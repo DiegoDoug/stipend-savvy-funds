@@ -1,24 +1,53 @@
-import { useState } from "react";
-import { TrendingUp, Plus, Calendar, DollarSign, Gift } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState, useMemo } from "react";
+import { TrendingUp, Calendar, DollarSign, Gift } from "lucide-react";
 import StatCard from "@/components/UI/StatCard";
-import CategoryBadge from "@/components/UI/CategoryBadge";
-import { mockTransactions, mockUser } from "@/lib/mockData";
+import AddIncomeDialog from "@/components/UI/AddIncomeDialog";
+import { useFinanceData } from "@/hooks/useFinanceData";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Income() {
   const [selectedPeriod, setSelectedPeriod] = useState("month");
+  const { user } = useAuth();
+  const { transactions, loading, refetch } = useFinanceData();
 
-  const incomeData = mockTransactions.filter(t => t.type === 'income');
-  const totalIncome = incomeData.reduce((sum, t) => sum + t.amount, 0);
-  const stipendIncome = incomeData.filter(t => t.description.includes('Stipend')).reduce((sum, t) => sum + t.amount, 0);
-  const refundIncome = incomeData.filter(t => t.description.includes('refund')).reduce((sum, t) => sum + t.amount, 0);
+  const incomeData = useMemo(() => 
+    transactions.filter(t => t.type === 'income'), 
+    [transactions]
+  );
 
-  const incomeCategories = [
-    { type: 'Stipend', amount: stipendIncome, recurring: true, next: '2024-02-01' },
-    { type: 'Scholarships', amount: refundIncome, recurring: false, next: 'Variable' },
-    { type: 'Side Gigs', amount: 0, recurring: false, next: 'None scheduled' },
-    { type: 'Gifts/Family', amount: 0, recurring: false, next: 'None scheduled' },
-  ];
+  const totalIncome = useMemo(() => 
+    incomeData.reduce((sum, t) => sum + Number(t.amount), 0), 
+    [incomeData]
+  );
+
+  const stipendIncome = useMemo(() => 
+    incomeData.filter(t => t.category === 'stipend').reduce((sum, t) => sum + Number(t.amount), 0), 
+    [incomeData]
+  );
+
+  const variableIncome = useMemo(() => 
+    incomeData.filter(t => t.category !== 'stipend').reduce((sum, t) => sum + Number(t.amount), 0), 
+    [incomeData]
+  );
+
+  const incomeCategories = useMemo(() => {
+    const categories = [
+      'stipend', 'scholarship', 'refund', 'side-gig', 'gift', 'other'
+    ];
+    
+    return categories.map(category => {
+      const categoryTransactions = incomeData.filter(t => t.category === category);
+      const amount = categoryTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
+      const isRecurring = category === 'stipend' || category === 'scholarship';
+      
+      return {
+        type: category.charAt(0).toUpperCase() + category.slice(1).replace('-', ' '),
+        amount,
+        recurring: isRecurring,
+        next: isRecurring ? 'Next month' : 'Variable'
+      };
+    });
+  }, [incomeData]);
 
   return (
     <div className="space-y-6">
@@ -28,10 +57,7 @@ export default function Income() {
           <h1 className="text-2xl md:text-3xl font-bold">Income Manager</h1>
           <p className="text-muted-foreground">Track all your income sources</p>
         </div>
-        <Button className="bg-gradient-to-r from-success to-success/80">
-          <Plus size={18} className="mr-2" />
-          Add Income
-        </Button>
+        <AddIncomeDialog onIncomeAdded={refetch.transactions} />
       </div>
 
       {/* Period Selector */}
@@ -62,14 +88,14 @@ export default function Income() {
         />
         <StatCard
           title="Regular Income"
-          value={`$${mockUser.monthlyStipend}`}
+          value={`$${stipendIncome.toLocaleString()}`}
           subtitle="Monthly stipend"
           icon={<Calendar size={24} />}
         />
         <StatCard
           title="Variable Income"
-          value={`$${refundIncome.toLocaleString()}`}
-          subtitle="Refunds & extras"
+          value={`$${variableIncome.toLocaleString()}`}
+          subtitle="Other sources"
           icon={<Gift size={24} />}
         />
       </div>
@@ -85,19 +111,22 @@ export default function Income() {
             <h3 className="font-medium mb-3">If no new refunds arrive:</h3>
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span>Current savings duration:</span>
-                <span className="font-semibold">{Math.round(mockUser.savings / mockUser.monthlyStipend)} months</span>
+                <span>Total monthly income:</span>
+                <span className="font-semibold">${totalIncome.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
-                <span>With current spending:</span>
-                <span className="font-semibold text-warning">8.5 months</span>
+                <span>Regular income:</span>
+                <span className="font-semibold">${stipendIncome.toLocaleString()}</span>
               </div>
             </div>
           </div>
           <div className="p-4 bg-primary/10 rounded-lg">
             <h3 className="font-medium text-primary mb-2">💡 Recommendation</h3>
             <p className="text-sm">
-              Your stipend covers 87% of your monthly expenses. Consider a small side gig for extra security.
+              {totalIncome > 0 
+                ? "Great job tracking your income! Keep diversifying your income sources for better financial security."
+                : "Start by adding your income sources to get a complete picture of your finances."
+              }
             </p>
           </div>
         </div>
@@ -140,29 +169,54 @@ export default function Income() {
       {/* Recent Income */}
       <div className="budget-card">
         <h2 className="text-lg font-semibold mb-4">Recent Income</h2>
-        <div className="space-y-3">
-          {incomeData.map((income) => (
-            <div key={income.id} className="expense-item">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
-                  <DollarSign size={18} className="text-success" />
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="animate-pulse expense-item">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-muted rounded-lg"></div>
+                  <div className="space-y-2">
+                    <div className="h-4 bg-muted rounded w-32"></div>
+                    <div className="h-3 bg-muted rounded w-20"></div>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium">{income.description}</p>
-                  <p className="text-sm text-muted-foreground">{income.date}</p>
+                <div className="h-6 bg-muted rounded w-16"></div>
+              </div>
+            ))}
+          </div>
+        ) : incomeData.length > 0 ? (
+          <div className="space-y-3">
+            {incomeData.slice(0, 5).map((income) => (
+              <div key={income.id} className="expense-item">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
+                    <DollarSign size={18} className="text-success" />
+                  </div>
+                  <div>
+                    <p className="font-medium">{income.description}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(income.date).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-success text-lg">
+                    +${Number(income.amount).toLocaleString()}
+                  </p>
+                  <p className="text-xs text-muted-foreground capitalize">
+                    {income.category.replace('-', ' ')}
+                  </p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="font-bold text-success text-lg">
-                  +${income.amount.toLocaleString()}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {income.category === 'refund' ? 'Refund' : 'Regular'}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <DollarSign size={48} className="mx-auto text-muted-foreground mb-3" />
+            <p className="text-muted-foreground">No income records yet</p>
+            <p className="text-sm text-muted-foreground">Add your first income entry to get started</p>
+          </div>
+        )}
       </div>
 
       {/* Income Goals */}
