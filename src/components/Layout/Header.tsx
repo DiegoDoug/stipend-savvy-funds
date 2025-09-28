@@ -1,19 +1,15 @@
 import { Menu, Bell, User } from "lucide-react";
 import { mockUser } from "@/lib/mockData";
-
 interface HeaderProps {
   onMenuClick?: () => void;
 }
-
-export default function Header({ onMenuClick }: HeaderProps) {
-  return (
-    <header className="bg-card border-b border-border/50 px-4 py-3 sticky top-0 z-40">
+export default function Header({
+  onMenuClick
+}: HeaderProps) {
+  return <header className="bg-card border-b border-border/50 px-4 py-3 sticky top-0 z-40">
       <div className="flex items-center justify-between max-w-7xl mx-auto">
         <div className="flex items-center gap-3">
-          <button
-            onClick={onMenuClick}
-            className="p-2 rounded-lg hover:bg-accent/50 transition-colors md:hidden"
-          >
+          <button onClick={onMenuClick} className="p-2 rounded-lg hover:bg-accent/50 transition-colors md:hidden">
             <Menu size={20} />
           </button>
           <div>
@@ -31,14 +27,8 @@ export default function Header({ onMenuClick }: HeaderProps) {
             <Bell size={18} />
             <span className="absolute -top-1 -right-1 w-3 h-3 bg-warning rounded-full text-xs"></span>
           </button>
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/30">
-            <div className="w-6 h-6 bg-gradient-to-br from-primary to-primary-glow rounded-full flex items-center justify-center">
-              <User size={14} className="text-primary-foreground" />
-            </div>
-            <span className="text-sm font-medium hidden sm:block">{mockUser.name}</span>
-          </div>
+          
         </div>
       </div>
-    </header>
-  );
+    </header>;
 }
