@@ -1,14 +1,27 @@
-import { DollarSign, TrendingUp, PiggyBank, AlertCircle, CreditCard, Target } from "lucide-react";
+import { DollarSign, TrendingUp, PiggyBank, AlertCircle, CreditCard, Target, LogOut } from "lucide-react";
 import StatCard from "@/components/UI/StatCard";
 import ProgressBar from "@/components/UI/ProgressBar";
 import CategoryBadge from "@/components/UI/CategoryBadge";
 import QuickActionFAB from "@/components/UI/QuickActionFAB";
-import { mockUser, mockBudget, mockTransactions, mockUpcomingTransactions, mockRefunds } from "@/lib/mockData";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { useFinanceData } from "@/hooks/useFinanceData";
+import { mockBudget } from "@/lib/mockData";
 
 export default function Dashboard() {
-  const totalBudget = Object.values(mockBudget).reduce((sum, cat) => sum + cat.allocated, 0);
-  const totalSpent = Object.values(mockBudget).reduce((sum, cat) => sum + cat.spent, 0);
-  const nextRefund = mockRefunds[0];
+  const { user, signOut } = useAuth();
+  const { transactions, budgetCategories, refunds, loading, stats } = useFinanceData();
+  
+  const totalBudget = budgetCategories.length > 0 
+    ? budgetCategories.reduce((sum, cat) => sum + Number(cat.allocated), 0)
+    : Object.values(mockBudget).reduce((sum, cat) => sum + cat.allocated, 0);
+    
+  const totalSpent = budgetCategories.length > 0
+    ? budgetCategories.reduce((sum, cat) => sum + Number(cat.spent), 0) 
+    : Object.values(mockBudget).reduce((sum, cat) => sum + cat.spent, 0);
+    
+  const nextRefund = refunds.find(r => r.status === 'pending') || refunds[0];
+  const recentTransactions = transactions.slice(0, 5);
 
   const quickActions = [
     {
@@ -28,37 +41,49 @@ export default function Dashboard() {
     },
   ];
 
+  if (loading) {
+    return <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+    </div>;
+  }
+
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
-      <div className="text-center md:text-left">
-        <h1 className="text-2xl md:text-3xl font-bold mb-2">
-          Welcome back, {mockUser.name.split(' ')[0]}! 👋
-        </h1>
-        <p className="text-muted-foreground">
-          Here's your financial overview for this month
-        </p>
+      <div className="text-center md:text-left flex justify-between items-start">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">
+            Welcome back, {user?.email?.split('@')[0]}! 👋
+          </h1>
+          <p className="text-muted-foreground">
+            Here's your financial overview for this month
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={signOut} className="flex items-center gap-2">
+          <LogOut size={16} />
+          Sign Out
+        </Button>
       </div>
 
       {/* Net Worth Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard
           title="Available Balance"
-          value={`$${mockUser.balance.toLocaleString()}`}
-          change="+$47.50 this week"
+          value={`$${Math.max(0, stats.balance).toLocaleString()}`}
+          change={transactions.length > 0 ? "+$47.50 this week" : "Add transactions to see changes"}
           changeType="positive"
           icon={<DollarSign size={24} />}
         />
         <StatCard
           title="Total Savings"
-          value={`$${mockUser.savings.toLocaleString()}`}
-          change="+12% this month"
+          value={`$${Math.max(0, stats.savings).toLocaleString()}`}
+          change={transactions.length > 0 ? "+12% this month" : "Start saving today"}
           changeType="positive"
           icon={<PiggyBank size={24} />}
         />
         <StatCard
           title="Monthly Income"
-          value={`$${mockUser.totalIncome.toLocaleString()}`}
+          value={`$${stats.totalIncome.toLocaleString()}`}
           subtitle="Stipend + Refunds"
           icon={<TrendingUp size={24} />}
         />
@@ -83,17 +108,23 @@ export default function Dashboard() {
           />
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-            {Object.entries(mockBudget).map(([category, data]) => (
-              <div key={category} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <CategoryBadge category={category as keyof typeof mockBudget} size="sm" />
-                  <span className="text-sm text-muted-foreground">
-                    ${data.spent} / ${data.allocated}
-                  </span>
+            {(budgetCategories.length > 0 ? budgetCategories : Object.entries(mockBudget)).map((item) => {
+              const isRealData = budgetCategories.length > 0;
+              const category = isRealData ? (item as any).category : item[0];
+              const data = isRealData ? item as any : item[1];
+              
+              return (
+                <div key={category} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <CategoryBadge category={category as keyof typeof mockBudget} size="sm" />
+                    <span className="text-sm text-muted-foreground">
+                      ${Number(data.spent || 0)} / ${Number(data.allocated || 0)}
+                    </span>
+                  </div>
+                  <ProgressBar value={Number(data.spent || 0)} max={Number(data.allocated || 0)} />
                 </div>
-                <ProgressBar value={data.spent} max={data.allocated} />
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
@@ -104,32 +135,39 @@ export default function Dashboard() {
         <div className="budget-card">
           <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
           <div className="space-y-3">
-            {mockTransactions.slice(0, 5).map((transaction) => (
-              <div key={transaction.id} className="expense-item">
-                <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full ${
-                    transaction.type === 'income' ? 'bg-success' : 'bg-primary'
-                  }`} />
-                  <div>
-                    <p className="font-medium text-sm">{transaction.description}</p>
-                    <p className="text-xs text-muted-foreground">{transaction.date}</p>
+            {recentTransactions.length > 0 ? (
+              recentTransactions.map((transaction) => (
+                <div key={transaction.id} className="expense-item">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-2 h-2 rounded-full ${
+                      transaction.type === 'income' ? 'bg-success' : 'bg-primary'
+                    }`} />
+                    <div>
+                      <p className="font-medium text-sm">{transaction.description}</p>
+                      <p className="text-xs text-muted-foreground">{new Date(transaction.date).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className={`font-semibold ${
+                      transaction.type === 'income' ? 'text-success' : 'text-foreground'
+                    }`}>
+                      {transaction.type === 'income' ? '+' : '-'}${Number(transaction.amount)}
+                    </p>
+                    {transaction.type === 'expense' && (
+                      <CategoryBadge 
+                        category={transaction.category as keyof typeof mockBudget} 
+                        size="sm" 
+                      />
+                    )}
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className={`font-semibold ${
-                    transaction.type === 'income' ? 'text-success' : 'text-foreground'
-                  }`}>
-                    {transaction.type === 'income' ? '+' : '-'}${transaction.amount}
-                  </p>
-                  {transaction.type === 'expense' && (
-                    <CategoryBadge 
-                      category={transaction.category as keyof typeof mockBudget} 
-                      size="sm" 
-                    />
-                  )}
-                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No transactions yet</p>
+                <p className="text-sm">Start by adding your first transaction</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
 
@@ -141,15 +179,22 @@ export default function Dashboard() {
               <CreditCard size={18} />
               Next Refund Check
             </h3>
-            <div className="bg-accent/30 rounded-lg p-3">
-              <p className="font-medium">{nextRefund.source}</p>
-              <p className="text-2xl font-bold text-success mt-1">
-                ${nextRefund.amount.toLocaleString()}
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Expected: {nextRefund.date}
-              </p>
-            </div>
+            {nextRefund ? (
+              <div className="bg-accent/30 rounded-lg p-3">
+                <p className="font-medium">{nextRefund.source}</p>
+                <p className="text-2xl font-bold text-success mt-1">
+                  ${Number(nextRefund.amount).toLocaleString()}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Expected: {new Date(nextRefund.date).toLocaleDateString()}
+                </p>
+              </div>
+            ) : (
+              <div className="bg-accent/30 rounded-lg p-3 text-center">
+                <p className="text-muted-foreground">No pending refunds</p>
+                <p className="text-sm text-muted-foreground mt-1">Add your first refund check</p>
+              </div>
+            )}
           </div>
 
           {/* Upcoming Transactions */}
@@ -159,17 +204,10 @@ export default function Dashboard() {
               Upcoming
             </h3>
             <div className="space-y-2">
-              {mockUpcomingTransactions.map((transaction) => (
-                <div key={transaction.id} className="flex items-center justify-between py-2">
-                  <div>
-                    <p className="font-medium text-sm">{transaction.description}</p>
-                    <p className="text-xs text-muted-foreground">{transaction.date}</p>
-                  </div>
-                  <p className="font-semibold text-warning">
-                    -${transaction.amount}
-                  </p>
-                </div>
-              ))}
+              <div className="text-center py-4 text-muted-foreground">
+                <p>No upcoming transactions</p>
+                <p className="text-sm">Set up recurring payments and reminders</p>
+              </div>
             </div>
           </div>
         </div>
