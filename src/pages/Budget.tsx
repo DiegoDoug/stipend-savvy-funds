@@ -240,7 +240,9 @@ export default function Budget() {
               No budget categories found. Default categories will be created automatically.
             </div>
           ) : (
-            budgetCategories.map((categoryData) => {
+            budgetCategories
+              .filter((categoryData) => Number(categoryData.allocated) > 0)
+              .map((categoryData) => {
               const category = categoryData.category;
               const data = { allocated: Number(categoryData.allocated), spent: Number(categoryData.spent) };
             const percentage = data.allocated > 0 ? (data.spent / data.allocated) * 100 : 0;
