@@ -1,7 +1,7 @@
 import { categoryLabels, categoryIcons } from "@/lib/mockData";
 
 interface CategoryBadgeProps {
-  category: keyof typeof categoryLabels;
+  category: string;
   size?: "sm" | "md" | "lg";
 }
 
@@ -20,14 +20,25 @@ export default function CategoryBadge({ category, size = "md" }: CategoryBadgePr
       personal: "bg-category-personal/10 text-category-personal border-category-personal/20",
       extra: "bg-category-extra/10 text-category-extra border-category-extra/20",
       refund: "bg-category-refund/10 text-category-refund border-category-refund/20",
+      savings: "bg-success/10 text-success border-success/20",
+      fun: "bg-warning/10 text-warning border-warning/20",
     };
-    return colorMap[cat as keyof typeof colorMap] || "bg-muted text-muted-foreground";
+    return colorMap[cat as keyof typeof colorMap] || "bg-primary/10 text-primary border-primary/20";
+  };
+
+  const getDisplayName = (cat: string) => {
+    return categoryLabels[cat as keyof typeof categoryLabels] || 
+           cat.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  };
+
+  const getIcon = (cat: string) => {
+    return categoryIcons[cat as keyof typeof categoryIcons] || "📂";
   };
 
   return (
     <span className={`category-badge border ${sizes[size]} ${getColorClasses(category)}`}>
-      <span className="mr-1">{categoryIcons[category]}</span>
-      {categoryLabels[category]}
+      <span className="mr-1">{getIcon(category)}</span>
+      {getDisplayName(category)}
     </span>
   );
 }

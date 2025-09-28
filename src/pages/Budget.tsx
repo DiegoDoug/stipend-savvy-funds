@@ -20,6 +20,8 @@ export default function Budget() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newCategory, setNewCategory] = useState("");
   const [newAmount, setNewAmount] = useState("");
+  const [customCategoryName, setCustomCategoryName] = useState("");
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
 
   // Convert budgetCategories array to object format for easier access
   const budget = budgetCategories.reduce((acc, cat) => {
@@ -95,13 +97,18 @@ export default function Budget() {
   };
 
   const handleAddCategory = async () => {
-    if (!user || !newCategory || !newAmount) return;
+    if (!user || !newAmount) return;
+    
+    const categoryKey = isCustomCategory ? customCategoryName.toLowerCase().replace(/\s+/g, '-') : newCategory;
+    const displayName = isCustomCategory ? customCategoryName : categoryLabels[newCategory as keyof typeof categoryLabels];
+    
+    if (!categoryKey || (isCustomCategory && !customCategoryName.trim())) return;
 
     const { error } = await supabase
       .from('budget_categories')
       .insert({
         user_id: user.id,
-        category: newCategory,
+        category: categoryKey,
         allocated: Number(newAmount),
         spent: 0
       });
@@ -116,10 +123,12 @@ export default function Budget() {
       refetch.budgetCategories();
       toast({
         title: "Category added",
-        description: `${categoryLabels[newCategory as keyof typeof categoryLabels] || newCategory} category added successfully`,
+        description: `${displayName} category added successfully`,
       });
       setNewCategory("");
       setNewAmount("");
+      setCustomCategoryName("");
+      setIsCustomCategory(false);
       setIsAddDialogOpen(false);
     }
   };
@@ -146,7 +155,16 @@ export default function Budget() {
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium">Category</label>
-                <Select value={newCategory} onValueChange={setNewCategory}>
+                <Select 
+                  value={newCategory} 
+                  onValueChange={(value) => {
+                    setNewCategory(value);
+                    setIsCustomCategory(value === 'custom');
+                    if (value !== 'custom') {
+                      setCustomCategoryName("");
+                    }
+                  }}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
@@ -154,9 +172,23 @@ export default function Budget() {
                     {Object.entries(categoryLabels).map(([key, label]) => (
                       <SelectItem key={key} value={key}>{label}</SelectItem>
                     ))}
+                    <SelectItem value="custom">Custom Category</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              
+              {isCustomCategory && (
+                <div>
+                  <label className="text-sm font-medium">Custom Category Name</label>
+                  <Input
+                    type="text"
+                    placeholder="Enter category name"
+                    value={customCategoryName}
+                    onChange={(e) => setCustomCategoryName(e.target.value)}
+                  />
+                </div>
+              )}
+              
               <div>
                 <label className="text-sm font-medium">Budget Amount</label>
                 <Input
@@ -169,7 +201,7 @@ export default function Budget() {
               <Button 
                 onClick={handleAddCategory}
                 className="w-full"
-                disabled={!newCategory || !newAmount}
+                disabled={!newAmount || (!newCategory || (isCustomCategory && !customCategoryName.trim()))}
               >
                 Add Category
               </Button>
@@ -251,7 +283,7 @@ export default function Budget() {
             return (
               <div key={category} className="p-4 bg-accent/20 rounded-lg border border-border/50">
                 <div className="flex items-center justify-between mb-3">
-                  <CategoryBadge category={category as keyof typeof categoryLabels} />
+                  <CategoryBadge category={category} />
                   <button
                     onClick={() => setEditMode(isEditing ? null : category)}
                     className="p-2 hover:bg-accent/50 rounded-lg transition-colors"
