@@ -17,8 +17,8 @@ export default function CategoryBadge({ category, size = "md" }: CategoryBadgePr
       essentials: "bg-category-essentials/10 text-category-essentials border-category-essentials/20",
       athletic: "bg-category-athletic/10 text-category-athletic border-category-athletic/20",
       education: "bg-category-education/10 text-category-education border-category-education/20",
-      savings: "bg-category-savings/10 text-category-savings border-category-savings/20",
-      fun: "bg-category-fun/10 text-category-fun border-category-fun/20",
+      personal: "bg-category-personal/10 text-category-personal border-category-personal/20",
+      extra: "bg-category-extra/10 text-category-extra border-category-extra/20",
       refund: "bg-category-refund/10 text-category-refund border-category-refund/20",
     };
     return colorMap[cat as keyof typeof colorMap] || "bg-muted text-muted-foreground";

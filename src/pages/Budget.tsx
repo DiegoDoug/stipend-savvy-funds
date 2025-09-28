@@ -1,25 +1,127 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PieChart, Edit3, Plus, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 import ProgressBar from "@/components/UI/ProgressBar";
 import CategoryBadge from "@/components/UI/CategoryBadge";
-import { mockBudget, categoryLabels } from "@/lib/mockData";
+import { categoryLabels } from "@/lib/mockData";
+import { useFinanceData } from "@/hooks/useFinanceData";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Budget() {
-  const [budget, setBudget] = useState(mockBudget);
+  const { user } = useAuth();
+  const { budgetCategories, loading, refetch } = useFinanceData();
+  const { toast } = useToast();
   const [editMode, setEditMode] = useState<string | null>(null);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [newCategory, setNewCategory] = useState("");
+  const [newAmount, setNewAmount] = useState("");
 
-  const totalAllocated = Object.values(budget).reduce((sum, cat) => sum + cat.allocated, 0);
-  const totalSpent = Object.values(budget).reduce((sum, cat) => sum + cat.spent, 0);
+  // Convert budgetCategories array to object format for easier access
+  const budget = budgetCategories.reduce((acc, cat) => {
+    acc[cat.category] = {
+      allocated: Number(cat.allocated),
+      spent: Number(cat.spent)
+    };
+    return acc;
+  }, {} as Record<string, { allocated: number; spent: number }>);
+
+  const totalAllocated = budgetCategories.reduce((sum, cat) => sum + Number(cat.allocated), 0);
+  const totalSpent = budgetCategories.reduce((sum, cat) => sum + Number(cat.spent), 0);
   const remaining = totalAllocated - totalSpent;
 
-  const handleBudgetUpdate = (category: string, newAmount: number) => {
-    setBudget(prev => ({
-      ...prev,
-      [category]: { ...prev[category as keyof typeof prev], allocated: newAmount }
-    }));
+  // Create default categories if none exist
+  useEffect(() => {
+    if (!user || loading) return;
+    
+    const createDefaultCategories = async () => {
+      if (budgetCategories.length === 0) {
+        const defaultCategories = [
+          { category: 'essentials', allocated: 400 },
+          { category: 'savings', allocated: 200 },
+          { category: 'personal', allocated: 150 },
+          { category: 'extra', allocated: 100 }
+        ];
+
+        for (const cat of defaultCategories) {
+          await supabase
+            .from('budget_categories')
+            .insert({
+              user_id: user.id,
+              category: cat.category,
+              allocated: cat.allocated,
+              spent: 0
+            });
+        }
+        
+        refetch.budgetCategories();
+        toast({
+          title: "Default categories created",
+          description: "Created Essentials, Savings, Personal, and Extra categories",
+        });
+      }
+    };
+
+    createDefaultCategories();
+  }, [user, budgetCategories.length, loading]);
+
+  const handleBudgetUpdate = async (category: string, newAmount: number) => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('budget_categories')
+      .update({ allocated: newAmount })
+      .eq('user_id', user.id)
+      .eq('category', category);
+
+    if (error) {
+      toast({
+        title: "Error updating budget",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      refetch.budgetCategories();
+      toast({
+        title: "Budget updated",
+        description: `${categoryLabels[category as keyof typeof categoryLabels]} budget updated successfully`,
+      });
+    }
     setEditMode(null);
+  };
+
+  const handleAddCategory = async () => {
+    if (!user || !newCategory || !newAmount) return;
+
+    const { error } = await supabase
+      .from('budget_categories')
+      .insert({
+        user_id: user.id,
+        category: newCategory,
+        allocated: Number(newAmount),
+        spent: 0
+      });
+
+    if (error) {
+      toast({
+        title: "Error adding category",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      refetch.budgetCategories();
+      toast({
+        title: "Category added",
+        description: `${categoryLabels[newCategory as keyof typeof categoryLabels] || newCategory} category added successfully`,
+      });
+      setNewCategory("");
+      setNewAmount("");
+      setIsAddDialogOpen(false);
+    }
   };
 
   return (
@@ -30,10 +132,50 @@ export default function Budget() {
           <h1 className="text-2xl md:text-3xl font-bold">Budget Planner</h1>
           <p className="text-muted-foreground">Manage your monthly allocations</p>
         </div>
-        <Button className="bg-gradient-to-r from-primary to-primary-glow">
-          <Plus size={18} className="mr-2" />
-          Add Category
-        </Button>
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-to-r from-primary to-primary-glow">
+              <Plus size={18} className="mr-2" />
+              Add Category
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Budget Category</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Category</label>
+                <Select value={newCategory} onValueChange={setNewCategory}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(categoryLabels).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Budget Amount</label>
+                <Input
+                  type="number"
+                  placeholder="Enter amount"
+                  value={newAmount}
+                  onChange={(e) => setNewAmount(e.target.value)}
+                />
+              </div>
+              <Button 
+                onClick={handleAddCategory}
+                className="w-full"
+                disabled={!newCategory || !newAmount}
+              >
+                Add Category
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Budget Summary */}
@@ -91,14 +233,23 @@ export default function Budget() {
       <div className="budget-card">
         <h2 className="text-lg font-semibold mb-6">Category Breakdown</h2>
         <div className="space-y-6">
-          {Object.entries(budget).map(([category, data]) => {
+          {loading ? (
+            <div className="text-center py-8">Loading budget categories...</div>
+          ) : budgetCategories.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No budget categories found. Default categories will be created automatically.
+            </div>
+          ) : (
+            budgetCategories.map((categoryData) => {
+              const category = categoryData.category;
+              const data = { allocated: Number(categoryData.allocated), spent: Number(categoryData.spent) };
             const percentage = data.allocated > 0 ? (data.spent / data.allocated) * 100 : 0;
             const isEditing = editMode === category;
             
             return (
               <div key={category} className="p-4 bg-accent/20 rounded-lg border border-border/50">
                 <div className="flex items-center justify-between mb-3">
-                  <CategoryBadge category={category as keyof typeof budget} />
+                  <CategoryBadge category={category as keyof typeof categoryLabels} />
                   <button
                     onClick={() => setEditMode(isEditing ? null : category)}
                     className="p-2 hover:bg-accent/50 rounded-lg transition-colors"
@@ -157,7 +308,8 @@ export default function Budget() {
                 )}
               </div>
             );
-          })}
+            })
+          )}
         </div>
       </div>
 
@@ -168,13 +320,19 @@ export default function Budget() {
           <div className="p-4 bg-success-light rounded-lg">
             <h3 className="font-semibold text-success mb-2">💡 Smart Tip</h3>
             <p className="text-sm text-success-foreground">
-              You have ${remaining} remaining this month. Consider moving some to your emergency fund!
+              You have ${remaining.toLocaleString()} remaining this month. Consider moving some to your emergency fund!
             </p>
           </div>
           <div className="p-4 bg-primary/10 rounded-lg">
             <h3 className="font-semibold text-primary mb-2">📊 Spending Pattern</h3>
             <p className="text-sm">
-              Your largest expense category is Essentials at ${budget.essentials.spent} this month.
+              {budgetCategories.length > 0 && (
+                `Your largest expense category is ${categoryLabels[budgetCategories.reduce((max, cat) => 
+                  Number(cat.spent) > Number(max.spent) ? cat : max
+                ).category as keyof typeof categoryLabels]} at $${budgetCategories.reduce((max, cat) => 
+                  Number(cat.spent) > Number(max.spent) ? cat : max
+                ).spent} this month.`
+              )}
             </p>
           </div>
         </div>

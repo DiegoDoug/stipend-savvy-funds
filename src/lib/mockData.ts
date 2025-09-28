@@ -46,18 +46,22 @@ export const mockUpcomingTransactions = [
 
 export const categoryLabels = {
   essentials: "Essentials",
+  savings: "Savings", 
+  personal: "Personal",
+  extra: "Extra",
   athletic: "Athletic/Health", 
   education: "Education",
-  savings: "Savings",
   fun: "Wants/Fun",
   refund: "Refund Holding",
 };
 
 export const categoryIcons = {
   essentials: "🏠",
+  savings: "💰",
+  personal: "👤",
+  extra: "✨",
   athletic: "💪",
   education: "📚",
-  savings: "💰",
   fun: "🎉",
   refund: "💳",
 };
