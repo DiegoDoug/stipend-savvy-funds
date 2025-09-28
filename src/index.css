@@ -23,7 +23,7 @@
     --primary-glow: 196 78% 65%;
 
     /* Secondary - Warm accent */
-    --secondary: 43 96% 56%;  /* Golden yellow */
+    --secondary: 43 85% 75%;  /* Lighter golden yellow */
     --secondary-foreground: 25 25% 15%;
 
     /* Success - Financial positive */
@@ -59,14 +59,14 @@
     --category-athletic: 142 76% 36%;      /* Green */
     --category-education: 262 83% 58%;     /* Purple */
     --category-savings: 196 78% 52%;       /* Teal */
-    --category-fun: 43 96% 56%;           /* Yellow */
+    --category-fun: 43 85% 75%;           /* Lighter yellow */
     --category-refund: 335 78% 42%;       /* Pink */
 
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(196 78% 52%), hsl(196 78% 65%));
     --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 50%));
-    --gradient-warning: linear-gradient(135deg, hsl(38 92% 50%), hsl(43 96% 56%));
-    --gradient-hero: linear-gradient(135deg, hsl(196 78% 52%) 0%, hsl(262 83% 58%) 50%, hsl(43 96% 56%) 100%);
+    --gradient-warning: linear-gradient(135deg, hsl(38 92% 50%), hsl(43 85% 75%));
+    --gradient-hero: linear-gradient(135deg, hsl(196 78% 52%) 0%, hsl(262 83% 58%) 50%, hsl(43 85% 75%) 100%);
 
     /* Shadows and effects */
     --shadow-soft: 0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 1px 2px 0 hsl(0 0% 0% / 0.06);
