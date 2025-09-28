@@ -1,14 +1,55 @@
 import { useState, useMemo } from "react";
-import { TrendingUp, Calendar, DollarSign, Gift } from "lucide-react";
+import { TrendingUp, Calendar, DollarSign, Gift, Trash2 } from "lucide-react";
 import StatCard from "@/components/UI/StatCard";
 import AddIncomeDialog from "@/components/UI/AddIncomeDialog";
 import { useFinanceData } from "@/hooks/useFinanceData";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Income() {
   const [selectedPeriod, setSelectedPeriod] = useState("month");
   const { user } = useAuth();
   const { transactions, loading, refetch } = useFinanceData();
+  const { toast } = useToast();
+
+  const handleDeleteIncome = async (incomeId: string) => {
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', incomeId)
+        .eq('user_id', user?.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Income deleted",
+        description: "The income entry has been successfully deleted.",
+      });
+
+      refetch.transactions();
+    } catch (error) {
+      console.error('Error deleting income:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete the income entry. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const incomeData = useMemo(() => 
     transactions.filter(t => t.type === 'income'), 
@@ -199,13 +240,43 @@ export default function Income() {
                     </p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-bold text-success text-lg">
-                    +${Number(income.amount).toLocaleString()}
-                  </p>
-                  <p className="text-xs text-muted-foreground capitalize">
-                    {income.category.replace('-', ' ')}
-                  </p>
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <p className="font-bold text-success text-lg">
+                      +${Number(income.amount).toLocaleString()}
+                    </p>
+                    <p className="text-xs text-muted-foreground capitalize">
+                      {income.category.replace('-', ' ')}
+                    </p>
+                  </div>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Income Entry</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete this income entry for ${Number(income.amount).toLocaleString()}? This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={() => handleDeleteIncome(income.id)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </div>
             ))}
