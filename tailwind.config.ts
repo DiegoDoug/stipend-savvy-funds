@@ -22,14 +22,26 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          glow: "hsl(var(--primary-glow))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
           foreground: "hsl(var(--secondary-foreground))",
         },
-        destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+          light: "hsl(var(--success-light))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+          light: "hsl(var(--warning-light))",
+        },
+        danger: {
+          DEFAULT: "hsl(var(--danger))",
+          foreground: "hsl(var(--danger-foreground))",
+          light: "hsl(var(--danger-light))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
@@ -46,6 +58,14 @@ export default {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        category: {
+          essentials: "hsl(var(--category-essentials))",
+          athletic: "hsl(var(--category-athletic))",
+          education: "hsl(var(--category-education))",
+          savings: "hsl(var(--category-savings))",
+          fun: "hsl(var(--category-fun))",
+          refund: "hsl(var(--category-refund))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",

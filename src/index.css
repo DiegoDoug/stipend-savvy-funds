@@ -2,39 +2,82 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Student-Athlete Finance Manager Design System */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Core backgrounds and text */
+    --background: 248 250 252;  /* slate-50 */
+    --foreground: 212 14% 15%;  /* slate-800 */
 
+    /* Cards and surfaces */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 212 14% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 212 14% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary brand - Fresh blue-green */
+    --primary: 196 78% 52%;  /* Vibrant teal */
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 196 78% 65%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary - Warm accent */
+    --secondary: 43 96% 56%;  /* Golden yellow */
+    --secondary-foreground: 25 25% 15%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Success - Financial positive */
+    --success: 142 76% 36%;  /* Green */
+    --success-foreground: 0 0% 100%;
+    --success-light: 142 76% 90%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Warning - Budget alerts */
+    --warning: 38 92% 50%;  /* Orange */
+    --warning-foreground: 0 0% 100%;
+    --warning-light: 38 92% 95%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Danger - Overspending */
+    --danger: 0 84% 60%;
+    --danger-foreground: 0 0% 100%;
+    --danger-light: 0 84% 95%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Muted surfaces */
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    /* Accent variations */
+    --accent: 240 5% 96%;
+    --accent-foreground: 240 6% 10%;
+
+    /* Form elements */
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 196 78% 52%;
+
+    /* Category colors */
+    --category-essentials: 220 13% 18%;    /* Dark blue-gray */
+    --category-athletic: 142 76% 36%;      /* Green */
+    --category-education: 262 83% 58%;     /* Purple */
+    --category-savings: 196 78% 52%;       /* Teal */
+    --category-fun: 43 96% 56%;           /* Yellow */
+    --category-refund: 335 78% 42%;       /* Pink */
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(196 78% 52%), hsl(196 78% 65%));
+    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 50%));
+    --gradient-warning: linear-gradient(135deg, hsl(38 92% 50%), hsl(43 96% 56%));
+    --gradient-hero: linear-gradient(135deg, hsl(196 78% 52%) 0%, hsl(262 83% 58%) 50%, hsl(43 96% 56%) 100%);
+
+    /* Shadows and effects */
+    --shadow-soft: 0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 1px 2px 0 hsl(0 0% 0% / 0.06);
+    --shadow-medium: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.06);
+    --shadow-large: 0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -2px hsl(0 0% 0% / 0.05);
+    --shadow-glow: 0 0 20px hsl(196 78% 52% / 0.3);
+
+    /* Animations */
+    --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
     --radius: 0.5rem;
 
@@ -100,6 +143,37 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-medium;
+  }
+}
+
+/* Custom component styles */
+@layer components {
+  .budget-card {
+    @apply bg-card rounded-xl p-4 shadow-[var(--shadow-soft)] border border-border/50 transition-[var(--transition-smooth)] hover:shadow-[var(--shadow-medium)];
+  }
+  
+  .stat-card {
+    @apply bg-gradient-to-br from-card to-accent/30 rounded-xl p-4 border border-border/50 shadow-[var(--shadow-soft)];
+  }
+  
+  .category-badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold transition-[var(--transition-fast)];
+  }
+  
+  .progress-bar {
+    @apply w-full bg-muted rounded-full h-2 overflow-hidden;
+  }
+  
+  .progress-fill {
+    @apply h-full transition-all duration-500 ease-out rounded-full;
+  }
+  
+  .expense-item {
+    @apply flex items-center justify-between p-3 rounded-lg bg-card/50 border border-border/30 hover:bg-card/80 transition-[var(--transition-smooth)];
+  }
+  
+  .floating-action {
+    @apply fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-primary to-primary-glow rounded-full shadow-[var(--shadow-large)] flex items-center justify-center text-primary-foreground transition-[var(--transition-bounce)] hover:scale-110 active:scale-95;
   }
 }
