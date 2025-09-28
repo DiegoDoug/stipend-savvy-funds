@@ -46,7 +46,7 @@ export default function Income() {
         recurring: isRecurring,
         next: isRecurring ? 'Next month' : 'Variable'
       };
-    });
+    }).filter(category => category.amount > 0);
   }, [incomeData]);
 
   return (
