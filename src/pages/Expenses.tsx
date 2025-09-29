@@ -5,16 +5,24 @@ import { Input } from "@/components/ui/input";
 import StatCard from "@/components/UI/StatCard";
 import CategoryBadge from "@/components/UI/CategoryBadge";
 import QuickActionFAB from "@/components/UI/QuickActionFAB";
-import { mockTransactions, mockBudget, categoryLabels } from "@/lib/mockData";
+import AddExpenseDialog from "@/components/UI/AddExpenseDialog";
+import { useFinanceData } from "@/hooks/useFinanceData";
+import { categoryLabels } from "@/lib/mockData";
 
 export default function Expenses() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState("date");
+  const [showAddDialog, setShowAddDialog] = useState(false);
 
-  const expenses = mockTransactions.filter(t => t.type === 'expense');
-  const totalExpenses = expenses.reduce((sum, t) => sum + t.amount, 0);
+  const { transactions, loading, refetch } = useFinanceData();
+
+  const expenses = transactions?.filter(t => t.type === 'expense') || [];
+  const totalExpenses = expenses.reduce((sum, t) => sum + Number(t.amount), 0);
   const avgDaily = totalExpenses / 30; // Approximate daily average
+
+  // Get unique categories from expenses
+  const availableCategories = [...new Set(expenses.map(e => e.category))].filter(Boolean);
 
   // Filter and sort expenses
   const filteredExpenses = expenses
@@ -23,21 +31,26 @@ export default function Expenses() {
       (selectedCategory === null || expense.category === selectedCategory)
     )
     .sort((a, b) => {
-      if (sortBy === 'amount') return b.amount - a.amount;
+      if (sortBy === 'amount') return Number(b.amount) - Number(a.amount);
       if (sortBy === 'date') return new Date(b.date).getTime() - new Date(a.date).getTime();
       return 0;
     });
 
   const categoryTotals = expenses.reduce((acc, expense) => {
-    acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
+    const amount = Number(expense.amount);
+    acc[expense.category] = (acc[expense.category] || 0) + amount;
     return acc;
   }, {} as Record<string, number>);
+
+  const largestCategory = Object.entries(categoryTotals).reduce((max, [category, amount]) => 
+    amount > max.amount ? { category, amount } : max, { category: '', amount: 0 }
+  );
 
   const quickActions = [
     {
       label: "Quick Expense",
       icon: <CreditCard size={18} />,
-      onClick: () => console.log("Quick expense"),
+      onClick: () => setShowAddDialog(true),
     },
     {
       label: "Add Receipt",
@@ -51,6 +64,14 @@ export default function Expenses() {
     },
   ];
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -59,7 +80,10 @@ export default function Expenses() {
           <h1 className="text-2xl md:text-3xl font-bold">Expense Tracker</h1>
           <p className="text-muted-foreground">Monitor your spending patterns</p>
         </div>
-        <Button className="bg-gradient-to-r from-primary to-primary-glow">
+        <Button 
+          onClick={() => setShowAddDialog(true)}
+          className="bg-gradient-to-r from-primary to-primary-glow"
+        >
           <Plus size={18} className="mr-2" />
           Add Expense
         </Button>
@@ -82,8 +106,8 @@ export default function Expenses() {
         />
         <StatCard
           title="Largest Category"
-          value="Essentials"
-          subtitle={`$${categoryTotals.essentials?.toFixed(2) || '0.00'}`}
+          value={largestCategory.category ? categoryLabels[largestCategory.category as keyof typeof categoryLabels] || largestCategory.category : "None"}
+          subtitle={`$${largestCategory.amount.toFixed(2)}`}
           icon={<Filter size={24} />}
         />
       </div>
@@ -114,7 +138,7 @@ export default function Expenses() {
             >
               All Categories
             </button>
-            {Object.keys(mockBudget).map((category) => (
+            {availableCategories.map((category) => (
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}
@@ -124,7 +148,7 @@ export default function Expenses() {
                     : 'bg-accent/50 hover:bg-accent'
                 }`}
               >
-                {categoryLabels[category as keyof typeof categoryLabels]}
+                {categoryLabels[category as keyof typeof categoryLabels] || category}
               </button>
             ))}
           </div>
@@ -155,9 +179,9 @@ export default function Expenses() {
           {Object.entries(categoryTotals).map(([category, amount]) => (
             <div key={category} className="p-4 bg-accent/20 rounded-lg border border-border/50">
               <div className="flex items-center justify-between mb-2">
-                <CategoryBadge category={category as keyof typeof mockBudget} size="sm" />
+                <CategoryBadge category={category} size="sm" />
                 <span className="text-sm text-muted-foreground">
-                  {((amount / totalExpenses) * 100).toFixed(1)}%
+                  {totalExpenses > 0 ? ((amount / totalExpenses) * 100).toFixed(1) : 0}%
                 </span>
               </div>
               <p className="text-xl font-bold">${amount.toFixed(2)}</p>
@@ -165,7 +189,7 @@ export default function Expenses() {
                 <div className="w-full bg-muted rounded-full h-1.5">
                   <div 
                     className={`h-full rounded-full bg-category-${category}`}
-                    style={{ width: `${(amount / totalExpenses) * 100}%` }}
+                    style={{ width: `${totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0}%` }}
                   />
                 </div>
               </div>
@@ -178,7 +202,7 @@ export default function Expenses() {
       <div className="budget-card">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">
-            {selectedCategory ? `${categoryLabels[selectedCategory as keyof typeof categoryLabels]} Expenses` : 'All Expenses'}
+            {selectedCategory ? `${categoryLabels[selectedCategory as keyof typeof categoryLabels] || selectedCategory} Expenses` : 'All Expenses'}
           </h2>
           <span className="text-sm text-muted-foreground">
             {filteredExpenses.length} transaction{filteredExpenses.length !== 1 ? 's' : ''}
@@ -195,13 +219,13 @@ export default function Expenses() {
                 <div className="flex-1 min-w-0">
                   <p className="font-medium truncate">{expense.description}</p>
                   <div className="flex items-center gap-2 mt-1">
-                    <CategoryBadge category={expense.category as keyof typeof mockBudget} size="sm" />
+                    <CategoryBadge category={expense.category} size="sm" />
                     <span className="text-xs text-muted-foreground">{expense.date}</span>
                   </div>
                 </div>
               </div>
               <div className="text-right">
-                <p className="font-bold text-lg">-${expense.amount}</p>
+                <p className="font-bold text-lg">-${Number(expense.amount).toFixed(2)}</p>
                 <button className="text-xs text-primary hover:underline mt-1">
                   Add Receipt
                 </button>
@@ -238,6 +262,12 @@ export default function Expenses() {
       </div>
 
       <QuickActionFAB actions={quickActions} />
+      
+      <AddExpenseDialog 
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
+        onExpenseAdded={refetch.transactions}
+      />
     </div>
   );
 }
