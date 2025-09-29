@@ -90,6 +90,7 @@ export const useFinanceData = () => {
       balance,
       savings,
       totalIncome: income,
+      totalExpenses: expenses,
       totalBudget,
       totalSpent
     };

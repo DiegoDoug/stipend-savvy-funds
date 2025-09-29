@@ -231,7 +231,7 @@ export default function Budget() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Total Spent</p>
-              <p className="text-xl font-bold">${totalSpent.toLocaleString()}</p>
+              <p className="text-xl font-bold">${stats.totalExpenses.toLocaleString()}</p>
             </div>
           </div>
         </div>
