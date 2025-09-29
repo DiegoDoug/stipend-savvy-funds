@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export default function Budget() {
   const { user } = useAuth();
-  const { budgetCategories, loading, refetch, stats } = useFinanceData();
+  const { budgetCategories, loading, refetch, stats, transactions } = useFinanceData();
   const { toast } = useToast();
   const [editMode, setEditMode] = useState<string | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -368,6 +368,79 @@ export default function Budget() {
                 ).spent} this month.`
               )}
             </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Transactions Breakdown */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Income Transactions */}
+        <div className="budget-card">
+          <h2 className="text-lg font-semibold mb-4">Income Breakdown</h2>
+          <div className="space-y-3">
+            {loading ? (
+              <div className="text-center py-4">Loading income transactions...</div>
+            ) : (
+              transactions
+                .filter(t => t.type === 'income')
+                .slice(0, 10) // Show last 10 transactions
+                .map((transaction) => (
+                  <div key={transaction.id} className="flex items-center justify-between p-3 bg-success/5 border border-success/20 rounded-lg">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <CategoryBadge category={transaction.category} />
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(transaction.date).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium">{transaction.description}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-success">+${Number(transaction.amount).toLocaleString()}</p>
+                    </div>
+                  </div>
+                ))
+            )}
+            {transactions.filter(t => t.type === 'income').length === 0 && !loading && (
+              <div className="text-center py-8 text-muted-foreground">
+                No income transactions found
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Expense Transactions */}
+        <div className="budget-card">
+          <h2 className="text-lg font-semibold mb-4">Expense Breakdown</h2>
+          <div className="space-y-3">
+            {loading ? (
+              <div className="text-center py-4">Loading expense transactions...</div>
+            ) : (
+              transactions
+                .filter(t => t.type === 'expense')
+                .slice(0, 10) // Show last 10 transactions
+                .map((transaction) => (
+                  <div key={transaction.id} className="flex items-center justify-between p-3 bg-danger/5 border border-danger/20 rounded-lg">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <CategoryBadge category={transaction.category} />
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(transaction.date).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium">{transaction.description}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-danger">-${Number(transaction.amount).toLocaleString()}</p>
+                    </div>
+                  </div>
+                ))
+            )}
+            {transactions.filter(t => t.type === 'expense').length === 0 && !loading && (
+              <div className="text-center py-8 text-muted-foreground">
+                No expense transactions found
+              </div>
+            )}
           </div>
         </div>
       </div>
