@@ -1,23 +1,65 @@
 import { useState } from "react";
-import { CreditCard, Plus, Search, Filter, Calendar, Receipt } from "lucide-react";
+import { CreditCard, Plus, Search, Filter, Calendar, Receipt, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle, 
+  AlertDialogTrigger 
+} from "@/components/ui/alert-dialog";
 import StatCard from "@/components/UI/StatCard";
 import CategoryBadge from "@/components/UI/CategoryBadge";
 import QuickActionFAB from "@/components/UI/QuickActionFAB";
 import AddExpenseDialog from "@/components/UI/AddExpenseDialog";
 import { useFinanceData } from "@/hooks/useFinanceData";
 import { categoryLabels } from "@/lib/mockData";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 export default function Expenses() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState("date");
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const { user } = useAuth();
+  const { toast } = useToast();
   const {
     transactions,
     loading,
     refetch
   } = useFinanceData();
+
+  const handleDeleteExpense = async (expenseId: string) => {
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', expenseId)
+        .eq('user_id', user?.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Expense deleted",
+        description: "The expense entry has been successfully deleted.",
+      });
+
+      refetch.transactions();
+    } catch (error) {
+      console.error('Error deleting expense:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete the expense entry. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
   const expenses = transactions?.filter(t => t.type === 'expense') || [];
   const totalExpenses = expenses.reduce((sum, t) => sum + Number(t.amount), 0);
   const avgDaily = totalExpenses / 30; // Approximate daily average
@@ -157,11 +199,41 @@ export default function Expenses() {
                   </div>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="font-bold text-lg">-${Number(expense.amount).toFixed(2)}</p>
-                <button className="text-xs text-primary hover:underline mt-1">
-                  Add Receipt
-                </button>
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <p className="font-bold text-lg">-${Number(expense.amount).toFixed(2)}</p>
+                  <button className="text-xs text-primary hover:underline mt-1">
+                    Add Receipt
+                  </button>
+                </div>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Expense Entry</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete this expense entry for ${Number(expense.amount).toLocaleString()}? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={() => handleDeleteExpense(expense.id)}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>)}
         </div>
