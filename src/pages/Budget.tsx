@@ -218,7 +218,7 @@ export default function Budget() {
               <DollarSign size={20} className="text-primary" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Total Allocated</p>
+              <p className="text-sm text-muted-foreground">Monthly Income</p>
               <p className="text-xl font-bold">${totalAllocated.toLocaleString()}</p>
             </div>
           </div>
