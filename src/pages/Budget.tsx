@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export default function Budget() {
   const { user } = useAuth();
-  const { budgetCategories, loading, refetch } = useFinanceData();
+  const { budgetCategories, loading, refetch, stats } = useFinanceData();
   const { toast } = useToast();
   const [editMode, setEditMode] = useState<string | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -219,7 +219,7 @@ export default function Budget() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Monthly Income</p>
-              <p className="text-xl font-bold">${totalAllocated.toLocaleString()}</p>
+              <p className="text-xl font-bold">${stats.totalIncome.toLocaleString()}</p>
             </div>
           </div>
         </div>
