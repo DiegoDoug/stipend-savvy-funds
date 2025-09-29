@@ -12,24 +12,17 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Plus } from "lucide-react";
+import { useCategories } from "@/hooks/useCategories";
 
 const addIncomeSchema = z.object({
   amount: z.string().min(1, "Amount is required").refine((val) => !isNaN(Number(val)) && Number(val) > 0, "Amount must be a positive number"),
   description: z.string().min(1, "Description is required").max(100, "Description must be less than 100 characters"),
   category: z.string().min(1, "Category is required"),
+  customCategory: z.string().optional(),
   date: z.string().min(1, "Date is required"),
 });
 
 type AddIncomeForm = z.infer<typeof addIncomeSchema>;
-
-const incomeCategories = [
-  { value: "stipend", label: "Stipend" },
-  { value: "scholarship", label: "Scholarship" },
-  { value: "refund", label: "Refund" },
-  { value: "side-gig", label: "Side Gig" },
-  { value: "gift", label: "Gift/Family" },
-  { value: "other", label: "Other" },
-];
 
 interface AddIncomeDialogProps {
   onIncomeAdded?: () => void;
@@ -39,6 +32,9 @@ export default function AddIncomeDialog({ onIncomeAdded }: AddIncomeDialogProps)
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { getIncomeCategories, addCustomCategory } = useCategories();
+
+  const incomeCategories = getIncomeCategories();
 
   const form = useForm<AddIncomeForm>({
     resolver: zodResolver(addIncomeSchema),
@@ -46,6 +42,7 @@ export default function AddIncomeDialog({ onIncomeAdded }: AddIncomeDialogProps)
       amount: "",
       description: "",
       category: "",
+      customCategory: "",
       date: new Date().toISOString().split('T')[0],
     },
   });
@@ -64,6 +61,23 @@ export default function AddIncomeDialog({ onIncomeAdded }: AddIncomeDialogProps)
         return;
       }
 
+      let finalCategory = data.category;
+      
+      // If custom category is selected, add it to the database first
+      if (data.category === "custom" && data.customCategory) {
+        const success = await addCustomCategory(
+          data.customCategory.toLowerCase().replace(/\s+/g, '-'),
+          data.customCategory,
+          'income'
+        );
+        if (success) {
+          finalCategory = data.customCategory.toLowerCase().replace(/\s+/g, '-');
+        } else {
+          setLoading(false);
+          return;
+        }
+      }
+
       const { error } = await supabase
         .from('transactions')
         .insert({
@@ -71,7 +85,7 @@ export default function AddIncomeDialog({ onIncomeAdded }: AddIncomeDialogProps)
           type: 'income',
           amount: Number(data.amount),
           description: data.description,
-          category: data.category,
+          category: finalCategory,
           date: data.date,
         });
 
@@ -157,18 +171,35 @@ export default function AddIncomeDialog({ onIncomeAdded }: AddIncomeDialogProps)
                         <SelectValue placeholder="Select income category" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent className="bg-background border border-border shadow-md z-50">
                       {incomeCategories.map((category) => (
                         <SelectItem key={category.value} value={category.value}>
-                          {category.label}
+                          {category.label} {category.isCustom && "(Custom)"}
                         </SelectItem>
                       ))}
+                      <SelectItem value="custom">Add Custom Category</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
+            {form.watch("category") === "custom" && (
+              <FormField
+                control={form.control}
+                name="customCategory"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Custom Category Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter category name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <FormField
               control={form.control}

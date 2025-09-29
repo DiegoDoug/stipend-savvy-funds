@@ -20,17 +20,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-
-const expenseCategories = [
-  { value: "essentials", label: "Essentials" },
-  { value: "transportation", label: "Transportation" },
-  { value: "entertainment", label: "Entertainment" },
-  { value: "food", label: "Food & Dining" },
-  { value: "education", label: "Education" },
-  { value: "health", label: "Health & Wellness" },
-  { value: "shopping", label: "Shopping" },
-  { value: "bills", label: "Bills & Utilities" },
-];
+import { useCategories } from "@/hooks/useCategories";
 
 interface AddExpenseDialogProps {
   open: boolean;
@@ -48,6 +38,9 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
   
   const { toast } = useToast();
   const { user } = useAuth();
+  const { getExpenseCategories, addCustomCategory } = useCategories();
+
+  const expenseCategories = getExpenseCategories();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +66,22 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
     setIsLoading(true);
     
     try {
-      const finalCategory = category === "custom" ? customCategory.toLowerCase().replace(/\s+/g, '_') : category;
+      let finalCategory = category;
+      
+      // If custom category is selected, add it to the database first
+      if (category === "custom" && customCategory) {
+        const success = await addCustomCategory(
+          customCategory.toLowerCase().replace(/\s+/g, '-'),
+          customCategory,
+          'expense'
+        );
+        if (success) {
+          finalCategory = customCategory.toLowerCase().replace(/\s+/g, '-');
+        } else {
+          setIsLoading(false);
+          return;
+        }
+      }
       
       const { error } = await supabase
         .from("transactions")
@@ -157,13 +165,13 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-background border border-border shadow-md z-50">
                   {expenseCategories.map((cat) => (
                     <SelectItem key={cat.value} value={cat.value}>
-                      {cat.label}
+                      {cat.label} {cat.isCustom && "(Custom)"}
                     </SelectItem>
                   ))}
-                  <SelectItem value="custom">Custom Category</SelectItem>
+                  <SelectItem value="custom">Add Custom Category</SelectItem>
                 </SelectContent>
               </Select>
             </div>
