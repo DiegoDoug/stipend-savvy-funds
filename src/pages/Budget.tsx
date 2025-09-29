@@ -22,6 +22,7 @@ export default function Budget() {
   const [newAmount, setNewAmount] = useState("");
   const [customCategoryName, setCustomCategoryName] = useState("");
   const [isCustomCategory, setIsCustomCategory] = useState(false);
+  const [creatingCategories, setCreatingCategories] = useState(false);
 
   // Convert budgetCategories array to object format for easier access
   const budget = budgetCategories.reduce((acc, cat) => {
@@ -38,38 +39,64 @@ export default function Budget() {
 
   // Create default categories if none exist
   useEffect(() => {
-    if (!user || loading) return;
+    if (!user || loading || creatingCategories) return;
     
     const createDefaultCategories = async () => {
       if (budgetCategories.length === 0) {
-        const defaultCategories = [
-          { category: 'essentials', allocated: 400 },
-          { category: 'savings', allocated: 200 },
-          { category: 'personal', allocated: 150 },
-          { category: 'extra', allocated: 100 }
-        ];
-
-        for (const cat of defaultCategories) {
-          await supabase
-            .from('budget_categories')
-            .insert({
-              user_id: user.id,
-              category: cat.category,
-              allocated: cat.allocated,
-              spent: 0
-            });
-        }
+        setCreatingCategories(true);
         
-        refetch.budgetCategories();
-        toast({
-          title: "Default categories created",
-          description: "Created Essentials, Savings, Personal, and Extra categories",
-        });
+        try {
+          const defaultCategories = [
+            { category: 'essentials', allocated: 400 },
+            { category: 'savings', allocated: 200 },
+            { category: 'personal', allocated: 150 },
+            { category: 'extra', allocated: 100 }
+          ];
+
+          const { data, error } = await supabase
+            .from('budget_categories')
+            .upsert(
+              defaultCategories.map(cat => ({
+                user_id: user.id,
+                category: cat.category,
+                allocated: cat.allocated,
+                spent: 0
+              })),
+              { 
+                onConflict: 'user_id,category',
+                ignoreDuplicates: true
+              }
+            )
+            .select();
+
+          if (error) {
+            // Only throw error if it's not a duplicate key error
+            if (!error.message.includes('duplicate key value violates unique constraint')) {
+              throw error;
+            }
+          } else if (data && data.length > 0) {
+            // Only show toast if categories were actually created
+            refetch.budgetCategories();
+            toast({
+              title: "Default categories created",
+              description: "Created Essentials, Savings, Personal, and Extra categories",
+            });
+          }
+        } catch (error: any) {
+          console.error('Error creating default categories:', error);
+          toast({
+            title: "Error creating categories",
+            description: "Failed to create default categories. Please try refreshing the page.",
+            variant: "destructive",
+          });
+        } finally {
+          setCreatingCategories(false);
+        }
       }
     };
 
     createDefaultCategories();
-  }, [user, budgetCategories.length, loading]);
+  }, [user?.id, budgetCategories.length, loading, creatingCategories]);
 
   const handleBudgetUpdate = async (category: string, newAmount: number) => {
     if (!user) return;
