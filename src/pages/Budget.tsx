@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { PieChart, Edit3, Plus, DollarSign } from "lucide-react";
+import { PieChart, Edit3, Plus, DollarSign, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -121,6 +121,30 @@ export default function Budget() {
       });
     }
     setEditMode(null);
+  };
+
+  const handleDeleteCategory = async (category: string) => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('budget_categories')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('category', category);
+
+    if (error) {
+      toast({
+        title: "Error deleting category",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      refetch.budgetCategories();
+      toast({
+        title: "Category deleted",
+        description: `Category deleted successfully`,
+      });
+    }
   };
 
   const handleAddCategory = async () => {
@@ -325,12 +349,20 @@ export default function Budget() {
               <div key={category} className="p-4 bg-accent/20 rounded-lg border border-border/50">
                 <div className="flex items-center justify-between mb-3">
                   <CategoryBadge category={category} />
-                  <button
-                    onClick={() => setEditMode(isEditing ? null : category)}
-                    className="p-2 hover:bg-accent/50 rounded-lg transition-colors"
-                  >
-                    <Edit3 size={16} />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setEditMode(isEditing ? null : category)}
+                      className="p-2 hover:bg-accent/50 rounded-lg transition-colors"
+                    >
+                      <Edit3 size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteCategory(category)}
+                      className="p-2 hover:bg-danger/20 rounded-lg transition-colors text-danger"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
