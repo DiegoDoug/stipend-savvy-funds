@@ -34,7 +34,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       >
         <div className="p-4 border-b border-border/50 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+            <h2 className="text-xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
               FinTrack
             </h2>
             <p className="text-xs text-muted-foreground">Student Finance Manager</p>
