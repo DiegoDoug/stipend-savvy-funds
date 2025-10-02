@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { PieChart, Edit3, Plus, DollarSign } from "lucide-react";
+import { PieChart, Edit3, Plus, DollarSign, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -23,6 +24,8 @@ export default function Budget() {
   const [customCategoryName, setCustomCategoryName] = useState("");
   const [isCustomCategory, setIsCustomCategory] = useState(false);
   const [creatingCategories, setCreatingCategories] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Convert budgetCategories array to object format for easier access
   const budget = budgetCategories.reduce((acc, cat) => {
@@ -170,6 +173,34 @@ export default function Budget() {
       setIsCustomCategory(false);
       setIsAddDialogOpen(false);
     }
+  };
+
+  const handleDeleteCategory = async () => {
+    if (!user || !categoryToDelete) return;
+
+    const { error } = await supabase
+      .from('budget_categories')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('category', categoryToDelete);
+
+    if (error) {
+      toast({
+        title: "Error deleting category",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      refetch.budgetCategories();
+      const displayName = categoryLabels[categoryToDelete as keyof typeof categoryLabels] || categoryToDelete;
+      toast({
+        title: "Category deleted",
+        description: `${displayName} category has been deleted and will need to be re-created.`,
+      });
+    }
+    
+    setCategoryToDelete(null);
+    setIsDeleteDialogOpen(false);
   };
 
   return (
@@ -323,12 +354,23 @@ export default function Budget() {
               <div key={category} className="p-4 bg-accent/20 rounded-lg border border-border/50">
                 <div className="flex items-center justify-between mb-3">
                   <CategoryBadge category={category} />
-                  <button
-                    onClick={() => setEditMode(isEditing ? null : category)}
-                    className="p-2 hover:bg-accent/50 rounded-lg transition-colors"
-                  >
-                    <Edit3 size={16} />
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setEditMode(isEditing ? null : category)}
+                      className="p-2 hover:bg-accent/50 rounded-lg transition-colors"
+                    >
+                      <Edit3 size={16} />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setCategoryToDelete(category);
+                        setIsDeleteDialogOpen(true);
+                      }}
+                      className="p-2 hover:bg-destructive/10 text-destructive rounded-lg transition-colors"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -483,6 +525,30 @@ export default function Budget() {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Category</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the "{categoryToDelete ? (categoryLabels[categoryToDelete as keyof typeof categoryLabels] || categoryToDelete) : ''}" category? 
+              This action cannot be undone and you will need to re-create this category if you want to use it again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setCategoryToDelete(null);
+              setIsDeleteDialogOpen(false);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteCategory} className="bg-destructive hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
