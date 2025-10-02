@@ -1,14 +1,12 @@
 import { NavLink } from "react-router-dom";
-import { Home, PieChart, TrendingUp, CreditCard, Target, BarChart3, X } from "lucide-react";
+import { Home, PieChart, TrendingUp, CreditCard, Target, X } from "lucide-react";
 
 const navItems = [
   { path: "/", icon: Home, label: "Dashboard" },
   { path: "/budget", icon: PieChart, label: "Budget Planner" },
   { path: "/income", icon: TrendingUp, label: "Income Manager" },
   { path: "/expenses", icon: CreditCard, label: "Expense Tracker" },
-  { path: "/refunds", icon: CreditCard, label: "Refund Manager" },
   { path: "/goals", icon: Target, label: "Goals & Savings" },
-  { path: "/reports", icon: BarChart3, label: "Reports" },
 ];
 
 interface SidebarProps {
