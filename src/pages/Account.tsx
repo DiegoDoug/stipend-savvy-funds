@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { User, Mail, Lock, Trash2, UserX, LogOut, Calendar, Clock } from 'lucide-react';
+import VerificationCodeDialog from '@/components/UI/VerificationCodeDialog';
 
 interface ProfileData {
   name: string;
@@ -39,6 +40,11 @@ export default function Account() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  
+  // Verification dialogs
+  const [emailVerificationOpen, setEmailVerificationOpen] = useState(false);
+  const [reactivationVerificationOpen, setReactivationVerificationOpen] = useState(false);
+  const [deletionVerificationOpen, setDeletionVerificationOpen] = useState(false);
 
   useEffect(() => {
     fetchProfileData();
@@ -115,7 +121,7 @@ export default function Account() {
     }
   };
 
-  const handleUpdateEmail = async () => {
+  const handleInitiateEmailChange = async () => {
     if (!newEmail || !emailPassword) {
       toast({
         title: "Error",
@@ -135,7 +141,23 @@ export default function Account() {
 
       if (signInError) throw new Error('Incorrect password');
 
-      // Update email
+      // Open verification dialog
+      setEmailVerificationOpen(true);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEmailChangeVerified = async () => {
+    setLoading(true);
+    try {
+      // Update email after verification
       const { error } = await supabase.auth.updateUser({ 
         email: newEmail 
       });
@@ -143,13 +165,14 @@ export default function Account() {
       if (error) throw error;
 
       toast({
-        title: "Verification email sent",
-        description: "Please check both your old and new email to confirm the change"
+        title: "Email updated successfully",
+        description: "Please check your new email for confirmation"
       });
       
       setEditingEmail(false);
       setEmailPassword('');
       setNewEmail('');
+      fetchProfileData();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -258,16 +281,7 @@ export default function Account() {
     }
   };
 
-  const handleDeleteAccount = async () => {
-    if (deleteConfirmText !== 'DELETE') {
-      toast({
-        title: "Error",
-        description: "Please type DELETE to confirm",
-        variant: "destructive"
-      });
-      return;
-    }
-
+  const handleDeleteAccountVerified = async () => {
     setLoading(true);
     try {
       // Delete user (cascade will handle related data)
@@ -285,6 +299,33 @@ export default function Account() {
       toast({
         title: "Error",
         description: "Unable to delete account. Please contact support.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReactivateVerified = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ status: 'active' })
+        .eq('user_id', user?.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Account Reactivated",
+        description: "Your account has been successfully reactivated. You now have full access.",
+      });
+      
+      fetchProfileData();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
         variant: "destructive"
       });
     } finally {
@@ -381,36 +422,11 @@ export default function Account() {
             Click below to reactivate your account and restore full access.
           </p>
           <Button 
-            onClick={async () => {
-              setLoading(true);
-              try {
-                const { error } = await supabase
-                  .from('profiles')
-                  .update({ status: 'active' })
-                  .eq('user_id', user?.id);
-
-                if (error) throw error;
-
-                toast({
-                  title: "Account Reactivated",
-                  description: "Your account has been successfully reactivated. You now have full access.",
-                });
-                
-                fetchProfileData();
-              } catch (error: any) {
-                toast({
-                  title: "Error",
-                  description: error.message,
-                  variant: "destructive"
-                });
-              } finally {
-                setLoading(false);
-              }
-            }}
+            onClick={() => setReactivationVerificationOpen(true)}
             disabled={loading}
             className="bg-success hover:bg-success/90"
           >
-            {loading ? 'Reactivating...' : 'Reactivate Account'}
+            Reactivate Account
           </Button>
         </Card>
       )}
@@ -486,7 +502,7 @@ export default function Account() {
               />
             </div>
             <div className="flex gap-2">
-              <Button onClick={handleUpdateEmail} disabled={loading}>
+              <Button onClick={handleInitiateEmailChange} disabled={loading}>
                 {loading ? 'Updating...' : 'Update Email'}
               </Button>
               <Button onClick={() => {
@@ -625,42 +641,67 @@ export default function Account() {
               </h3>
               <p className="text-sm text-muted-foreground">Permanently delete your account and all data</p>
             </div>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive">Delete</Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Permanently Delete Account?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete your account,
-                    including all transactions, budgets, goals, and savings data.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <div className="my-4">
-                  <Label htmlFor="deleteConfirm">Type DELETE to confirm</Label>
-                  <Input
-                    id="deleteConfirm"
-                    value={deleteConfirmText}
-                    onChange={(e) => setDeleteConfirmText(e.target.value)}
-                    placeholder="DELETE"
-                  />
-                </div>
-                <AlertDialogFooter>
-                  <AlertDialogCancel onClick={() => setDeleteConfirmText('')}>Cancel</AlertDialogCancel>
-                  <AlertDialogAction 
-                    onClick={handleDeleteAccount}
-                    disabled={deleteConfirmText !== 'DELETE'}
-                    className="bg-red-600 hover:bg-red-700 text-black"
-                  >
-                    Delete Forever
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <Button 
+              variant="destructive"
+              onClick={() => {
+                if (deleteConfirmText === 'DELETE') {
+                  setDeletionVerificationOpen(true);
+                } else {
+                  toast({
+                    title: "Confirmation Required",
+                    description: "Please type DELETE in the field above first",
+                    variant: "destructive"
+                  });
+                }
+              }}
+              disabled={deleteConfirmText !== 'DELETE'}
+            >
+              Delete
+            </Button>
+          </div>
+          
+          <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-lg">
+            <Label htmlFor="deleteConfirm" className="text-destructive">Type DELETE to enable deletion</Label>
+            <Input
+              id="deleteConfirm"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="DELETE"
+              className="mt-2"
+            />
           </div>
         </div>
       </Card>
+      
+      {/* Verification Dialogs */}
+      {user && profileData && (
+        <>
+          <VerificationCodeDialog
+            open={emailVerificationOpen}
+            onOpenChange={setEmailVerificationOpen}
+            actionType="email_change"
+            email={profileData.email}
+            newEmail={newEmail}
+            onVerified={handleEmailChangeVerified}
+          />
+          
+          <VerificationCodeDialog
+            open={reactivationVerificationOpen}
+            onOpenChange={setReactivationVerificationOpen}
+            actionType="account_reactivation"
+            email={profileData.email}
+            onVerified={handleReactivateVerified}
+          />
+          
+          <VerificationCodeDialog
+            open={deletionVerificationOpen}
+            onOpenChange={setDeletionVerificationOpen}
+            actionType="account_deletion"
+            email={profileData.email}
+            onVerified={handleDeleteAccountVerified}
+          />
+        </>
+      )}
     </div>
   );
 }
