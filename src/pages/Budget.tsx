@@ -131,6 +131,18 @@ export default function Budget() {
     
     if (!categoryKey || (isCustomCategory && !customCategoryName.trim())) return;
 
+    // Check if category already exists
+    const existingCategory = budgetCategories.find(cat => cat.category === categoryKey);
+    
+    if (existingCategory) {
+      toast({
+        title: "Category already exists",
+        description: `The category "${displayName}" already exists in your budget. Please edit the existing category instead.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     const { error } = await supabase
       .from('budget_categories')
       .insert({
@@ -196,15 +208,9 @@ export default function Budget() {
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(categoryLabels)
-                      .filter(([key]) => {
-                        const exists = budgetCategories.some(cat => cat.category === key);
-                        console.log(`Category ${key}: exists=${exists}`);
-                        return !exists;
-                      })
-                      .map(([key, label]) => (
-                        <SelectItem key={key} value={key}>{label}</SelectItem>
-                      ))}
+                    {Object.entries(categoryLabels).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    ))}
                     <SelectItem value="custom">Custom Category</SelectItem>
                   </SelectContent>
                 </Select>
