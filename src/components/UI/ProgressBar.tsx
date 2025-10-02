@@ -15,7 +15,8 @@ export default function ProgressBar({
   showLabel = false,
   label
 }: ProgressBarProps) {
-  const percentage = Math.min((value / max) * 100, 100);
+  // If max is 0 or negative, percentage should be 0
+  const percentage = max > 0 ? Math.min((value / max) * 100, 100) : 0;
   
   const heights = {
     sm: "h-1",
