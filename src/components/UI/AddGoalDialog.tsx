@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useAccountStatus } from "@/hooks/useAccountStatus";
 
 interface AddGoalDialogProps {
   open: boolean;
@@ -30,9 +31,14 @@ export default function AddGoalDialog({ open, onOpenChange, onGoalAdded }: AddGo
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+  const { checkAndNotify } = useAccountStatus();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!checkAndNotify()) {
+      return;
+    }
 
     if (!user) {
       toast({

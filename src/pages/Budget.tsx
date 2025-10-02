@@ -12,11 +12,13 @@ import { categoryLabels } from "@/lib/mockData";
 import { useFinanceData } from "@/hooks/useFinanceData";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useAccountStatus } from "@/hooks/useAccountStatus";
 
 export default function Budget() {
   const { user } = useAuth();
   const { budgetCategories, loading, refetch, stats, transactions } = useFinanceData();
   const { toast } = useToast();
+  const { isActive, checkAndNotify } = useAccountStatus();
   const [editMode, setEditMode] = useState<string | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newCategory, setNewCategory] = useState("");
@@ -102,7 +104,7 @@ export default function Budget() {
   }, [user?.id, budgetCategories.length, loading, creatingCategories]);
 
   const handleBudgetUpdate = async (category: string, newAmount: number) => {
-    if (!user) return;
+    if (!user || !checkAndNotify()) return;
 
     const { error } = await supabase
       .from('budget_categories')
@@ -127,7 +129,7 @@ export default function Budget() {
   };
 
   const handleAddCategory = async () => {
-    if (!user || !newAmount) return;
+    if (!user || !newAmount || !checkAndNotify()) return;
     
     const categoryKey = isCustomCategory ? customCategoryName.toLowerCase().replace(/\s+/g, '-') : newCategory;
     const displayName = isCustomCategory ? customCategoryName : categoryLabels[newCategory as keyof typeof categoryLabels];
@@ -176,7 +178,7 @@ export default function Budget() {
   };
 
   const handleDeleteCategory = async () => {
-    if (!user || !categoryToDelete) return;
+    if (!user || !categoryToDelete || !checkAndNotify()) return;
 
     const { error } = await supabase
       .from('budget_categories')
@@ -213,7 +215,10 @@ export default function Budget() {
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-primary to-primary-glow">
+            <Button 
+              className="bg-gradient-to-r from-primary to-primary-glow"
+              disabled={!isActive}
+            >
               <Plus size={18} className="mr-2" />
               Add Category
             </Button>
@@ -356,17 +361,23 @@ export default function Budget() {
                   <CategoryBadge category={category} />
                   <div className="flex gap-2">
                     <button
-                      onClick={() => setEditMode(isEditing ? null : category)}
-                      className="p-2 hover:bg-accent/50 rounded-lg transition-colors"
+                      onClick={() => isActive && setEditMode(isEditing ? null : category)}
+                      disabled={!isActive}
+                      className="p-2 hover:bg-accent/50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Edit3 size={16} />
                     </button>
                     <button
                       onClick={() => {
-                        setCategoryToDelete(category);
-                        setIsDeleteDialogOpen(true);
+                        if (isActive) {
+                          setCategoryToDelete(category);
+                          setIsDeleteDialogOpen(true);
+                        } else {
+                          checkAndNotify();
+                        }
                       }}
-                      className="p-2 hover:bg-destructive/10 text-destructive rounded-lg transition-colors"
+                      disabled={!isActive}
+                      className="p-2 hover:bg-destructive/10 text-destructive rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Trash2 size={16} />
                     </button>

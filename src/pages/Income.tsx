@@ -18,14 +18,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAccountStatus } from "@/hooks/useAccountStatus";
 
 export default function Income() {
   const [selectedPeriod, setSelectedPeriod] = useState("month");
   const { user } = useAuth();
   const { transactions, loading, refetch } = useFinanceData();
   const { toast } = useToast();
+  const { checkAndNotify } = useAccountStatus();
 
   const handleDeleteIncome = async (incomeId: string) => {
+    if (!checkAndNotify()) return;
+    
     try {
       const { error } = await supabase
         .from('transactions')

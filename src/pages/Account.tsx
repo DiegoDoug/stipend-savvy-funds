@@ -242,10 +242,11 @@ export default function Account() {
 
       toast({
         title: "Account deactivated",
-        description: "Your account has been deactivated. You can reactivate it by logging in again."
+        description: "Your account has been deactivated. You can reactivate it anytime from Account Settings."
       });
       
-      await signOut();
+      // Refresh profile data instead of logging out
+      fetchProfileData();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -370,6 +371,49 @@ export default function Account() {
           </div>
         </div>
       </Card>
+
+      {/* Reactivate Account (shown when inactive) */}
+      {profileData.status === 'inactive' && (
+        <Card className="p-6 border-warning bg-warning/5">
+          <h2 className="text-xl font-semibold mb-4 text-warning">Account Deactivated</h2>
+          <p className="text-muted-foreground mb-4">
+            Your account is currently deactivated. You can view your data but cannot make any changes.
+            Click below to reactivate your account and restore full access.
+          </p>
+          <Button 
+            onClick={async () => {
+              setLoading(true);
+              try {
+                const { error } = await supabase
+                  .from('profiles')
+                  .update({ status: 'active' })
+                  .eq('user_id', user?.id);
+
+                if (error) throw error;
+
+                toast({
+                  title: "Account Reactivated",
+                  description: "Your account has been successfully reactivated. You now have full access.",
+                });
+                
+                fetchProfileData();
+              } catch (error: any) {
+                toast({
+                  title: "Error",
+                  description: error.message,
+                  variant: "destructive"
+                });
+              } finally {
+                setLoading(false);
+              }
+            }}
+            disabled={loading}
+            className="bg-success hover:bg-success/90"
+          >
+            {loading ? 'Reactivating...' : 'Reactivate Account'}
+          </Button>
+        </Card>
+      )}
 
       {/* B. Edit Name */}
       <Card className="p-6">
@@ -558,8 +602,8 @@ export default function Account() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Deactivate Account?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will temporarily disable your account. You can reactivate it by logging in again.
-                    Your data will be preserved.
+                    Your account will remain accessible but you won't be able to make any changes until you reactivate it.
+                    Your data will be preserved and you can view everything in read-only mode.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

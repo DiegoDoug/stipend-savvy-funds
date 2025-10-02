@@ -8,12 +8,15 @@ import QuickActionFAB from "@/components/UI/QuickActionFAB";
 import AddExpenseDialog from "@/components/UI/AddExpenseDialog";
 import AddIncomeDialog from "@/components/UI/AddIncomeDialog";
 import AddGoalDialog from "@/components/UI/AddGoalDialog";
+import DeactivationAlert from "@/components/UI/DeactivationAlert";
+import { useAccountStatus } from "@/hooks/useAccountStatus";
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
   const [incomeDialogOpen, setIncomeDialogOpen] = useState(false);
   const [goalDialogOpen, setGoalDialogOpen] = useState(false);
+  const { isActive } = useAccountStatus();
 
   const quickActions = [
     {
@@ -42,6 +45,7 @@ export default function Layout() {
           <Header onMenuClick={() => setSidebarOpen(true)} />
           
           <main className="flex-1 p-4 pb-20 md:pb-4 max-w-7xl mx-auto w-full">
+            {!isActive && <DeactivationAlert />}
             <Outlet />
           </main>
         </div>

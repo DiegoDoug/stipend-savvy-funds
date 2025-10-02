@@ -9,6 +9,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<{ error: any }>;
   loading: boolean;
+  profileStatus: string;
 }
 
 const AuthContext = React.createContext<AuthContextType | null>(null);
@@ -17,6 +18,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = React.useState<User | null>(null);
   const [session, setSession] = React.useState<Session | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [profileStatus, setProfileStatus] = React.useState<string>('active');
 
   React.useEffect(() => {
     let mounted = true;
@@ -28,6 +30,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setSession(session);
           setUser(session?.user ?? null);
           setLoading(false);
+          
+          // Fetch profile status after auth state changes
+          if (session?.user) {
+            setTimeout(() => {
+              supabase
+                .from('profiles')
+                .select('status')
+                .eq('user_id', session.user.id)
+                .single()
+                .then(({ data }) => {
+                  if (data && mounted) {
+                    setProfileStatus(data.status || 'active');
+                  }
+                });
+            }, 0);
+          } else {
+            setProfileStatus('active');
+          }
         }
       }
     );
@@ -38,6 +58,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        
+        // Fetch profile status for existing session
+        if (session?.user) {
+          setTimeout(() => {
+            supabase
+              .from('profiles')
+              .select('status')
+              .eq('user_id', session.user.id)
+              .single()
+              .then(({ data }) => {
+                if (data && mounted) {
+                  setProfileStatus(data.status || 'active');
+                }
+              });
+          }, 0);
+        }
       }
     });
 
@@ -83,8 +119,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp,
     signIn,
     signOut,
-    loading
-  }), [user, session, signUp, signIn, signOut, loading]);
+    loading,
+    profileStatus
+  }), [user, session, signUp, signIn, signOut, loading, profileStatus]);
 
   return (
     <AuthContext.Provider value={value}>

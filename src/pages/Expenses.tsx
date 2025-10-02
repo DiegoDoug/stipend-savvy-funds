@@ -22,6 +22,7 @@ import { categoryLabels } from "@/lib/mockData";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAccountStatus } from "@/hooks/useAccountStatus";
 export default function Expenses() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -29,6 +30,7 @@ export default function Expenses() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+  const { checkAndNotify } = useAccountStatus();
   const {
     transactions,
     loading,
@@ -36,6 +38,8 @@ export default function Expenses() {
   } = useFinanceData();
 
   const handleDeleteExpense = async (expenseId: string) => {
+    if (!checkAndNotify()) return;
+    
     try {
       const { error } = await supabase
         .from('transactions')

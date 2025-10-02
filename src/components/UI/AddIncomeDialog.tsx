@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Plus } from "lucide-react";
 import { useCategories } from "@/hooks/useCategories";
+import { useAccountStatus } from "@/hooks/useAccountStatus";
 const addIncomeSchema = z.object({
   amount: z.string().min(1, "Amount is required").refine(val => !isNaN(Number(val)) && Number(val) > 0, "Amount must be a positive number"),
   description: z.string().min(1, "Description is required").max(100, "Description must be less than 100 characters"),
@@ -37,13 +38,9 @@ export default function AddIncomeDialog({
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
   const setOpen = controlledOnOpenChange !== undefined ? controlledOnOpenChange : setInternalOpen;
   const [loading, setLoading] = useState(false);
-  const {
-    toast
-  } = useToast();
-  const {
-    getIncomeCategories,
-    addCustomCategory
-  } = useCategories();
+  const { toast } = useToast();
+  const { getIncomeCategories, addCustomCategory } = useCategories();
+  const { checkAndNotify } = useAccountStatus();
   const incomeCategories = getIncomeCategories();
   const form = useForm<AddIncomeForm>({
     resolver: zodResolver(addIncomeSchema),
@@ -56,6 +53,10 @@ export default function AddIncomeDialog({
     }
   });
   const onSubmit = async (data: AddIncomeForm) => {
+    if (!checkAndNotify()) {
+      return;
+    }
+    
     setLoading(true);
     try {
       const {

@@ -1,5 +1,6 @@
 import { Plus } from "lucide-react";
 import { useState } from "react";
+import { useAccountStatus } from "@/hooks/useAccountStatus";
 
 interface QuickAction {
   label: string;
@@ -14,6 +15,7 @@ interface QuickActionFABProps {
 
 export default function QuickActionFAB({ actions }: QuickActionFABProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const { checkAndNotify } = useAccountStatus();
 
   return (
     <div className="fixed bottom-20 right-6 md:bottom-6 z-40">
@@ -27,7 +29,9 @@ export default function QuickActionFAB({ actions }: QuickActionFABProps) {
               </span>
               <button
                 onClick={() => {
-                  action.onClick();
+                  if (checkAndNotify()) {
+                    action.onClick();
+                  }
                   setIsOpen(false);
                 }}
                 className="w-12 h-12 bg-card border border-border/50 rounded-full shadow-lg flex items-center justify-center text-foreground hover:bg-accent/50 transition-all duration-200 hover:scale-105"

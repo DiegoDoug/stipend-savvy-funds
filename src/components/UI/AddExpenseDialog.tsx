@@ -21,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useCategories } from "@/hooks/useCategories";
+import { useAccountStatus } from "@/hooks/useAccountStatus";
 
 interface AddExpenseDialogProps {
   open?: boolean;
@@ -40,11 +41,16 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
   const { toast } = useToast();
   const { user } = useAuth();
   const { getExpenseCategories, addCustomCategory } = useCategories();
+  const { checkAndNotify } = useAccountStatus();
 
   const expenseCategories = getExpenseCategories();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!checkAndNotify()) {
+      return;
+    }
     
     if (!user) {
       toast({
