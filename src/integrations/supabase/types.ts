@@ -217,8 +217,10 @@ export type Database = {
           email: string
           expires_at: string
           id: string
+          locked_until: string | null
           used: boolean
           user_id: string
+          verification_attempts: number
         }
         Insert: {
           action_type: string
@@ -227,8 +229,10 @@ export type Database = {
           email: string
           expires_at: string
           id?: string
+          locked_until?: string | null
           used?: boolean
           user_id: string
+          verification_attempts?: number
         }
         Update: {
           action_type?: string
@@ -237,8 +241,10 @@ export type Database = {
           email?: string
           expires_at?: string
           id?: string
+          locked_until?: string | null
           used?: boolean
           user_id?: string
+          verification_attempts?: number
         }
         Relationships: []
       }

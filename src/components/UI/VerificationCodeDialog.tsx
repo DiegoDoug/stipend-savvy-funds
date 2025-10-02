@@ -104,13 +104,12 @@ export default function VerificationCodeDialog({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Verify code in database
+      // Get the most recent unused verification code for this action
       const { data: verificationCode, error: fetchError } = await supabase
         .from('verification_codes')
         .select('*')
         .eq('user_id', user.id)
         .eq('action_type', actionType)
-        .eq('code', code)
         .eq('used', false)
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false })
@@ -122,7 +121,53 @@ export default function VerificationCodeDialog({
       if (!verificationCode) {
         toast({
           title: "Invalid Code",
-          description: "The verification code is incorrect or has expired.",
+          description: "No valid verification code found. Please request a new one.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check if code is locked due to too many attempts
+      if (verificationCode.locked_until && new Date(verificationCode.locked_until) > new Date()) {
+        const lockMinutes = Math.ceil((new Date(verificationCode.locked_until).getTime() - Date.now()) / 60000);
+        toast({
+          title: "Code Locked",
+          description: `Too many failed attempts. Please try again in ${lockMinutes} minute${lockMinutes > 1 ? 's' : ''}.`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Verify the code using bcrypt comparison via edge function
+      const { data: verifyResult, error: verifyError } = await supabase.functions.invoke('verify-code', {
+        body: { 
+          codeId: verificationCode.id,
+          inputCode: code
+        }
+      });
+
+      if (verifyError || !verifyResult?.valid) {
+        // Increment verification attempts
+        const newAttempts = (verificationCode.verification_attempts || 0) + 1;
+        const updateData: any = {
+          verification_attempts: newAttempts
+        };
+
+        // Lock the code after 5 failed attempts for 15 minutes
+        if (newAttempts >= 5) {
+          updateData.locked_until = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+        }
+
+        await supabase
+          .from('verification_codes')
+          .update(updateData)
+          .eq('id', verificationCode.id);
+
+        toast({
+          title: "Invalid Code",
+          description: newAttempts >= 5 
+            ? "Too many failed attempts. Code locked for 15 minutes."
+            : `Incorrect code. ${5 - newAttempts} attempt${5 - newAttempts > 1 ? 's' : ''} remaining.`,
           variant: "destructive",
         });
         return;

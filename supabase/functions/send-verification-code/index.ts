@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@4.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -42,19 +43,50 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { actionType, email, newEmail }: SendVerificationRequest = await req.json();
 
+    // Rate limiting: Check how many codes were created in the last 15 minutes
+    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+    const { data: recentCodes, error: rateLimitError } = await supabase
+      .from('verification_codes')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('action_type', actionType)
+      .gte('created_at', fifteenMinutesAgo.toISOString());
+
+    if (rateLimitError) {
+      console.error("Rate limit check error:", rateLimitError);
+      throw new Error("Failed to check rate limit");
+    }
+
+    if (recentCodes && recentCodes.length >= 3) {
+      console.log(`Rate limit exceeded for user ${user.id}`);
+      return new Response(
+        JSON.stringify({ 
+          error: "Rate limit exceeded. Please wait 15 minutes before requesting a new code." 
+        }),
+        {
+          status: 429,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
     // Generate 6-digit code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    
+    // Hash the code before storing
+    const hashedCode = await bcrypt.hash(code);
 
-    // Store verification code in database
+    // Store hashed verification code in database
     const { error: insertError } = await supabase
       .from('verification_codes')
       .insert({
         user_id: user.id,
         action_type: actionType,
-        code,
+        code: hashedCode,
         email: newEmail || email,
         expires_at: expiresAt.toISOString(),
+        verification_attempts: 0,
       });
 
     if (insertError) {

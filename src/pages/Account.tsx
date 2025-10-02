@@ -284,22 +284,26 @@ export default function Account() {
   const handleDeleteAccountVerified = async () => {
     setLoading(true);
     try {
-      // Delete user (cascade will handle related data)
-      const { error } = await supabase.auth.admin.deleteUser(user?.id || '');
-
+      // Call edge function to delete account using service role
+      const { data, error } = await supabase.functions.invoke('delete-user-account', {
+        body: {}
+      });
+      
       if (error) throw error;
 
       toast({
-        title: "Account deleted",
-        description: "Your account and all associated data have been permanently deleted"
+        title: "Account Deleted",
+        description: "Your account has been permanently deleted.",
       });
-      
+
+      // Sign out after successful deletion
       await signOut();
     } catch (error: any) {
+      console.error('Delete error:', error);
       toast({
         title: "Error",
-        description: "Unable to delete account. Please contact support.",
-        variant: "destructive"
+        description: error.message || "Failed to delete account. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
