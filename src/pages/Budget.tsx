@@ -3,6 +3,7 @@ import { PieChart, Edit3, Plus, DollarSign, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import ProgressBar from "@/components/UI/ProgressBar";
@@ -23,6 +24,7 @@ export default function Budget() {
   const [customCategoryName, setCustomCategoryName] = useState("");
   const [isCustomCategory, setIsCustomCategory] = useState(false);
   const [creatingCategories, setCreatingCategories] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
 
   // Convert budgetCategories array to object format for easier access
   const budget = budgetCategories.reduce((acc, cat) => {
@@ -123,14 +125,14 @@ export default function Budget() {
     setEditMode(null);
   };
 
-  const handleDeleteCategory = async (category: string) => {
-    if (!user) return;
+  const handleDeleteCategory = async () => {
+    if (!user || !categoryToDelete) return;
 
     const { error } = await supabase
       .from('budget_categories')
       .delete()
       .eq('user_id', user.id)
-      .eq('category', category);
+      .eq('category', categoryToDelete);
 
     if (error) {
       toast({
@@ -145,6 +147,7 @@ export default function Budget() {
         description: `Category deleted successfully`,
       });
     }
+    setCategoryToDelete(null);
   };
 
   const handleAddCategory = async () => {
@@ -357,7 +360,7 @@ export default function Budget() {
                       <Edit3 size={16} />
                     </button>
                     <button
-                      onClick={() => handleDeleteCategory(category)}
+                      onClick={() => setCategoryToDelete(category)}
                       className="p-2 hover:bg-danger/20 rounded-lg transition-colors text-danger"
                     >
                       <Trash2 size={16} />
@@ -517,6 +520,24 @@ export default function Budget() {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!categoryToDelete} onOpenChange={() => setCategoryToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Category</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this budget category? This action cannot be undone and you will need to create the category again if you want to use it in the future.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteCategory} className="bg-danger hover:bg-danger/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
