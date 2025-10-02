@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@4.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
-import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -76,8 +75,12 @@ const handler = async (req: Request): Promise<Response> => {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
     
-    // Hash the code before storing
-    const hashedCode = await bcrypt.hash(code);
+    // Hash the code using Web Crypto API (SHA-256)
+    const encoder = new TextEncoder();
+    const data = encoder.encode(code);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashedCode = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
     // Store hashed verification code in database
     const { error: insertError } = await supabase
