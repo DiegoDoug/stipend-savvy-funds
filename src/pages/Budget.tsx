@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import { PieChart, Edit3, Plus, DollarSign, Trash2 } from "lucide-react";
+import { PieChart, Edit3, Plus, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import ProgressBar from "@/components/UI/ProgressBar";
@@ -24,7 +23,6 @@ export default function Budget() {
   const [customCategoryName, setCustomCategoryName] = useState("");
   const [isCustomCategory, setIsCustomCategory] = useState(false);
   const [creatingCategories, setCreatingCategories] = useState(false);
-  const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
 
   // Convert budgetCategories array to object format for easier access
   const budget = budgetCategories.reduce((acc, cat) => {
@@ -125,31 +123,6 @@ export default function Budget() {
     setEditMode(null);
   };
 
-  const handleDeleteCategory = async () => {
-    if (!user || !categoryToDelete) return;
-
-    const { error } = await supabase
-      .from('budget_categories')
-      .delete()
-      .eq('user_id', user.id)
-      .eq('category', categoryToDelete);
-
-    if (error) {
-      toast({
-        title: "Error deleting category",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      refetch.budgetCategories();
-      toast({
-        title: "Category deleted",
-        description: `Category deleted successfully`,
-      });
-    }
-    setCategoryToDelete(null);
-  };
-
   const handleAddCategory = async () => {
     if (!user || !newAmount) return;
     
@@ -157,19 +130,7 @@ export default function Budget() {
     const displayName = isCustomCategory ? customCategoryName : categoryLabels[newCategory as keyof typeof categoryLabels];
     
     if (!categoryKey || (isCustomCategory && !customCategoryName.trim())) return;
-  
-    // Check if category already exists
-    const existingCategory = budgetCategories.find(cat => cat.category === categoryKey);
-    
-    if (existingCategory) {
-      toast({
-        title: "Category already exists",
-        description: `The category "${displayName}" already exists in your budget. Please edit the existing category instead.`,
-        variant: "destructive",
-      });
-      return;
-    }
-  
+
     const { error } = await supabase
       .from('budget_categories')
       .insert({
@@ -178,7 +139,7 @@ export default function Budget() {
         allocated: Number(newAmount),
         spent: 0
       });
-  
+
     if (error) {
       toast({
         title: "Error adding category",
@@ -236,7 +197,11 @@ export default function Budget() {
                   </SelectTrigger>
                   <SelectContent>
                     {Object.entries(categoryLabels)
-                      .filter(([key]) => !budgetCategories.some(cat => cat.category === key))
+                      .filter(([key]) => {
+                        const exists = budgetCategories.some(cat => cat.category === key);
+                        console.log(`Category ${key}: exists=${exists}`);
+                        return !exists;
+                      })
                       .map(([key, label]) => (
                         <SelectItem key={key} value={key}>{label}</SelectItem>
                       ))}
@@ -352,20 +317,12 @@ export default function Budget() {
               <div key={category} className="p-4 bg-accent/20 rounded-lg border border-border/50">
                 <div className="flex items-center justify-between mb-3">
                   <CategoryBadge category={category} />
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setEditMode(isEditing ? null : category)}
-                      className="p-2 hover:bg-accent/50 rounded-lg transition-colors"
-                    >
-                      <Edit3 size={16} />
-                    </button>
-                    <button
-                      onClick={() => setCategoryToDelete(category)}
-                      className="p-2 hover:bg-danger/20 rounded-lg transition-colors text-danger"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => setEditMode(isEditing ? null : category)}
+                    className="p-2 hover:bg-accent/50 rounded-lg transition-colors"
+                  >
+                    <Edit3 size={16} />
+                  </button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -520,24 +477,6 @@ export default function Budget() {
           </div>
         </div>
       </div>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!categoryToDelete} onOpenChange={() => setCategoryToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Category</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this budget category? This action cannot be undone and you will need to create the category again if you want to use it in the future.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteCategory} className="bg-danger hover:bg-danger/90">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
