@@ -23,9 +23,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCategories } from "@/hooks/useCategories";
 
 interface AddExpenseDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onExpenseAdded: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onExpenseAdded?: () => void;
+  showTrigger?: boolean;
 }
 
 export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }: AddExpenseDialogProps) {

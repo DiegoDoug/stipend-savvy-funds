@@ -1,8 +1,7 @@
-import { DollarSign, TrendingUp, PiggyBank, AlertCircle, CreditCard, Target, LogOut } from "lucide-react";
+import { DollarSign, TrendingUp, PiggyBank, AlertCircle, CreditCard, LogOut } from "lucide-react";
 import StatCard from "@/components/UI/StatCard";
 import ProgressBar from "@/components/UI/ProgressBar";
 import CategoryBadge from "@/components/UI/CategoryBadge";
-import QuickActionFAB from "@/components/UI/QuickActionFAB";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useFinanceData } from "@/hooks/useFinanceData";
@@ -22,24 +21,6 @@ export default function Dashboard() {
     
   const nextRefund = refunds.find(r => r.status === 'pending') || refunds[0];
   const recentTransactions = transactions.slice(0, 5);
-
-  const quickActions = [
-    {
-      label: "Add Expense",
-      icon: <CreditCard size={18} />,
-      onClick: () => console.log("Add expense"),
-    },
-    {
-      label: "Log Income", 
-      icon: <TrendingUp size={18} />,
-      onClick: () => console.log("Add income"),
-    },
-    {
-      label: "Set Goal",
-      icon: <Target size={18} />,
-      onClick: () => console.log("Add goal"),
-    },
-  ];
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">
@@ -212,8 +193,6 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-
-      <QuickActionFAB actions={quickActions} />
     </div>
   );
 }

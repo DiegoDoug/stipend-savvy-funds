@@ -26,10 +26,21 @@ type AddIncomeForm = z.infer<typeof addIncomeSchema>;
 
 interface AddIncomeDialogProps {
   onIncomeAdded?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  showTrigger?: boolean;
 }
 
-export default function AddIncomeDialog({ onIncomeAdded }: AddIncomeDialogProps) {
-  const [open, setOpen] = useState(false);
+export default function AddIncomeDialog({ 
+  onIncomeAdded, 
+  open: controlledOpen, 
+  onOpenChange: controlledOnOpenChange,
+  showTrigger = true 
+}: AddIncomeDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = controlledOnOpenChange !== undefined ? controlledOnOpenChange : setInternalOpen;
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { getIncomeCategories, addCustomCategory } = useCategories();
@@ -113,12 +124,14 @@ export default function AddIncomeDialog({ onIncomeAdded }: AddIncomeDialogProps)
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="bg-gradient-to-r from-success to-success/80">
-          <Plus size={18} className="mr-2" />
-          Add Income
-        </Button>
-      </DialogTrigger>
+      {showTrigger && (
+        <DialogTrigger asChild>
+          <Button className="bg-gradient-to-r from-success to-success/80">
+            <Plus size={18} className="mr-2" />
+            Add Income
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Add New Income</DialogTitle>
