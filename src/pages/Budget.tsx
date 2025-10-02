@@ -543,7 +543,7 @@ export default function Budget() {
             }}>
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteCategory} className="bg-destructive hover:bg-destructive/90">
+            <AlertDialogAction onClick={handleDeleteCategory} className="bg-red-600 hover:bg-red-700 text-black">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
