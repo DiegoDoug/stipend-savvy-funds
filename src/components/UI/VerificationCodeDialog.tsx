@@ -105,9 +105,10 @@ export default function VerificationCodeDialog({
       if (!user) throw new Error('Not authenticated');
 
       // Get the most recent unused verification code for this action
+      // Note: We only select the columns we need, excluding email for security
       const { data: verificationCode, error: fetchError } = await supabase
         .from('verification_codes')
-        .select('*')
+        .select('id, user_id, action_type, used, expires_at, locked_until, verification_attempts, created_at')
         .eq('user_id', user.id)
         .eq('action_type', actionType)
         .eq('used', false)

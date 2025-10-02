@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -57,8 +56,14 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Compare the input code with the hashed code
-    const isValid = await bcrypt.compare(inputCode, verificationCode.code);
+    // Compare the input code with the hashed code using Web Crypto API
+    const encoder = new TextEncoder();
+    const data = encoder.encode(inputCode);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const inputHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    const isValid = inputHash === verificationCode.code;
 
     return new Response(
       JSON.stringify({ valid: isValid }),
