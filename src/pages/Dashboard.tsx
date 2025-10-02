@@ -6,11 +6,15 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useFinanceData } from "@/hooks/useFinanceData";
 import { mockBudget } from "@/lib/mockData";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
+
 export default function Dashboard() {
   const {
     user,
     signOut
   } = useAuth();
+  const [userName, setUserName] = useState<string>('');
   const {
     transactions,
     budgetCategories,
@@ -18,6 +22,30 @@ export default function Dashboard() {
     loading,
     stats
   } = useFinanceData();
+
+  useEffect(() => {
+    const fetchUserName = async () => {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (!error && data) {
+          setUserName(data.name || user.email?.split('@')[0] || 'User');
+        } else {
+          setUserName(user.email?.split('@')[0] || 'User');
+        }
+      } catch {
+        setUserName(user.email?.split('@')[0] || 'User');
+      }
+    };
+    
+    fetchUserName();
+  }, [user]);
   const totalBudget = budgetCategories.length > 0 ? budgetCategories.reduce((sum, cat) => sum + Number(cat.allocated), 0) : Object.values(mockBudget).reduce((sum, cat) => sum + cat.allocated, 0);
   const totalSpent = budgetCategories.length > 0 ? budgetCategories.reduce((sum, cat) => sum + Number(cat.spent), 0) : Object.values(mockBudget).reduce((sum, cat) => sum + cat.spent, 0);
   const nextRefund = refunds.find(r => r.status === 'pending') || refunds[0];
@@ -32,7 +60,7 @@ export default function Dashboard() {
       <div className="text-center md:text-left flex justify-between items-start">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold mb-2">
-            Welcome back, {user?.email?.split('@')[0]}! 👋
+            Welcome back, {userName}! 👋
           </h1>
           <p className="text-muted-foreground">
             Here's your financial overview for this month

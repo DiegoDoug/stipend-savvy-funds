@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Home, PieChart, TrendingUp, CreditCard, Target } from "lucide-react";
+import { Home, PieChart, TrendingUp, CreditCard, Target, Settings } from "lucide-react";
 
 const navItems = [
   { path: "/", icon: Home, label: "Home" },
@@ -7,6 +7,7 @@ const navItems = [
   { path: "/income", icon: TrendingUp, label: "Income" },
   { path: "/expenses", icon: CreditCard, label: "Expenses" },
   { path: "/goals", icon: Target, label: "Goals" },
+  { path: "/account", icon: Settings, label: "Account" },
 ];
 
 export default function BottomNav() {
