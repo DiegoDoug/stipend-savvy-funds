@@ -66,7 +66,7 @@ export default function Auth() {
           </div>
           <h1 className="text-2xl font-bold">FinTrack</h1>
           <p className="text-muted-foreground mt-2">
-            {isLogin ? 'Expense and Income tracker' : 'Create your account'}
+            {isLogin ? 'Your expense and income tracker' : 'Create your account'}
           </p>
         </div>
 
