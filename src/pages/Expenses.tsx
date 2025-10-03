@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CreditCard, Plus, Search, Filter, Calendar, Receipt, Trash2 } from "lucide-react";
+import { CreditCard, Plus, Search, Filter, Calendar, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import StatCard from "@/components/UI/StatCard";
 import CategoryBadge from "@/components/UI/CategoryBadge";
-import QuickActionFAB from "@/components/UI/QuickActionFAB";
 import AddExpenseDialog from "@/components/UI/AddExpenseDialog";
 import { useFinanceData } from "@/hooks/useFinanceData";
 import { categoryLabels } from "@/lib/mockData";
@@ -89,19 +88,7 @@ export default function Expenses() {
     category: '',
     amount: 0
   });
-  const quickActions = [{
-    label: "Quick Expense",
-    icon: <CreditCard size={18} />,
-    onClick: () => setShowAddDialog(true)
-  }, {
-    label: "Add Receipt",
-    icon: <Receipt size={18} />,
-    onClick: () => console.log("Add receipt")
-  }, {
-    label: "Split Bill",
-    icon: <Plus size={18} />,
-    onClick: () => console.log("Split bill")
-  }];
+  
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
@@ -249,9 +236,6 @@ export default function Expenses() {
       </div>
 
       {/* Spending Insights */}
-      
-
-      <QuickActionFAB actions={quickActions} />
       
       <AddExpenseDialog open={showAddDialog} onOpenChange={setShowAddDialog} onExpenseAdded={refetch.transactions} />
     </div>;

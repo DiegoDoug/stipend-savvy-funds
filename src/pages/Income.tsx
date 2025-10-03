@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { TrendingUp, Calendar, DollarSign, Gift, Trash2 } from "lucide-react";
+import { TrendingUp, Calendar, DollarSign, Gift, Trash2, Plus } from "lucide-react";
 import StatCard from "@/components/UI/StatCard";
 import AddIncomeDialog from "@/components/UI/AddIncomeDialog";
 import { useFinanceData } from "@/hooks/useFinanceData";
@@ -22,6 +22,7 @@ import { useAccountStatus } from "@/hooks/useAccountStatus";
 
 export default function Income() {
   const [selectedPeriod, setSelectedPeriod] = useState("month");
+  const [showAddDialog, setShowAddDialog] = useState(false);
   const { user } = useAuth();
   const { transactions, loading, refetch } = useFinanceData();
   const { toast } = useToast();
@@ -102,7 +103,10 @@ export default function Income() {
           <h1 className="text-2xl md:text-3xl font-bold">Income Manager</h1>
           <p className="text-muted-foreground">Track all your income sources</p>
         </div>
-        <AddIncomeDialog onIncomeAdded={refetch.transactions} />
+        <Button onClick={() => setShowAddDialog(true)} className="bg-gradient-to-r from-success to-success/80">
+          <Plus size={18} className="mr-2" />
+          Add Income
+        </Button>
       </div>
 
       {/* Period Selector */}
@@ -327,6 +331,13 @@ export default function Income() {
           </div>
         </div>
       </div>
+
+      <AddIncomeDialog 
+        open={showAddDialog} 
+        onOpenChange={setShowAddDialog} 
+        onIncomeAdded={refetch.transactions}
+        showTrigger={false}
+      />
     </div>
   );
 }
