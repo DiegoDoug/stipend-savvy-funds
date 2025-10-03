@@ -139,15 +139,36 @@ export default function Budget() {
     // Check if category already exists
     const existingCategory = budgetCategories.find(cat => cat.category === categoryKey);
     
+    // If category exists, update it instead of showing an error
     if (existingCategory) {
-      toast({
-        title: "Category already exists",
-        description: `The category "${displayName}" already exists in your budget. Please edit the existing category instead.`,
-        variant: "destructive",
-      });
+      const { error } = await supabase
+        .from('budget_categories')
+        .update({ allocated: Number(newAmount) })
+        .eq('user_id', user.id)
+        .eq('category', categoryKey);
+
+      if (error) {
+        toast({
+          title: "Error updating category",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        refetch.budgetCategories();
+        toast({
+          title: "Category updated",
+          description: `${displayName} budget updated to $${Number(newAmount).toLocaleString()}`,
+        });
+        setNewCategory("");
+        setNewAmount("");
+        setCustomCategoryName("");
+        setIsCustomCategory(false);
+        setIsAddDialogOpen(false);
+      }
       return;
     }
 
+    // Insert new category if it doesn't exist
     const { error } = await supabase
       .from('budget_categories')
       .insert({
