@@ -257,11 +257,11 @@ export default function Account() {
 
       toast({
         title: "Account deactivated",
-        description: "Your account has been deactivated. You can reactivate it anytime from Account Settings."
+        description: "You'll need to log in again to reactivate your account."
       });
       
-      // Refresh profile data instead of logging out
-      fetchProfileData();
+      // Log the user out immediately
+      await signOut();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -320,32 +320,6 @@ export default function Account() {
     }
   };
 
-  const handleReactivateAccount = async () => {
-    setLoading(true);
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ status: 'active' })
-        .eq('user_id', user?.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Account Reactivated",
-        description: "Your account has been successfully reactivated. You now have full access.",
-      });
-      
-      fetchProfileData();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleLogoutOtherSessions = async () => {
     setLoading(true);
@@ -427,40 +401,6 @@ export default function Account() {
         </div>
       </Card>
 
-      {/* Reactivate Account (shown when inactive) */}
-      {profileData.status === 'inactive' && (
-        <Card className="p-6 border-warning bg-warning/5">
-          <h2 className="text-xl font-semibold mb-4 text-warning">Account Deactivated</h2>
-          <p className="text-muted-foreground mb-4">
-            Your account is currently deactivated. You can view your data but cannot make any changes.
-            Click below to reactivate your account and restore full access.
-          </p>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button 
-                disabled={loading}
-                className="bg-success hover:bg-success/90"
-              >
-                Reactivate Account
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Reactivate Account?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will restore full access to your account. You'll be able to make changes and use all features again.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleReactivateAccount} className="bg-success hover:bg-success/90">
-                  Reactivate
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </Card>
-      )}
 
       {/* B. Edit Name */}
       <Card className="p-6">
