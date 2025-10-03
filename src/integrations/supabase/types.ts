@@ -80,6 +80,7 @@ export type Database = {
           last_login: string | null
           name: string | null
           status: string
+          timezone: string
           updated_at: string
           user_id: string
         }
@@ -88,6 +89,7 @@ export type Database = {
           last_login?: string | null
           name?: string | null
           status?: string
+          timezone?: string
           updated_at?: string
           user_id: string
         }
@@ -96,6 +98,7 @@ export type Database = {
           last_login?: string | null
           name?: string | null
           status?: string
+          timezone?: string
           updated_at?: string
           user_id?: string
         }
@@ -256,6 +259,14 @@ export type Database = {
       cleanup_expired_verification_codes: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      date_in_user_tz: {
+        Args: { input_date: string; user_tz: string }
+        Returns: string
+      }
+      get_user_local_date: {
+        Args: { user_tz: string }
+        Returns: string
       }
     }
     Enums: {
