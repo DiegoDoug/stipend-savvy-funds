@@ -15,6 +15,7 @@ export default function Dashboard() {
     signOut
   } = useAuth();
   const [userName, setUserName] = useState<string>('');
+  const [userTimezone, setUserTimezone] = useState<string>('America/Chicago');
   const {
     transactions,
     budgetCategories,
@@ -24,18 +25,19 @@ export default function Dashboard() {
   } = useFinanceData();
 
   useEffect(() => {
-    const fetchUserName = async () => {
+    const fetchUserProfile = async () => {
       if (!user) return;
       
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('name')
+          .select('name, timezone')
           .eq('user_id', user.id)
           .single();
         
         if (!error && data) {
           setUserName(data.name || user.email?.split('@')[0] || 'User');
+          setUserTimezone(data.timezone || 'America/Chicago');
         } else {
           setUserName(user.email?.split('@')[0] || 'User');
         }
@@ -44,25 +46,46 @@ export default function Dashboard() {
       }
     };
     
-    fetchUserName();
+    fetchUserProfile();
   }, [user]);
   const totalBudget = budgetCategories.length > 0 ? budgetCategories.reduce((sum, cat) => sum + Number(cat.allocated), 0) : Object.values(mockBudget).reduce((sum, cat) => sum + cat.allocated, 0);
   const totalSpent = budgetCategories.length > 0 ? budgetCategories.reduce((sum, cat) => sum + Number(cat.spent), 0) : Object.values(mockBudget).reduce((sum, cat) => sum + cat.spent, 0);
   const nextRefund = refunds.find(r => r.status === 'pending') || refunds[0];
   
-  // Filter transactions by date
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Get today's date in user's timezone
+  const getUserLocalDate = () => {
+    const now = new Date();
+    // Convert to user's timezone and get just the date part
+    const localDateStr = now.toLocaleDateString('en-US', { 
+      timeZone: userTimezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+    const [month, day, year] = localDateStr.split('/');
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  };
+  
+  const todayLocal = getUserLocalDate();
+  todayLocal.setHours(0, 0, 0, 0);
   
   // Recent Activity: past and today's transactions (most recent first)
   const recentTransactions = transactions
-    .filter(t => new Date(t.date) <= today)
+    .filter(t => {
+      const transactionDate = new Date(t.date);
+      transactionDate.setHours(0, 0, 0, 0);
+      return transactionDate <= todayLocal;
+    })
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5);
   
   // Upcoming: future scheduled transactions (chronological order)
   const upcomingTransactions = transactions
-    .filter(t => new Date(t.date) > today)
+    .filter(t => {
+      const transactionDate = new Date(t.date);
+      transactionDate.setHours(0, 0, 0, 0);
+      return transactionDate > todayLocal;
+    })
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .slice(0, 5);
   if (loading) {

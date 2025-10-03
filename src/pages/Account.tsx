@@ -8,7 +8,8 @@ import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { User, Mail, Lock, Trash2, UserX, LogOut, Calendar, Clock } from 'lucide-react';
+import { User, Mail, Lock, Trash2, UserX, LogOut, Calendar, Clock, Globe } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface ProfileData {
   name: string;
@@ -16,6 +17,7 @@ interface ProfileData {
   created_at: string;
   last_login: string | null;
   status: string;
+  timezone: string;
 }
 
 export default function Account() {
@@ -39,6 +41,9 @@ export default function Account() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  
+  // Timezone
+  const [selectedTimezone, setSelectedTimezone] = useState('America/Chicago');
   
   // Delete account confirmation
   const [deletePassword, setDeletePassword] = useState('');
@@ -64,9 +69,11 @@ export default function Account() {
         email: user.email || '',
         created_at: data.created_at,
         last_login: data.last_login,
-        status: data.status
+        status: data.status,
+        timezone: data.timezone || 'America/Chicago'
       });
       setNewName(data.name || '');
+      setSelectedTimezone(data.timezone || 'America/Chicago');
     } catch (error: any) {
       console.error('Error fetching profile:', error);
     }
@@ -106,6 +113,36 @@ export default function Account() {
       });
       
       setEditingName(false);
+      fetchProfileData();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateTimezone = async (newTimezone: string) => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ timezone: newTimezone })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Timezone Updated",
+        description: "Your timezone has been updated successfully. Activity dates will now be calculated using your local timezone.",
+      });
+      
+      setSelectedTimezone(newTimezone);
       fetchProfileData();
     } catch (error: any) {
       toast({
@@ -496,6 +533,53 @@ export default function Account() {
             </div>
           </div>
         )}
+      </Card>
+
+      {/* Timezone Settings */}
+      <Card className="p-6">
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <Globe size={20} />
+          Timezone Settings
+        </h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Your timezone is used to correctly classify activities as Recent (today and past) or Upcoming (future).
+        </p>
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="timezone">Select Your Timezone</Label>
+            <Select 
+              value={selectedTimezone} 
+              onValueChange={handleUpdateTimezone}
+              disabled={loading}
+            >
+              <SelectTrigger id="timezone" className="w-full">
+                <SelectValue placeholder="Select timezone" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
+                <SelectItem value="America/Chicago">Central Time (CT)</SelectItem>
+                <SelectItem value="America/Denver">Mountain Time (MT)</SelectItem>
+                <SelectItem value="America/Los_Angeles">Pacific Time (PT)</SelectItem>
+                <SelectItem value="America/Phoenix">Arizona Time (MST)</SelectItem>
+                <SelectItem value="America/Anchorage">Alaska Time (AKT)</SelectItem>
+                <SelectItem value="Pacific/Honolulu">Hawaii Time (HST)</SelectItem>
+                <SelectItem value="Europe/London">London (GMT/BST)</SelectItem>
+                <SelectItem value="Europe/Paris">Paris (CET)</SelectItem>
+                <SelectItem value="Europe/Berlin">Berlin (CET)</SelectItem>
+                <SelectItem value="Europe/Madrid">Madrid (CET)</SelectItem>
+                <SelectItem value="Asia/Tokyo">Tokyo (JST)</SelectItem>
+                <SelectItem value="Asia/Shanghai">Shanghai (CST)</SelectItem>
+                <SelectItem value="Asia/Dubai">Dubai (GST)</SelectItem>
+                <SelectItem value="Asia/Kolkata">India (IST)</SelectItem>
+                <SelectItem value="Australia/Sydney">Sydney (AEDT)</SelectItem>
+                <SelectItem value="Pacific/Auckland">Auckland (NZDT)</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground mt-2">
+              Current timezone: {selectedTimezone}
+            </p>
+          </div>
+        </div>
       </Card>
 
       {/* C. Edit Email */}
