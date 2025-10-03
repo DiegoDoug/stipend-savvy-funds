@@ -20,7 +20,7 @@ export default function StatCard({
     negative: "text-danger",
     neutral: "text-muted-foreground"
   };
-  return <div className="stat-card rounded bg-cyan-200">
+  return <div className="stat-card rounded">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className="text-sm text-muted-foreground font-medium">{title}</p>

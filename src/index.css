@@ -158,6 +158,16 @@
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 220 15% 20%;
     --sidebar-ring: 196 78% 52%;
+
+    /* Category colors for dark mode */
+    --category-essentials: 220 13% 82%;       /* Light blue-gray */
+    --category-athletic: 142 76% 50%;         /* Brighter green */
+    --category-education: 262 83% 70%;        /* Lighter purple */
+    --category-savings: 196 78% 60%;          /* Brighter teal */
+    --category-personal: 280 87% 75%;         /* Lighter violet */
+    --category-extra: 45 93% 60%;             /* Lighter orange */
+    --category-fun: 43 85% 80%;              /* Brighter yellow */
+    --category-refund: 335 78% 60%;          /* Lighter pink */
   }
 }
 
