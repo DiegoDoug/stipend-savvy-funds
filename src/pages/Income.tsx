@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
-import { TrendingUp, Calendar, DollarSign, Gift, Trash2, Plus } from "lucide-react";
+import { TrendingUp, Calendar, DollarSign, Gift, Trash2, Plus, Pencil } from "lucide-react";
 import StatCard from "@/components/UI/StatCard";
 import AddIncomeDialog from "@/components/UI/AddIncomeDialog";
+import EditIncomeDialog from "@/components/UI/EditIncomeDialog";
 import { useFinanceData } from "@/hooks/useFinanceData";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -20,13 +21,61 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccountStatus } from "@/hooks/useAccountStatus";
 
+interface Transaction {
+  id: string;
+  amount: number;
+  description: string;
+  category: string;
+  date: string;
+  type: string;
+  user_id: string;
+}
+
 export default function Income() {
   const [selectedPeriod, setSelectedPeriod] = useState("month");
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editingIncome, setEditingIncome] = useState<Transaction | null>(null);
   const { user } = useAuth();
   const { transactions, loading, refetch } = useFinanceData();
   const { toast } = useToast();
   const { checkAndNotify } = useAccountStatus();
+
+  const handleEditIncome = (income: Transaction) => {
+    if (!checkAndNotify()) return;
+    setEditingIncome(income);
+    setShowEditDialog(true);
+  };
+
+  const handleUpdateIncome = async (amount: number) => {
+    if (!editingIncome || !checkAndNotify()) return;
+    
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .update({ amount })
+        .eq('id', editingIncome.id)
+        .eq('user_id', user?.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Income updated",
+        description: "The income entry has been successfully updated.",
+      });
+
+      refetch.transactions();
+      setShowEditDialog(false);
+      setEditingIncome(null);
+    } catch (error) {
+      console.error('Error updating income:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update the income entry. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleDeleteIncome = async (incomeId: string) => {
     if (!checkAndNotify()) return;
@@ -241,22 +290,30 @@ export default function Income() {
                   <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
                     <DollarSign size={18} className="text-success" />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <p className="font-medium">{income.description}</p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs text-muted-foreground capitalize">
+                      {income.category.replace('-', ' ')}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
                       {new Date(income.date).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <div className="text-right">
                     <p className="font-bold text-success text-lg">
                       +${Number(income.amount).toLocaleString()}
                     </p>
-                    <p className="text-xs text-muted-foreground capitalize">
-                      {income.category.replace('-', ' ')}
-                    </p>
                   </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-muted-foreground hover:text-primary"
+                    onClick={() => handleEditIncome(income as Transaction)}
+                  >
+                    <Pencil size={16} />
+                  </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button 
@@ -338,6 +395,16 @@ export default function Income() {
         onIncomeAdded={refetch.transactions}
         showTrigger={false}
       />
+
+      {/* Edit Income Dialog */}
+      {editingIncome && (
+        <EditIncomeDialog
+          open={showEditDialog}
+          onOpenChange={setShowEditDialog}
+          income={editingIncome}
+          onUpdate={handleUpdateIncome}
+        />
+      )}
     </div>
   );
 }
