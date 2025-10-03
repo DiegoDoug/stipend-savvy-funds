@@ -130,16 +130,34 @@ export default function Income() {
       'stipend', 'scholarship', 'refund', 'side-gig', 'gift', 'other'
     ];
     
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
     return categories.map(category => {
       const categoryTransactions = incomeData.filter(t => t.category === category);
+      
+      // Current month's total
       const amount = categoryTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
+      
+      // Find next expected income (future dates only)
+      const futureTransactions = categoryTransactions
+        .filter(t => {
+          const transactionDate = new Date(t.date);
+          transactionDate.setHours(0, 0, 0, 0);
+          return transactionDate > today;
+        })
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      
       const isRecurring = category === 'stipend' || category === 'scholarship';
+      const nextDate = futureTransactions.length > 0 
+        ? new Date(futureTransactions[0].date).toLocaleDateString()
+        : (isRecurring ? 'Not scheduled' : 'Variable');
       
       return {
         type: category.charAt(0).toUpperCase() + category.slice(1).replace('-', ' '),
         amount,
         recurring: isRecurring,
-        next: isRecurring ? 'Next month' : 'Variable'
+        next: nextDate
       };
     }).filter(category => category.amount > 0);
   }, [incomeData]);
