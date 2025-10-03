@@ -1,12 +1,36 @@
+import { useState, useEffect } from "react";
 import { Menu, Bell, User } from "lucide-react";
-import { mockUser } from "@/lib/mockData";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+
 interface HeaderProps {
   onMenuClick?: () => void;
 }
-export default function Header({
-  onMenuClick
-}: HeaderProps) {
-  return <header className="bg-card border-b border-border/50 px-4 py-3 sticky top-0 z-40">
+
+export default function Header({ onMenuClick }: HeaderProps) {
+  const { user } = useAuth();
+  const [userName, setUserName] = useState<string>('');
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user) return;
+      
+      const { data } = await supabase
+        .from('profiles')
+        .select('name')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (data) {
+        setUserName(data.name || user.email?.split('@')[0] || 'User');
+      }
+    };
+
+    fetchUserProfile();
+  }, [user]);
+
+  return (
+    <header className="bg-card border-b border-border/50 px-4 py-3 sticky top-0 z-40">
       <div className="flex items-center justify-between max-w-7xl mx-auto">
         <div className="flex items-center gap-3">
           <button onClick={onMenuClick} className="p-2 rounded-lg hover:bg-accent/50 transition-colors md:hidden">
@@ -28,7 +52,14 @@ export default function Header({
             <span className="absolute -top-1 -right-1 w-3 h-3 bg-warning rounded-full text-xs"></span>
           </button>
           
+          {userName && (
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-accent/50">
+              <User size={16} className="text-primary" />
+              <span className="text-sm font-medium">{userName}</span>
+            </div>
+          )}
         </div>
       </div>
-    </header>;
+    </header>
+  );
 }

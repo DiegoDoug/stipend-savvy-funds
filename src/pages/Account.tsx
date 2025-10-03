@@ -9,7 +9,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { User, Mail, Lock, Trash2, UserX, LogOut, Calendar, Clock } from 'lucide-react';
-import VerificationCodeDialog from '@/components/UI/VerificationCodeDialog';
 
 interface ProfileData {
   name: string;
@@ -41,10 +40,8 @@ export default function Account() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
-  // Verification dialogs
-  const [emailVerificationOpen, setEmailVerificationOpen] = useState(false);
-  const [reactivationVerificationOpen, setReactivationVerificationOpen] = useState(false);
-  const [deletionVerificationOpen, setDeletionVerificationOpen] = useState(false);
+  // Delete account confirmation
+  const [deletePassword, setDeletePassword] = useState('');
 
   useEffect(() => {
     fetchProfileData();
@@ -121,11 +118,22 @@ export default function Account() {
     }
   };
 
-  const handleInitiateEmailChange = async () => {
+  const handleChangeEmail = async () => {
     if (!newEmail || !emailPassword) {
       toast({
         title: "Error",
         description: "Please provide both new email and current password",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid email address",
         variant: "destructive"
       });
       return;
@@ -141,23 +149,7 @@ export default function Account() {
 
       if (signInError) throw new Error('Incorrect password');
 
-      // Open verification dialog
-      setEmailVerificationOpen(true);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleEmailChangeVerified = async () => {
-    setLoading(true);
-    try {
-      // Update email after verification
+      // Update email immediately
       const { error } = await supabase.auth.updateUser({ 
         email: newEmail 
       });
@@ -166,7 +158,7 @@ export default function Account() {
 
       toast({
         title: "Email updated successfully",
-        description: "Please check your new email for confirmation"
+        description: "Your email has been updated"
       });
       
       setEditingEmail(false);
@@ -281,11 +273,28 @@ export default function Account() {
     }
   };
 
-  const handleDeleteAccountVerified = async () => {
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) {
+      toast({
+        title: "Error",
+        description: "Please enter your password to confirm deletion",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
     try {
-      // Call edge function to delete account using service role
-      const { data, error } = await supabase.functions.invoke('delete-user-account', {
+      // Verify password first
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user?.email || '',
+        password: deletePassword
+      });
+
+      if (signInError) throw new Error('Incorrect password');
+
+      // Call edge function to delete account
+      const { error } = await supabase.functions.invoke('delete-user-account', {
         body: {}
       });
       
@@ -307,10 +316,11 @@ export default function Account() {
       });
     } finally {
       setLoading(false);
+      setDeletePassword('');
     }
   };
 
-  const handleReactivateVerified = async () => {
+  const handleReactivateAccount = async () => {
     setLoading(true);
     try {
       const { error } = await supabase
@@ -425,13 +435,30 @@ export default function Account() {
             Your account is currently deactivated. You can view your data but cannot make any changes.
             Click below to reactivate your account and restore full access.
           </p>
-          <Button 
-            onClick={() => setReactivationVerificationOpen(true)}
-            disabled={loading}
-            className="bg-success hover:bg-success/90"
-          >
-            Reactivate Account
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button 
+                disabled={loading}
+                className="bg-success hover:bg-success/90"
+              >
+                Reactivate Account
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Reactivate Account?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will restore full access to your account. You'll be able to make changes and use all features again.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleReactivateAccount} className="bg-success hover:bg-success/90">
+                  Reactivate
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </Card>
       )}
 
@@ -506,7 +533,7 @@ export default function Account() {
               />
             </div>
             <div className="flex gap-2">
-              <Button onClick={handleInitiateEmailChange} disabled={loading}>
+              <Button onClick={handleChangeEmail} disabled={loading}>
                 {loading ? 'Updating...' : 'Update Email'}
               </Button>
               <Button onClick={() => {
@@ -637,75 +664,60 @@ export default function Account() {
           </div>
 
           {/* Delete Account */}
-          <div className="flex items-center justify-between p-4 border border-destructive rounded-lg">
+          <div className="p-4 border border-destructive rounded-lg space-y-4">
             <div>
-              <h3 className="font-medium flex items-center gap-2 text-destructive">
+              <h3 className="font-medium flex items-center gap-2 text-destructive mb-2">
                 <Trash2 size={18} />
                 Delete Account
               </h3>
-              <p className="text-sm text-muted-foreground">Permanently delete your account and all data</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                Permanently delete your account and all data. This action cannot be undone.
+              </p>
             </div>
-            <Button 
-              variant="destructive"
-              onClick={() => {
-                if (deleteConfirmText === 'DELETE') {
-                  setDeletionVerificationOpen(true);
-                } else {
-                  toast({
-                    title: "Confirmation Required",
-                    description: "Please type DELETE in the field above first",
-                    variant: "destructive"
-                  });
-                }
-              }}
-              disabled={deleteConfirmText !== 'DELETE'}
-            >
-              Delete
-            </Button>
-          </div>
-          
-          <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-lg">
-            <Label htmlFor="deleteConfirm" className="text-destructive">Type DELETE to enable deletion</Label>
-            <Input
-              id="deleteConfirm"
-              value={deleteConfirmText}
-              onChange={(e) => setDeleteConfirmText(e.target.value)}
-              placeholder="DELETE"
-              className="mt-2"
-            />
+            
+            <div className="space-y-4">
+              <div className="p-3 bg-destructive/5 border border-destructive/20 rounded-lg">
+                <Label htmlFor="deleteConfirm" className="text-destructive text-sm font-medium">
+                  Type DELETE to confirm
+                </Label>
+                <Input
+                  id="deleteConfirm"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="DELETE"
+                  className="mt-2"
+                />
+              </div>
+
+              {deleteConfirmText === 'DELETE' && (
+                <div>
+                  <Label htmlFor="deletePassword" className="text-destructive text-sm font-medium">
+                    Enter your password to confirm deletion
+                  </Label>
+                  <Input
+                    id="deletePassword"
+                    type="password"
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                    placeholder="Your password"
+                    className="mt-2"
+                  />
+                </div>
+              )}
+
+              <Button 
+                variant="destructive"
+                onClick={handleDeleteAccount}
+                disabled={deleteConfirmText !== 'DELETE' || !deletePassword || loading}
+                className="w-full"
+              >
+                {loading ? 'Deleting...' : 'Permanently Delete Account'}
+              </Button>
+            </div>
           </div>
         </div>
       </Card>
       
-      {/* Verification Dialogs */}
-      {user && profileData && (
-        <>
-          <VerificationCodeDialog
-            open={emailVerificationOpen}
-            onOpenChange={setEmailVerificationOpen}
-            actionType="email_change"
-            email={profileData.email}
-            newEmail={newEmail}
-            onVerified={handleEmailChangeVerified}
-          />
-          
-          <VerificationCodeDialog
-            open={reactivationVerificationOpen}
-            onOpenChange={setReactivationVerificationOpen}
-            actionType="account_reactivation"
-            email={profileData.email}
-            onVerified={handleReactivateVerified}
-          />
-          
-          <VerificationCodeDialog
-            open={deletionVerificationOpen}
-            onOpenChange={setDeletionVerificationOpen}
-            actionType="account_deletion"
-            email={profileData.email}
-            onVerified={handleDeleteAccountVerified}
-          />
-        </>
-      )}
     </div>
   );
 }
