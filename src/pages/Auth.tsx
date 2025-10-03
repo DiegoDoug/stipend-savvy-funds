@@ -59,7 +59,7 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background/95 to-accent/20 p-4">
-      <Card className="w-full max-w-md p-20 space-y-6">
+      <Card className="w-full max-w-md p-20 space-y-30">
         <div className="text-center">
           <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary-glow rounded-full flex items-center justify-center mx-auto mb-4">
             <User className="w-8 h-8 text-white" />
