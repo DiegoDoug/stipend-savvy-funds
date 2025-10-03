@@ -9,6 +9,8 @@ interface Transaction {
   description: string;
   category: string;
   date: string;
+  user_id?: string;
+  receipt_url?: string | null;
 }
 
 interface BudgetCategory {

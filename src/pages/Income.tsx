@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
-import { TrendingUp, Calendar, DollarSign, Gift, Trash2, Plus, Pencil } from "lucide-react";
+import { TrendingUp, Calendar, DollarSign, Gift, Trash2, Plus, Pencil, Camera, ExternalLink } from "lucide-react";
 import StatCard from "@/components/UI/StatCard";
 import AddIncomeDialog from "@/components/UI/AddIncomeDialog";
 import EditIncomeDialog from "@/components/UI/EditIncomeDialog";
+import ReceiptScannerModal from "@/components/UI/ReceiptScannerModal";
 import { useFinanceData } from "@/hooks/useFinanceData";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -21,27 +22,19 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccountStatus } from "@/hooks/useAccountStatus";
 
-interface Transaction {
-  id: string;
-  amount: number;
-  description: string;
-  category: string;
-  date: string;
-  type: string;
-  user_id: string;
-}
-
 export default function Income() {
   const [selectedPeriod, setSelectedPeriod] = useState("month");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
-  const [editingIncome, setEditingIncome] = useState<Transaction | null>(null);
+  const [showScannerDialog, setShowScannerDialog] = useState(false);
+  const [editingIncome, setEditingIncome] = useState<any | null>(null);
+  const [scanningIncomeId, setScanningIncomeId] = useState<string | null>(null);
   const { user } = useAuth();
   const { transactions, loading, refetch } = useFinanceData();
   const { toast } = useToast();
   const { checkAndNotify } = useAccountStatus();
 
-  const handleEditIncome = (income: Transaction) => {
+  const handleEditIncome = (income: any) => {
     if (!checkAndNotify()) return;
     setEditingIncome(income);
     setShowEditDialog(true);
@@ -103,6 +96,16 @@ export default function Income() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleOpenScanner = (incomeId: string) => {
+    if (!checkAndNotify()) return;
+    setScanningIncomeId(incomeId);
+    setShowScannerDialog(true);
+  };
+
+  const handleReceiptUploaded = () => {
+    refetch.transactions();
   };
 
   const incomeData = useMemo(() => 
@@ -324,11 +327,32 @@ export default function Income() {
                       +${Number(income.amount).toLocaleString()}
                     </p>
                   </div>
+                  {income.receipt_url ? (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-primary hover:text-primary/80"
+                      onClick={() => window.open(income.receipt_url!, '_blank')}
+                      title="View receipt"
+                    >
+                      <ExternalLink size={16} />
+                    </Button>
+                  ) : (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-muted-foreground hover:text-primary"
+                      onClick={() => handleOpenScanner(income.id)}
+                      title="Scan receipt"
+                    >
+                      <Camera size={16} />
+                    </Button>
+                  )}
                   <Button 
                     variant="ghost" 
                     size="sm" 
                     className="text-muted-foreground hover:text-primary"
-                    onClick={() => handleEditIncome(income as Transaction)}
+                    onClick={() => handleEditIncome(income)}
                   >
                     <Pencil size={16} />
                   </Button>
@@ -421,6 +445,16 @@ export default function Income() {
           onOpenChange={setShowEditDialog}
           income={editingIncome}
           onUpdate={handleUpdateIncome}
+        />
+      )}
+
+      {/* Receipt Scanner Modal */}
+      {scanningIncomeId && (
+        <ReceiptScannerModal
+          open={showScannerDialog}
+          onOpenChange={setShowScannerDialog}
+          incomeId={scanningIncomeId}
+          onReceiptUploaded={handleReceiptUploaded}
         />
       )}
     </div>
