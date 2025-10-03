@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 interface VerifyCodeRequest {
-  codeId: string;
+  actionType: 'email_change' | 'account_reactivation' | 'account_deletion';
   inputCode: string;
 }
 
@@ -24,6 +24,13 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("No authorization header");
     }
 
+    // Use service role key to bypass RLS and access verification_codes table
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    // Authenticate user with anon key
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
@@ -36,19 +43,50 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("User not authenticated");
     }
 
-    const { codeId, inputCode } = await req.json() as VerifyCodeRequest;
+    const { actionType, inputCode } = await req.json() as VerifyCodeRequest;
 
-    // Fetch the stored hashed code
-    const { data: verificationCode, error: fetchError } = await supabaseClient
+    console.log(`Verification attempt for user ${user.id}, action: ${actionType}`);
+
+    // Get the most recent unused verification code for this action using service role
+    const { data: verificationCode, error: fetchError } = await supabaseAdmin
       .from('verification_codes')
-      .select('code, user_id')
-      .eq('id', codeId)
+      .select('*')
       .eq('user_id', user.id)
-      .single();
+      .eq('action_type', actionType)
+      .eq('used', false)
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    if (fetchError || !verificationCode) {
+    if (fetchError) {
+      console.error("Database fetch error:", fetchError);
+      throw fetchError;
+    }
+
+    if (!verificationCode) {
+      console.log("No valid verification code found");
       return new Response(
-        JSON.stringify({ valid: false }),
+        JSON.stringify({ 
+          valid: false, 
+          error: "No valid verification code found. Please request a new one." 
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Check if code is locked due to too many attempts
+    if (verificationCode.locked_until && new Date(verificationCode.locked_until) > new Date()) {
+      const lockMinutes = Math.ceil((new Date(verificationCode.locked_until).getTime() - Date.now()) / 60000);
+      console.log(`Code is locked for ${lockMinutes} more minutes`);
+      return new Response(
+        JSON.stringify({ 
+          valid: false, 
+          error: `Too many failed attempts. Please try again in ${lockMinutes} minute${lockMinutes > 1 ? 's' : ''}.` 
+        }),
         {
           status: 200,
           headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -65,8 +103,56 @@ const handler = async (req: Request): Promise<Response> => {
     
     const isValid = inputHash === verificationCode.code;
 
+    if (!isValid) {
+      // Increment verification attempts
+      const newAttempts = (verificationCode.verification_attempts || 0) + 1;
+      const updateData: any = {
+        verification_attempts: newAttempts
+      };
+
+      // Lock the code after 5 failed attempts for 15 minutes
+      if (newAttempts >= 5) {
+        updateData.locked_until = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+        console.log(`Code locked after ${newAttempts} attempts`);
+      }
+
+      await supabaseAdmin
+        .from('verification_codes')
+        .update(updateData)
+        .eq('id', verificationCode.id);
+
+      const attemptsRemaining = Math.max(0, 5 - newAttempts);
+      console.log(`Incorrect code. Attempts remaining: ${attemptsRemaining}`);
+
+      return new Response(
+        JSON.stringify({ 
+          valid: false,
+          error: newAttempts >= 5 
+            ? "Too many failed attempts. Code locked for 15 minutes."
+            : `Incorrect code. ${attemptsRemaining} attempt${attemptsRemaining !== 1 ? 's' : ''} remaining.`
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Mark code as used
+    const { error: updateError } = await supabaseAdmin
+      .from('verification_codes')
+      .update({ used: true })
+      .eq('id', verificationCode.id);
+
+    if (updateError) {
+      console.error("Error marking code as used:", updateError);
+      throw updateError;
+    }
+
+    console.log("Verification successful");
+
     return new Response(
-      JSON.stringify({ valid: isValid }),
+      JSON.stringify({ valid: true }),
       {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },

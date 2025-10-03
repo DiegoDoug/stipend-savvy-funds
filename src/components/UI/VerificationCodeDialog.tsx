@@ -101,86 +101,26 @@ export default function VerificationCodeDialog({
 
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      // Get the most recent unused verification code for this action
-      // Note: We only select the columns we need, excluding email for security
-      const { data: verificationCode, error: fetchError } = await supabase
-        .from('verification_codes')
-        .select('id, user_id, action_type, used, expires_at, locked_until, verification_attempts, created_at')
-        .eq('user_id', user.id)
-        .eq('action_type', actionType)
-        .eq('used', false)
-        .gt('expires_at', new Date().toISOString())
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (fetchError) throw fetchError;
-
-      if (!verificationCode) {
-        toast({
-          title: "Invalid Code",
-          description: "No valid verification code found. Please request a new one.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Check if code is locked due to too many attempts
-      if (verificationCode.locked_until && new Date(verificationCode.locked_until) > new Date()) {
-        const lockMinutes = Math.ceil((new Date(verificationCode.locked_until).getTime() - Date.now()) / 60000);
-        toast({
-          title: "Code Locked",
-          description: `Too many failed attempts. Please try again in ${lockMinutes} minute${lockMinutes > 1 ? 's' : ''}.`,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Verify the code using bcrypt comparison via edge function
+      // Verify the code via edge function - all verification logic is server-side
       const { data: verifyResult, error: verifyError } = await supabase.functions.invoke('verify-code', {
         body: { 
-          codeId: verificationCode.id,
+          actionType,
           inputCode: code
         }
       });
 
-      if (verifyError || !verifyResult?.valid) {
-        // Increment verification attempts
-        const newAttempts = (verificationCode.verification_attempts || 0) + 1;
-        const updateData: any = {
-          verification_attempts: newAttempts
-        };
+      if (verifyError) {
+        throw verifyError;
+      }
 
-        // Lock the code after 5 failed attempts for 15 minutes
-        if (newAttempts >= 5) {
-          updateData.locked_until = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-        }
-
-        await supabase
-          .from('verification_codes')
-          .update(updateData)
-          .eq('id', verificationCode.id);
-
+      if (!verifyResult?.valid) {
         toast({
           title: "Invalid Code",
-          description: newAttempts >= 5 
-            ? "Too many failed attempts. Code locked for 15 minutes."
-            : `Incorrect code. ${5 - newAttempts} attempt${5 - newAttempts > 1 ? 's' : ''} remaining.`,
+          description: verifyResult?.error || "Verification failed. Please try again.",
           variant: "destructive",
         });
         return;
       }
-
-      // Mark code as used
-      const { error: updateError } = await supabase
-        .from('verification_codes')
-        .update({ used: true })
-        .eq('id', verificationCode.id);
-
-      if (updateError) throw updateError;
 
       toast({
         title: "Verified",
