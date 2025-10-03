@@ -35,8 +35,8 @@ export default function ProgressBar({
       {showLabel && (
         <div className="flex justify-between items-center mb-2">
           <span className="text-sm font-medium">{label}</span>
-          <span className="text-sm text-muted-foreground">
-            ${value.toFixed(0)} / ${max.toFixed(0)}
+          <span className="text-xs text-muted-foreground">
+            {percentage.toFixed(1)}%
           </span>
         </div>
       )}
@@ -46,13 +46,6 @@ export default function ProgressBar({
           style={{ width: `${percentage}%` }}
         />
       </div>
-      {showLabel && (
-        <div className="text-right mt-1">
-          <span className="text-xs text-muted-foreground">
-            {percentage.toFixed(1)}%
-          </span>
-        </div>
-      )}
     </div>
   );
 }
