@@ -1,20 +1,13 @@
+import { useState } from "react";
 import { DollarSign, TrendingUp, PiggyBank, AlertCircle, CreditCard } from "lucide-react";
 import StatCard from "@/components/UI/StatCard";
 import ProgressBar from "@/components/UI/ProgressBar";
 import CategoryBadge from "@/components/UI/CategoryBadge";
-import ProfileDialog from "@/components/UI/ProfileDialog";
-import { useAuth } from "@/hooks/useAuth";
 import { useFinanceData } from "@/hooks/useFinanceData";
 import { mockBudget } from "@/lib/mockData";
-import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState } from "react";
 
 export default function Dashboard() {
-  const {
-    user
-  } = useAuth();
-  const [userName, setUserName] = useState<string>('');
-  const [userTimezone, setUserTimezone] = useState<string>('America/Chicago');
+  const [userTimezone] = useState<string>('America/Chicago');
   const {
     transactions,
     budgetCategories,
@@ -22,31 +15,6 @@ export default function Dashboard() {
     loading,
     stats
   } = useFinanceData();
-
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (!user) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('name, timezone')
-          .eq('user_id', user.id)
-          .single();
-        
-        if (!error && data) {
-          setUserName(data.name || user.email?.split('@')[0] || 'User');
-          setUserTimezone(data.timezone || 'America/Chicago');
-        } else {
-          setUserName(user.email?.split('@')[0] || 'User');
-        }
-      } catch {
-        setUserName(user.email?.split('@')[0] || 'User');
-      }
-    };
-    
-    fetchUserProfile();
-  }, [user]);
   const totalBudget = budgetCategories.length > 0 ? budgetCategories.reduce((sum, cat) => sum + Number(cat.allocated), 0) : Object.values(mockBudget).reduce((sum, cat) => sum + cat.allocated, 0);
   const totalSpent = budgetCategories.length > 0 ? budgetCategories.reduce((sum, cat) => sum + Number(cat.spent), 0) : Object.values(mockBudget).reduce((sum, cat) => sum + cat.spent, 0);
   const nextRefund = refunds.find(r => r.status === 'pending') || refunds[0];
@@ -94,18 +62,13 @@ export default function Dashboard() {
   }
   return <div className="space-y-6">
       {/* Welcome Header */}
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold">
-              Welcome back! 👋
-            </h1>
-            <p className="text-muted-foreground">
-              Here's your financial overview for this month
-            </p>
-          </div>
-        </div>
-        <ProfileDialog userName={userName} />
+      <div>
+        <h1 className="text-2xl md:text-3xl font-bold">
+          Welcome back! 👋
+        </h1>
+        <p className="text-muted-foreground">
+          Here's your financial overview for this month
+        </p>
       </div>
 
       {/* Net Worth Cards */}

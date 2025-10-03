@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Menu, Bell, User } from "lucide-react";
+import { Menu, Bell } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import ProfileDialog from "@/components/UI/ProfileDialog";
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -52,12 +53,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
             <span className="absolute -top-1 -right-1 w-3 h-3 bg-warning rounded-full text-xs"></span>
           </button>
           
-          {userName && (
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-accent/50">
-              <User size={16} className="text-primary" />
-              <span className="text-sm font-medium">{userName}</span>
-            </div>
-          )}
+          {userName && <ProfileDialog userName={userName} />}
         </div>
       </div>
     </header>
