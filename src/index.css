@@ -152,11 +152,17 @@
 /* Custom component styles */
 @layer components {
   .budget-card {
-    @apply bg-card rounded-xl p-4 shadow-[var(--shadow-soft)] border border-border/50 transition-[var(--transition-smooth)] hover:shadow-[var(--shadow-medium)];
+    @apply bg-card rounded-xl p-4 border border-border/50 transition-[var(--transition-smooth)] hover:shadow-[var(--shadow-medium)];
+    box-shadow: var(--shadow-soft), 0 0 15px hsl(196 78% 52% / 0.15);
+  }
+  
+  .budget-card:hover {
+    box-shadow: var(--shadow-medium), 0 0 20px hsl(196 78% 52% / 0.2);
   }
   
   .stat-card {
-    @apply bg-gradient-to-br from-card to-accent/30 rounded-xl p-4 border border-border/50 shadow-[var(--shadow-soft)];
+    @apply bg-gradient-to-br from-card to-accent/30 rounded-xl p-4 border border-border/50;
+    box-shadow: var(--shadow-soft), 0 0 15px hsl(196 78% 52% / 0.15);
   }
   
   .category-badge {
