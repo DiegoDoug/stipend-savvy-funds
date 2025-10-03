@@ -59,14 +59,14 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background/95 to-accent/20 p-4">
-      <Card className="w-full max-w-md p-8 space-y-6">
+      <Card className="w-full max-w-md p-20 space-y-6">
         <div className="text-center">
           <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary-glow rounded-full flex items-center justify-center mx-auto mb-4">
             <User className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold">FinApp</h1>
+          <h1 className="text-2xl font-bold">FinTrack</h1>
           <p className="text-muted-foreground mt-2">
-            {isLogin ? 'Welcome back!' : 'Create your account'}
+            {isLogin ? 'Expense and Income tracker' : 'Create your account'}
           </p>
         </div>
 
@@ -79,7 +79,7 @@ export default function Auth() {
                 <Input
                   id="name"
                   type="text"
-                  placeholder="Enter your full name"
+                  placeholder="Enter your name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="pl-10"
