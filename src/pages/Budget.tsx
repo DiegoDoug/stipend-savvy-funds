@@ -226,36 +226,7 @@ export default function Budget() {
   };
 
   return (
-    <div className="flex gap-6">
-      {/* Left Panel - Budget Insights */}
-      <aside className="hidden lg:block w-80 space-y-4 shrink-0">
-        <div className="budget-card sticky top-4">
-          <h2 className="text-lg font-semibold mb-4">Budget Insights</h2>
-          <div className="space-y-4">
-            <div className="p-4 bg-success-light rounded-lg">
-              <h3 className="font-semibold text-success mb-2">💡 Smart Tip</h3>
-              <p className="text-sm text-success-foreground">
-                You have ${remaining.toLocaleString()} remaining this month. Consider moving some to your emergency fund!
-              </p>
-            </div>
-            <div className="p-4 bg-primary/10 rounded-lg">
-              <h3 className="font-semibold text-primary mb-2">📊 Spending Pattern</h3>
-              <p className="text-sm">
-                {budgetCategories.length > 0 && (
-                  `Your largest expense category is ${categoryLabels[budgetCategories.reduce((max, cat) => 
-                    Number(cat.spent) > Number(max.spent) ? cat : max
-                  ).category as keyof typeof categoryLabels]} at $${budgetCategories.reduce((max, cat) => 
-                    Number(cat.spent) > Number(max.spent) ? cat : max
-                  ).spent} this month.`
-                )}
-              </p>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <div className="flex-1 space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -560,7 +531,6 @@ export default function Budget() {
             </div>
           </div>
         </div>
-      </div>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

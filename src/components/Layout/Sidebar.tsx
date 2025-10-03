@@ -1,5 +1,7 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { Home, PieChart, TrendingUp, CreditCard, Target, Settings, X } from "lucide-react";
+import { useFinanceData } from "@/hooks/useFinanceData";
+import { categoryLabels } from "@/lib/mockData";
 
 const navItems = [
   { path: "/", icon: Home, label: "Dashboard" },
@@ -16,6 +18,14 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const location = useLocation();
+  const { budgetCategories, stats } = useFinanceData();
+  
+  const totalAllocated = budgetCategories.reduce((sum, cat) => sum + Number(cat.allocated), 0);
+  const totalSpent = budgetCategories.reduce((sum, cat) => sum + Number(cat.spent), 0);
+  const remaining = totalAllocated - totalSpent;
+  
+  const showBudgetInsights = location.pathname === '/budget';
   return (
     <>
       {/* Mobile overlay */}
@@ -47,25 +57,55 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </button>
         </div>
 
-        <nav className="p-4 space-y-2">
-          {navItems.map(({ path, icon: Icon, label }) => (
-            <NavLink
-              key={path}
-              to={path}
-              onClick={() => onClose()}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${
-                  isActive
-                    ? "bg-primary text-primary-foreground shadow-lg"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                }`
-              }
-            >
-              <Icon size={18} />
-              <span className="font-medium">{label}</span>
-            </NavLink>
-          ))}
-        </nav>
+        <div className="flex flex-col h-[calc(100%-73px)] overflow-y-auto">
+          <nav className="p-4 space-y-2">
+            {navItems.map(({ path, icon: Icon, label }) => (
+              <NavLink
+                key={path}
+                to={path}
+                onClick={() => onClose()}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${
+                    isActive
+                      ? "bg-primary text-primary-foreground shadow-lg"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                  }`
+                }
+              >
+                <Icon size={18} />
+                <span className="font-medium">{label}</span>
+              </NavLink>
+            ))}
+          </nav>
+
+          {showBudgetInsights && budgetCategories.length > 0 && (
+            <div className="p-4 pt-0">
+              <div className="budget-card">
+                <h2 className="text-lg font-semibold mb-4">Budget Insights</h2>
+                <div className="space-y-4">
+                  <div className="p-4 bg-success-light rounded-lg">
+                    <h3 className="font-semibold text-success mb-2">💡 Smart Tip</h3>
+                    <p className="text-sm text-success-foreground">
+                      You have ${remaining.toLocaleString()} remaining this month. Consider moving some to your emergency fund!
+                    </p>
+                  </div>
+                  <div className="p-4 bg-primary/10 rounded-lg">
+                    <h3 className="font-semibold text-primary mb-2">📊 Spending Pattern</h3>
+                    <p className="text-sm">
+                      {budgetCategories.length > 0 && (
+                        `Your largest expense category is ${categoryLabels[budgetCategories.reduce((max, cat) => 
+                          Number(cat.spent) > Number(max.spent) ? cat : max
+                        ).category as keyof typeof categoryLabels]} at $${budgetCategories.reduce((max, cat) => 
+                          Number(cat.spent) > Number(max.spent) ? cat : max
+                        ).spent} this month.`
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </aside>
     </>
   );
