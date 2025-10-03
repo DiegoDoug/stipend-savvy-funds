@@ -101,29 +101,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = React.useCallback(async (email: string, password: string) => {
-    const { error, data } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    
-    // Auto-reactivate if account is inactive
-    if (!error && data.user) {
-      setTimeout(async () => {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('status')
-          .eq('user_id', data.user.id)
-          .single();
-        
-        if (profile?.status === 'inactive') {
-          await supabase
-            .from('profiles')
-            .update({ status: 'active' })
-            .eq('user_id', data.user.id);
-        }
-      }, 0);
-    }
-    
     return { error };
   }, []);
 
