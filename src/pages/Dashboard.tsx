@@ -50,6 +50,14 @@ export default function Dashboard() {
   const totalSpent = budgetCategories.length > 0 ? budgetCategories.reduce((sum, cat) => sum + Number(cat.spent), 0) : Object.values(mockBudget).reduce((sum, cat) => sum + cat.spent, 0);
   const nextRefund = refunds.find(r => r.status === 'pending') || refunds[0];
   const recentTransactions = transactions.slice(0, 5);
+  
+  // Get future scheduled transactions (both expenses and incomes)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const upcomingTransactions = transactions
+    .filter(t => new Date(t.date) > today)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(0, 5);
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">
       <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
@@ -166,10 +174,24 @@ export default function Dashboard() {
               Upcoming
             </h3>
             <div className="space-y-2">
-              <div className="text-center py-4 text-muted-foreground">
+              {upcomingTransactions.length > 0 ? upcomingTransactions.map(transaction => <div key={transaction.id} className="expense-item">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-2 h-2 rounded-full ${transaction.type === 'income' ? 'bg-success' : 'bg-primary'}`} />
+                    <div>
+                      <p className="font-medium text-sm">{transaction.description}</p>
+                      <p className="text-xs text-muted-foreground">{new Date(transaction.date).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className={`font-semibold ${transaction.type === 'income' ? 'text-success' : 'text-foreground'}`}>
+                      {transaction.type === 'income' ? '+' : '-'}${Number(transaction.amount)}
+                    </p>
+                    {transaction.type === 'expense' && <CategoryBadge category={transaction.category as keyof typeof mockBudget} size="sm" />}
+                  </div>
+                </div>) : <div className="text-center py-4 text-muted-foreground">
                 <p>No upcoming transactions</p>
-                <p className="text-sm">Set up recurring payments and reminders</p>
-              </div>
+                <p className="text-sm">Schedule future expenses and income</p>
+              </div>}
             </div>
           </div>
         </div>
