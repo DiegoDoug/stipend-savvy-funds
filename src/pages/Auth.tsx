@@ -61,9 +61,7 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background/95 to-accent/20 p-4">
       <Card className="w-full max-w-md p-10 space-y-4">
         <div className="text-center">
-          <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary-glow rounded-full flex items-center justify-center mx-auto mb-4">
-            <User className="w-8 h-8 text-white" />
-          </div>
+          <img src="/Icon.png" alt="FinTrack Logo" className="w-16 h-16 mx-auto mb-4" />
           <h1 className="text-2xl font-bold">FinTrack</h1>
           <p className="text-muted-foreground mt-2">
             {isLogin ? 'Your expense and income tracker' : 'Create your account'}
