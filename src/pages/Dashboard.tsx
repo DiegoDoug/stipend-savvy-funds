@@ -1,8 +1,8 @@
-import { DollarSign, TrendingUp, PiggyBank, AlertCircle, CreditCard, LogOut } from "lucide-react";
+import { DollarSign, TrendingUp, PiggyBank, AlertCircle, CreditCard } from "lucide-react";
 import StatCard from "@/components/UI/StatCard";
 import ProgressBar from "@/components/UI/ProgressBar";
 import CategoryBadge from "@/components/UI/CategoryBadge";
-import { Button } from "@/components/ui/button";
+import ProfileDialog from "@/components/UI/ProfileDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useFinanceData } from "@/hooks/useFinanceData";
 import { mockBudget } from "@/lib/mockData";
@@ -11,8 +11,7 @@ import { useEffect, useState } from "react";
 
 export default function Dashboard() {
   const {
-    user,
-    signOut
+    user
   } = useAuth();
   const [userName, setUserName] = useState<string>('');
   const [userTimezone, setUserTimezone] = useState<string>('America/Chicago');
@@ -95,19 +94,18 @@ export default function Dashboard() {
   }
   return <div className="space-y-6">
       {/* Welcome Header */}
-      <div className="text-center md:text-left flex justify-between items-start">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">
-            Welcome back, {userName}! 👋
-          </h1>
-          <p className="text-muted-foreground">
-            Here's your financial overview for this month
-          </p>
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-3">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold">
+              Welcome back! 👋
+            </h1>
+            <p className="text-muted-foreground">
+              Here's your financial overview for this month
+            </p>
+          </div>
         </div>
-        <Button variant="outline" size="sm" onClick={signOut} className="flex items-center gap-2">
-          <LogOut size={16} />
-          Sign Out
-        </Button>
+        <ProfileDialog userName={userName} />
       </div>
 
       {/* Net Worth Cards */}
