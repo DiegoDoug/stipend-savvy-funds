@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CreditCard, Plus, Search, Filter, Calendar, Trash2 } from "lucide-react";
+import { CreditCard, Plus, Search, Filter, Calendar, Trash2, Camera, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -16,6 +16,7 @@ import {
 import StatCard from "@/components/UI/StatCard";
 import CategoryBadge from "@/components/UI/CategoryBadge";
 import AddExpenseDialog from "@/components/UI/AddExpenseDialog";
+import ReceiptScannerModal from "@/components/UI/ReceiptScannerModal";
 import { useFinanceData } from "@/hooks/useFinanceData";
 import { categoryLabels } from "@/lib/mockData";
 import { useAuth } from "@/hooks/useAuth";
@@ -27,6 +28,8 @@ export default function Expenses() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState("date");
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showScannerDialog, setShowScannerDialog] = useState(false);
+  const [scanningExpenseId, setScanningExpenseId] = useState<string | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
   const { checkAndNotify } = useAccountStatus();
@@ -62,6 +65,16 @@ export default function Expenses() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleOpenScanner = (expenseId: string) => {
+    if (!checkAndNotify()) return;
+    setScanningExpenseId(expenseId);
+    setShowScannerDialog(true);
+  };
+
+  const handleReceiptUploaded = () => {
+    refetch.transactions();
   };
   const expenses = transactions?.filter(t => t.type === 'expense') || [];
   const totalExpenses = expenses.reduce((sum, t) => sum + Number(t.amount), 0);
@@ -193,10 +206,28 @@ export default function Expenses() {
               <div className="flex items-center gap-3">
                 <div className="text-right">
                   <p className="font-bold text-lg">-${Number(expense.amount).toFixed(2)}</p>
-                  <button className="text-xs text-primary hover:underline mt-1">
-                    Add Receipt
-                  </button>
                 </div>
+                {expense.receipt_url ? (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-primary hover:text-primary/80"
+                    onClick={() => window.open(expense.receipt_url!, '_blank')}
+                    title="View receipt"
+                  >
+                    <ExternalLink size={16} />
+                  </Button>
+                ) : (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-muted-foreground hover:text-primary"
+                    onClick={() => handleOpenScanner(expense.id)}
+                    title="Scan receipt"
+                  >
+                    <Camera size={16} />
+                  </Button>
+                )}
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button 
@@ -238,5 +269,15 @@ export default function Expenses() {
       {/* Spending Insights */}
       
       <AddExpenseDialog open={showAddDialog} onOpenChange={setShowAddDialog} onExpenseAdded={refetch.transactions} />
+      
+      {/* Receipt Scanner Modal */}
+      {scanningExpenseId && (
+        <ReceiptScannerModal
+          open={showScannerDialog}
+          onOpenChange={setShowScannerDialog}
+          incomeId={scanningExpenseId}
+          onReceiptUploaded={handleReceiptUploaded}
+        />
+      )}
     </div>;
 }
