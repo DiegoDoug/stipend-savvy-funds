@@ -81,7 +81,7 @@ export default function Dashboard() {
       {/* Welcome Header */}
       <div>
         <h1 className="text-2xl md:text-3xl font-bold">Welcome back! 👋</h1>
-        <span className="font-medium text-foreground">{profileData.name}</span>
+        <h1 className="text-2xl md:text-3xl font-bold">Welcome back{profileData ? `, ${profileData.name}` : ""}! 👋</h1>
         <p className="text-muted-foreground">Here's your financial overview for this month</p>
       </div>
 
