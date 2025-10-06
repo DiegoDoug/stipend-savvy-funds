@@ -35,7 +35,18 @@ export default function Dashboard() {
 
   const todayLocal = getUserLocalDate();
   todayLocal.setHours(0, 0, 0, 0);
+  const [profileData, setProfileData] = useState<{ name: string } | null>(null);
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user) return;
 
+      const { data } = await supabase.from("profiles").select("name").eq("user_id", user.id).single();
+
+      if (data) setProfileData(data);
+    };
+
+    fetchProfile();
+  }, [user]);
   // Recent Activity: past and today's transactions (most recent first)
   const recentTransactions = transactions
     .filter((t) => {
