@@ -1,4 +1,6 @@
 import { ReactNode } from "react";
+import { GlowCard } from "@/components/ui/spotlight-card";
+
 interface StatCardProps {
   title: string;
   value: string;
@@ -6,21 +8,30 @@ interface StatCardProps {
   changeType?: "positive" | "negative" | "neutral";
   icon?: ReactNode;
   subtitle?: string;
+  glowColor?: 'blue' | 'purple' | 'green' | 'red' | 'orange';
 }
+
 export default function StatCard({
   title,
   value,
   change,
   changeType = "neutral",
   icon,
-  subtitle
+  subtitle,
+  glowColor = "blue"
 }: StatCardProps) {
   const changeColors = {
     positive: "text-success",
     negative: "text-danger",
     neutral: "text-muted-foreground"
   };
-  return <div className="stat-card rounded">
+  
+  return (
+    <GlowCard 
+      glowColor={glowColor} 
+      customSize={true}
+      className="stat-card rounded w-full h-auto"
+    >
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className="text-sm text-muted-foreground font-medium">{title}</p>
@@ -34,5 +45,6 @@ export default function StatCard({
             {icon}
           </div>}
       </div>
-    </div>;
+    </GlowCard>
+  );
 }

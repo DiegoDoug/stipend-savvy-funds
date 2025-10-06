@@ -7,6 +7,7 @@ import { useFinanceData } from "@/hooks/useFinanceData";
 import { mockBudget } from "@/lib/mockData";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { GlowCard } from "@/components/ui/spotlight-card";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -92,6 +93,7 @@ export default function Dashboard() {
           change={transactions.length > 0 ? "+$47.50 this week" : "Add transactions to see changes"}
           changeType="positive"
           icon={<DollarSign size={24} />}
+          glowColor="blue"
         />
         <StatCard
           title="Total Savings"
@@ -99,17 +101,19 @@ export default function Dashboard() {
           change={transactions.length > 0 ? "+12% this month" : "Start saving today"}
           changeType="positive"
           icon={<PiggyBank size={24} />}
+          glowColor="purple"
         />
         <StatCard
           title="Monthly Income"
           value={`$${stats.totalIncome.toLocaleString()}`}
           subtitle="Stipend + Refunds"
           icon={<TrendingUp size={24} />}
+          glowColor="green"
         />
       </div>
 
       {/* Budget Overview */}
-      <div className="budget-card rounded-md">
+      <GlowCard glowColor="purple" customSize={true} className="budget-card rounded-md w-full h-auto">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Monthly Budget Status</h2>
           <span className="text-sm text-muted-foreground">
@@ -121,30 +125,15 @@ export default function Dashboard() {
           <ProgressBar value={totalSpent} max={totalBudget} showLabel={true} label="Overall Progress" size="lg" />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-            {(budgetCategories.length > 0 ? budgetCategories : Object.entries(mockBudget)).map((item) => {
-              const isRealData = budgetCategories.length > 0;
-              const category = isRealData ? (item as any).category : item[0];
-              const data = isRealData ? (item as any) : item[1];
-              return (
-                <div key={category} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <CategoryBadge category={category as keyof typeof mockBudget} size="sm" />
-                    <span className="text-sm text-muted-foreground">
-                      ${Number(data.spent || 0)} / ${Number(data.allocated || 0)}
-                    </span>
-                  </div>
-                  <ProgressBar value={Number(data.spent || 0)} max={Number(data.allocated || 0)} />
-                </div>
-              );
-            })}
+...
           </div>
         </div>
-      </div>
+      </GlowCard>
 
       {/* Recent Activity & Upcoming */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Transactions */}
-        <div className="budget-card">
+        <GlowCard glowColor="blue" customSize={true} className="budget-card w-full h-auto">
           <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
           <div className="space-y-3">
             {recentTransactions.length > 0 ? (
@@ -178,12 +167,12 @@ export default function Dashboard() {
               </div>
             )}
           </div>
-        </div>
+        </GlowCard>
 
         {/* Upcoming & Alerts */}
         <div className="space-y-4">
           {/* Next Refund */}
-          <div className="budget-card">
+          <GlowCard glowColor="green" customSize={true} className="budget-card w-full h-auto">
             <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
               <CreditCard size={18} />
               Next Refund Check
@@ -202,10 +191,10 @@ export default function Dashboard() {
                 <p className="text-sm text-muted-foreground mt-1">Add your first refund check</p>
               </div>
             )}
-          </div>
+          </GlowCard>
 
           {/* Upcoming Transactions */}
-          <div className="budget-card">
+          <GlowCard glowColor="orange" customSize={true} className="budget-card w-full h-auto">
             <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
               <AlertCircle size={18} />
               Upcoming
@@ -244,7 +233,7 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
-          </div>
+          </GlowCard>
         </div>
       </div>
     </div>

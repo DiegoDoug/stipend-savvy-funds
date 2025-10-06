@@ -13,6 +13,7 @@ import { useFinanceData } from "@/hooks/useFinanceData";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccountStatus } from "@/hooks/useAccountStatus";
+import { GlowCard } from "@/components/ui/spotlight-card";
 
 export default function Budget() {
   const { user } = useAuth();
@@ -307,7 +308,7 @@ export default function Budget() {
 
         {/* Budget Summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="stat-card">
+          <GlowCard glowColor="blue" customSize={true} className="stat-card w-full h-auto">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
                 <DollarSign size={20} className="text-primary" />
@@ -317,9 +318,9 @@ export default function Budget() {
                 <p className="text-xl font-bold">${stats.totalIncome.toLocaleString()}</p>
               </div>
             </div>
-          </div>
+          </GlowCard>
           
-          <div className="stat-card">
+          <GlowCard glowColor="orange" customSize={true} className="stat-card w-full h-auto">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-warning/10 rounded-lg flex items-center justify-center">
                 <PieChart size={20} className="text-warning" />
@@ -329,9 +330,9 @@ export default function Budget() {
                 <p className="text-xl font-bold">${stats.totalExpenses.toLocaleString()}</p>
               </div>
             </div>
-          </div>
+          </GlowCard>
 
-          <div className="stat-card">
+          <GlowCard glowColor="green" customSize={true} className="stat-card w-full h-auto">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
                 <DollarSign size={20} className="text-success" />
@@ -341,11 +342,11 @@ export default function Budget() {
                 <p className="text-xl font-bold text-success">${remaining.toLocaleString()}</p>
               </div>
             </div>
-          </div>
+          </GlowCard>
         </div>
 
         {/* Overall Progress */}
-        <div className="budget-card">
+        <GlowCard glowColor="purple" customSize={true} className="budget-card w-full h-auto">
           <h2 className="text-lg font-semibold mb-4">Overall Budget Progress</h2>
           <ProgressBar 
             value={totalSpent} 
@@ -354,10 +355,10 @@ export default function Budget() {
             label="Monthly Progress"
             size="lg"
           />
-        </div>
+        </GlowCard>
 
         {/* Category Details */}
-        <div className="budget-card">
+        <GlowCard glowColor="blue" customSize={true} className="budget-card w-full h-auto">
           <h2 className="text-lg font-semibold mb-6">Category Breakdown</h2>
           <div className="space-y-6">
             {loading ? (
@@ -457,7 +458,7 @@ export default function Budget() {
               })
             )}
           </div>
-        </div>
+        </GlowCard>
 
         {/* Transactions Breakdown */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
