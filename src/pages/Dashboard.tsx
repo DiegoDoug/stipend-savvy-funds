@@ -7,48 +7,48 @@ import { useFinanceData } from "@/hooks/useFinanceData";
 import { mockBudget } from "@/lib/mockData";
 
 export default function Dashboard() {
-  const [userTimezone] = useState<string>('America/Chicago');
-  const {
-    transactions,
-    budgetCategories,
-    refunds,
-    loading,
-    stats
-  } = useFinanceData();
-  const totalBudget = budgetCategories.length > 0 ? budgetCategories.reduce((sum, cat) => sum + Number(cat.allocated), 0) : Object.values(mockBudget).reduce((sum, cat) => sum + cat.allocated, 0);
-  const totalSpent = budgetCategories.length > 0 ? budgetCategories.reduce((sum, cat) => sum + Number(cat.spent), 0) : Object.values(mockBudget).reduce((sum, cat) => sum + cat.spent, 0);
-  const nextRefund = refunds.find(r => r.status === 'pending') || refunds[0];
-  
+  const [userTimezone] = useState<string>("America/Chicago");
+  const { transactions, budgetCategories, refunds, loading, stats } = useFinanceData();
+  const totalBudget =
+    budgetCategories.length > 0
+      ? budgetCategories.reduce((sum, cat) => sum + Number(cat.allocated), 0)
+      : Object.values(mockBudget).reduce((sum, cat) => sum + cat.allocated, 0);
+  const totalSpent =
+    budgetCategories.length > 0
+      ? budgetCategories.reduce((sum, cat) => sum + Number(cat.spent), 0)
+      : Object.values(mockBudget).reduce((sum, cat) => sum + cat.spent, 0);
+  const nextRefund = refunds.find((r) => r.status === "pending") || refunds[0];
+
   // Get today's date in user's timezone
   const getUserLocalDate = () => {
     const now = new Date();
     // Convert to user's timezone and get just the date part
-    const localDateStr = now.toLocaleDateString('en-US', { 
+    const localDateStr = now.toLocaleDateString("en-US", {
       timeZone: userTimezone,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
     });
-    const [month, day, year] = localDateStr.split('/');
+    const [month, day, year] = localDateStr.split("/");
     return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
   };
-  
+
   const todayLocal = getUserLocalDate();
   todayLocal.setHours(0, 0, 0, 0);
-  
+
   // Recent Activity: past and today's transactions (most recent first)
   const recentTransactions = transactions
-    .filter(t => {
+    .filter((t) => {
       const transactionDate = new Date(t.date);
       transactionDate.setHours(0, 0, 0, 0);
       return transactionDate <= todayLocal;
     })
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5);
-  
+
   // Upcoming: future scheduled transactions (chronological order)
   const upcomingTransactions = transactions
-    .filter(t => {
+    .filter((t) => {
       const transactionDate = new Date(t.date);
       transactionDate.setHours(0, 0, 0, 0);
       return transactionDate > todayLocal;
@@ -56,26 +56,43 @@ export default function Dashboard() {
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .slice(0, 5);
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">
-      <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-    </div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
   }
-  return <div className="space-y-6">
+  return (
+    <div className="space-y-6">
       {/* Welcome Header */}
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold">
-          Welcome back! 👋
-        </h1>
-        <p className="text-muted-foreground">
-          Here's your financial overview for this month
-        </p>
+        <h1 className="text-2xl md:text-3xl font-bold">Welcome back! 👋</h1>
+        <span className="font-medium text-foreground">{profileData.name}</span>
+        <p className="text-muted-foreground">Here's your financial overview for this month</p>
       </div>
 
       {/* Net Worth Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard title="Available Balance" value={`$${Math.max(0, stats.balance).toLocaleString()}`} change={transactions.length > 0 ? "+$47.50 this week" : "Add transactions to see changes"} changeType="positive" icon={<DollarSign size={24} />} />
-        <StatCard title="Total Savings" value={`$${Math.max(0, stats.savings).toLocaleString()}`} change={transactions.length > 0 ? "+12% this month" : "Start saving today"} changeType="positive" icon={<PiggyBank size={24} />} />
-        <StatCard title="Monthly Income" value={`$${stats.totalIncome.toLocaleString()}`} subtitle="Stipend + Refunds" icon={<TrendingUp size={24} />} />
+        <StatCard
+          title="Available Balance"
+          value={`$${Math.max(0, stats.balance).toLocaleString()}`}
+          change={transactions.length > 0 ? "+$47.50 this week" : "Add transactions to see changes"}
+          changeType="positive"
+          icon={<DollarSign size={24} />}
+        />
+        <StatCard
+          title="Total Savings"
+          value={`$${Math.max(0, stats.savings).toLocaleString()}`}
+          change={transactions.length > 0 ? "+12% this month" : "Start saving today"}
+          changeType="positive"
+          icon={<PiggyBank size={24} />}
+        />
+        <StatCard
+          title="Monthly Income"
+          value={`$${stats.totalIncome.toLocaleString()}`}
+          subtitle="Stipend + Refunds"
+          icon={<TrendingUp size={24} />}
+        />
       </div>
 
       {/* Budget Overview */}
@@ -86,16 +103,17 @@ export default function Dashboard() {
             ${totalSpent.toFixed(0)} / ${totalBudget.toFixed(0)}
           </span>
         </div>
-        
+
         <div className="space-y-4">
           <ProgressBar value={totalSpent} max={totalBudget} showLabel={true} label="Overall Progress" size="lg" />
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-            {(budgetCategories.length > 0 ? budgetCategories : Object.entries(mockBudget)).map(item => {
-            const isRealData = budgetCategories.length > 0;
-            const category = isRealData ? (item as any).category : item[0];
-            const data = isRealData ? item as any : item[1];
-            return <div key={category} className="space-y-2">
+            {(budgetCategories.length > 0 ? budgetCategories : Object.entries(mockBudget)).map((item) => {
+              const isRealData = budgetCategories.length > 0;
+              const category = isRealData ? (item as any).category : item[0];
+              const data = isRealData ? (item as any) : item[1];
+              return (
+                <div key={category} className="space-y-2">
                   <div className="flex items-center justify-between">
                     <CategoryBadge category={category as keyof typeof mockBudget} size="sm" />
                     <span className="text-sm text-muted-foreground">
@@ -103,8 +121,9 @@ export default function Dashboard() {
                     </span>
                   </div>
                   <ProgressBar value={Number(data.spent || 0)} max={Number(data.allocated || 0)} />
-                </div>;
-          })}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -115,24 +134,36 @@ export default function Dashboard() {
         <div className="budget-card">
           <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
           <div className="space-y-3">
-            {recentTransactions.length > 0 ? recentTransactions.map(transaction => <div key={transaction.id} className="expense-item">
+            {recentTransactions.length > 0 ? (
+              recentTransactions.map((transaction) => (
+                <div key={transaction.id} className="expense-item">
                   <div className="flex items-center gap-3">
-                    <div className={`w-2 h-2 rounded-full ${transaction.type === 'income' ? 'bg-success' : 'bg-primary'}`} />
+                    <div
+                      className={`w-2 h-2 rounded-full ${transaction.type === "income" ? "bg-success" : "bg-primary"}`}
+                    />
                     <div>
                       <p className="font-medium text-sm">{transaction.description}</p>
                       <p className="text-xs text-muted-foreground">{new Date(transaction.date).toLocaleDateString()}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className={`font-semibold ${transaction.type === 'income' ? 'text-success' : 'text-foreground'}`}>
-                      {transaction.type === 'income' ? '+' : '-'}${Number(transaction.amount)}
+                    <p
+                      className={`font-semibold ${transaction.type === "income" ? "text-success" : "text-foreground"}`}
+                    >
+                      {transaction.type === "income" ? "+" : "-"}${Number(transaction.amount)}
                     </p>
-                    {transaction.type === 'expense' && <CategoryBadge category={transaction.category as keyof typeof mockBudget} size="sm" />}
+                    {transaction.type === "expense" && (
+                      <CategoryBadge category={transaction.category as keyof typeof mockBudget} size="sm" />
+                    )}
                   </div>
-                </div>) : <div className="text-center py-8 text-muted-foreground">
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
                 <p>No transactions yet</p>
                 <p className="text-sm">Start by adding your first transaction</p>
-              </div>}
+              </div>
+            )}
           </div>
         </div>
 
@@ -144,18 +175,20 @@ export default function Dashboard() {
               <CreditCard size={18} />
               Next Refund Check
             </h3>
-            {nextRefund ? <div className="bg-accent/30 rounded-lg p-3">
+            {nextRefund ? (
+              <div className="bg-accent/30 rounded-lg p-3">
                 <p className="font-medium">{nextRefund.source}</p>
-                <p className="text-2xl font-bold text-success mt-1">
-                  ${Number(nextRefund.amount).toLocaleString()}
-                </p>
+                <p className="text-2xl font-bold text-success mt-1">${Number(nextRefund.amount).toLocaleString()}</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   Expected: {new Date(nextRefund.date).toLocaleDateString()}
                 </p>
-              </div> : <div className="bg-accent/30 rounded-lg p-3 text-center">
+              </div>
+            ) : (
+              <div className="bg-accent/30 rounded-lg p-3 text-center">
                 <p className="text-muted-foreground">No pending refunds</p>
                 <p className="text-sm text-muted-foreground mt-1">Add your first refund check</p>
-              </div>}
+              </div>
+            )}
           </div>
 
           {/* Upcoming Transactions */}
@@ -165,27 +198,42 @@ export default function Dashboard() {
               Upcoming
             </h3>
             <div className="space-y-2">
-              {upcomingTransactions.length > 0 ? upcomingTransactions.map(transaction => <div key={transaction.id} className="expense-item">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-2 h-2 rounded-full ${transaction.type === 'income' ? 'bg-success' : 'bg-primary'}`} />
-                    <div>
-                      <p className="font-medium text-sm">{transaction.description}</p>
-                      <p className="text-xs text-muted-foreground">{new Date(transaction.date).toLocaleDateString()}</p>
+              {upcomingTransactions.length > 0 ? (
+                upcomingTransactions.map((transaction) => (
+                  <div key={transaction.id} className="expense-item">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-2 h-2 rounded-full ${transaction.type === "income" ? "bg-success" : "bg-primary"}`}
+                      />
+                      <div>
+                        <p className="font-medium text-sm">{transaction.description}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(transaction.date).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p
+                        className={`font-semibold ${transaction.type === "income" ? "text-success" : "text-foreground"}`}
+                      >
+                        {transaction.type === "income" ? "+" : "-"}${Number(transaction.amount)}
+                      </p>
+                      {transaction.type === "expense" && (
+                        <CategoryBadge category={transaction.category as keyof typeof mockBudget} size="sm" />
+                      )}
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className={`font-semibold ${transaction.type === 'income' ? 'text-success' : 'text-foreground'}`}>
-                      {transaction.type === 'income' ? '+' : '-'}${Number(transaction.amount)}
-                    </p>
-                    {transaction.type === 'expense' && <CategoryBadge category={transaction.category as keyof typeof mockBudget} size="sm" />}
-                  </div>
-                </div>) : <div className="text-center py-4 text-muted-foreground">
-                <p>No upcoming transactions</p>
-                <p className="text-sm">Schedule future expenses and income</p>
-              </div>}
+                ))
+              ) : (
+                <div className="text-center py-4 text-muted-foreground">
+                  <p>No upcoming transactions</p>
+                  <p className="text-sm">Schedule future expenses and income</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 }
