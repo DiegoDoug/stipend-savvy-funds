@@ -1,15 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DollarSign, TrendingUp, PiggyBank, AlertCircle, CreditCard } from "lucide-react";
 import StatCard from "@/components/UI/StatCard";
 import ProgressBar from "@/components/UI/ProgressBar";
 import CategoryBadge from "@/components/UI/CategoryBadge";
 import { useFinanceData } from "@/hooks/useFinanceData";
 import { mockBudget } from "@/lib/mockData";
-import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function Dashboard() {
+  const { user } = useAuth();
   const [userTimezone] = useState<string>("America/Chicago");
   const { transactions, budgetCategories, refunds, loading, stats } = useFinanceData();
   const totalBudget =
