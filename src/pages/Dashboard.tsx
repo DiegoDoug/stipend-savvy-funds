@@ -5,6 +5,9 @@ import ProgressBar from "@/components/UI/ProgressBar";
 import CategoryBadge from "@/components/UI/CategoryBadge";
 import { useFinanceData } from "@/hooks/useFinanceData";
 import { mockBudget } from "@/lib/mockData";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Dashboard() {
   const [userTimezone] = useState<string>("America/Chicago");
