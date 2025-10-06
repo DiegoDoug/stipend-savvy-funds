@@ -184,6 +184,10 @@ export type Database = {
           date: string
           description: string
           id: string
+          ocr_amount: number | null
+          ocr_date: string | null
+          ocr_text: string | null
+          ocr_vendor: string | null
           receipt_url: string | null
           type: string
           updated_at: string
@@ -196,6 +200,10 @@ export type Database = {
           date?: string
           description: string
           id?: string
+          ocr_amount?: number | null
+          ocr_date?: string | null
+          ocr_text?: string | null
+          ocr_vendor?: string | null
           receipt_url?: string | null
           type: string
           updated_at?: string
@@ -208,6 +216,10 @@ export type Database = {
           date?: string
           description?: string
           id?: string
+          ocr_amount?: number | null
+          ocr_date?: string | null
+          ocr_text?: string | null
+          ocr_vendor?: string | null
           receipt_url?: string | null
           type?: string
           updated_at?: string

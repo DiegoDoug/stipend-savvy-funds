@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CreditCard, Plus, Search, Filter, Calendar, Trash2, Camera, ExternalLink } from "lucide-react";
+import { CreditCard, Plus, Search, Filter, Calendar, Trash2, Camera, ExternalLink, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -17,6 +17,7 @@ import StatCard from "@/components/UI/StatCard";
 import CategoryBadge from "@/components/UI/CategoryBadge";
 import AddExpenseDialog from "@/components/UI/AddExpenseDialog";
 import ReceiptScannerModal from "@/components/UI/ReceiptScannerModal";
+import ExpenseDetailsDialog from "@/components/UI/ExpenseDetailsDialog";
 import { useFinanceData } from "@/hooks/useFinanceData";
 import { categoryLabels } from "@/lib/mockData";
 import { useAuth } from "@/hooks/useAuth";
@@ -30,6 +31,8 @@ export default function Expenses() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showScannerDialog, setShowScannerDialog] = useState(false);
   const [scanningExpenseId, setScanningExpenseId] = useState<string | null>(null);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [selectedExpense, setSelectedExpense] = useState<any>(null);
   const { user } = useAuth();
   const { toast } = useToast();
   const { checkAndNotify } = useAccountStatus();
@@ -75,6 +78,11 @@ export default function Expenses() {
 
   const handleReceiptUploaded = () => {
     refetch.transactions();
+  };
+
+  const handleViewDetails = (expense: any) => {
+    setSelectedExpense(expense);
+    setShowDetailsDialog(true);
   };
   const expenses = transactions?.filter(t => t.type === 'expense') || [];
   const totalExpenses = expenses.reduce((sum, t) => sum + Number(t.amount), 0);
@@ -207,6 +215,15 @@ export default function Expenses() {
                 <div className="text-right">
                   <p className="font-bold text-lg">-${Number(expense.amount).toFixed(2)}</p>
                 </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-primary hover:text-primary/80"
+                  onClick={() => handleViewDetails(expense)}
+                  title="View details"
+                >
+                  <Eye size={16} />
+                </Button>
                 {expense.receipt_url ? (
                   <Button 
                     variant="ghost" 
@@ -279,5 +296,12 @@ export default function Expenses() {
           onReceiptUploaded={handleReceiptUploaded}
         />
       )}
+
+      {/* Expense Details Dialog */}
+      <ExpenseDetailsDialog
+        open={showDetailsDialog}
+        onOpenChange={setShowDetailsDialog}
+        expense={selectedExpense}
+      />
     </div>;
 }

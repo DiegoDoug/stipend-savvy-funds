@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useReceiptOCR } from "@/hooks/useReceiptOCR";
+import { Progress } from "@/components/ui/progress";
 
 interface ReceiptScannerModalProps {
   open: boolean;
@@ -27,6 +29,7 @@ export default function ReceiptScannerModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
+  const { extractReceiptData, isProcessing, progress } = useReceiptOCR();
 
   const videoConstraints = {
     width: 1280,
@@ -73,6 +76,14 @@ export default function ReceiptScannerModal({
 
     setUploading(true);
     try {
+      // Run OCR on the image
+      toast({
+        title: "Processing receipt",
+        description: "Extracting data from receipt image...",
+      });
+
+      const ocrResult = await extractReceiptData(capturedImage);
+
       // Convert base64 to blob
       const blob = dataURLtoBlob(capturedImage);
       const fileName = `${user.id}/${incomeId}/${Date.now()}.jpg`;
@@ -92,10 +103,16 @@ export default function ReceiptScannerModal({
         .from('receipts')
         .getPublicUrl(fileName);
 
-      // Update transaction with receipt URL
+      // Update transaction with receipt URL and OCR data
       const { error: updateError } = await supabase
         .from('transactions')
-        .update({ receipt_url: publicUrl })
+        .update({ 
+          receipt_url: publicUrl,
+          ocr_text: ocrResult.text,
+          ocr_vendor: ocrResult.vendor,
+          ocr_amount: ocrResult.amount,
+          ocr_date: ocrResult.date
+        })
         .eq('id', incomeId)
         .eq('user_id', user.id);
 
@@ -103,7 +120,7 @@ export default function ReceiptScannerModal({
 
       toast({
         title: "Receipt uploaded",
-        description: "Receipt has been successfully attached to this income entry.",
+        description: "Receipt and extracted data saved successfully.",
       });
 
       onReceiptUploaded();
@@ -196,35 +213,46 @@ export default function ReceiptScannerModal({
                 />
               </div>
 
-              <div className="flex gap-3">
-                <Button 
-                  onClick={handleRetake} 
-                  variant="outline"
-                  className="flex-1"
-                  size="lg"
-                  disabled={uploading}
-                >
-                  <RotateCcw className="mr-2" size={20} />
-                  Retake
-                </Button>
-                <Button 
-                  onClick={handleUpload} 
-                  className="flex-1"
-                  size="lg"
-                  disabled={uploading}
-                >
-                  {uploading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                      Uploading...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="mr-2" size={20} />
-                      Upload Receipt
-                    </>
-                  )}
-                </Button>
+              <div className="space-y-3">
+                {isProcessing && (
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground text-center">
+                      Processing receipt... {progress}%
+                    </p>
+                    <Progress value={progress} className="w-full" />
+                  </div>
+                )}
+                
+                <div className="flex gap-3">
+                  <Button 
+                    onClick={handleRetake} 
+                    variant="outline"
+                    className="flex-1"
+                    size="lg"
+                    disabled={uploading || isProcessing}
+                  >
+                    <RotateCcw className="mr-2" size={20} />
+                    Retake
+                  </Button>
+                  <Button 
+                    onClick={handleUpload} 
+                    className="flex-1"
+                    size="lg"
+                    disabled={uploading || isProcessing}
+                  >
+                    {uploading || isProcessing ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                        {isProcessing ? 'Processing...' : 'Uploading...'}
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="mr-2" size={20} />
+                        Upload Receipt
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             </>
           )}
