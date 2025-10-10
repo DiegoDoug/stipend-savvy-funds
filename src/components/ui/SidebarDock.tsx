@@ -1,9 +1,4 @@
-import {
-  Dock,
-  DockIcon,
-  DockItem,
-  DockLabel,
-} from "./DockBase"; // We'll put your provided Dock code in DockBase.tsx
+import { Dock, DockItem, DockIcon, DockLabel } from "./DockBase";
 import { Home, PieChart, TrendingUp, CreditCard, Target, Settings } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -23,7 +18,14 @@ export function SidebarDock({ onClose }: { onClose?: () => void }) {
   return (
     <Dock className="flex flex-col h-full items-center px-2 py-8 bg-card shadow-lg">
       {dockItems.map((item, idx) => (
-        <DockItem key={item.path} className="mb-6 cursor-pointer" onClick={() => { navigate(item.path); onClose?.(); }}>
+        <DockItem
+          key={item.path}
+          className="mb-6 cursor-pointer"
+          onClick={() => {
+            navigate(item.path);
+            onClose?.();
+          }}
+        >
           <DockIcon>{item.icon}</DockIcon>
           <DockLabel>{item.label}</DockLabel>
         </DockItem>
