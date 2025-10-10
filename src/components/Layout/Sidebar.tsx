@@ -51,11 +51,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </button>
         </div>
 
-        <div className="flex flex-col h-[calc(100%-73px)] overflow-y-auto p-4">
+        <div className="flex flex-col h-[calc(100%-73px)] overflow-y-auto p-4 items-center">
           <ExpandableTabs
             tabs={tabs}
             activeColor="text-primary"
-            onChange={(index) => {
+            className="flex flex-col gap-2 w-full items-center"
+            onChange={index => {
               if (index !== null) {
                 window.location.href = paths[index];
                 onClose();
