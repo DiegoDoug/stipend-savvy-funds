@@ -64,7 +64,7 @@ export default function Auth() {
           <img src="/Icon.png" alt="FinTrack Logo" className="w-16 h-16 mx-auto mb-4" />
           <h1 className="text-2xl font-bold">FinTrack</h1>
           <p className="text-muted-foreground mt-2">
-            {isLogin ? 'Your expense and income tracker' : 'Create your account'}
+            {isLogin ? 'Create your account'}
           </p>
         </div>
 
