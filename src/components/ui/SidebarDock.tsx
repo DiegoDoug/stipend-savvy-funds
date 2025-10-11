@@ -16,7 +16,7 @@ export function SidebarDock({ onClose }: { onClose?: () => void }) {
   const location = useLocation();
 
   return (
-    <nav className="flex flex-col h-full items-center px-3 py-8 bg-card w-20 gap-2">
+    <nav className="flex flex-col h-full items-center justify-center px-3 py-8 bg-card w-20 gap-2">
       {dockItems.map((item) => {
         const Icon = item.icon;
         const isActive = location.pathname === item.path;
