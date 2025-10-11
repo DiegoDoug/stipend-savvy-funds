@@ -34,7 +34,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
     <header className="bg-card border-b border-border/50 px-4 py-3 sticky top-0 z-40">
       <div className="flex items-center justify-between max-w-7xl mx-auto">
         <div className="flex items-center gap-3">
-          <button onClick={onMenuClick} className="p-2 rounded-lg hover:bg-accent/50 transition-colors md:hidden">
+          <button onClick={onMenuClick} className="p-2 rounded-lg hover:bg-accent/50 transition-colors">
             <Menu size={20} />
           </button>
           <div>
