@@ -1,18 +1,18 @@
-import { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
-import { Mail, Lock, User } from 'lucide-react';
+import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { Mail, Lock, User } from "lucide-react";
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
@@ -27,20 +27,18 @@ export default function Auth() {
         toast({
           title: "Error",
           description: "Please fill in all fields",
-          variant: "destructive"
+          variant: "destructive",
         });
         return;
       }
 
-      const { error } = isLogin 
-        ? await signIn(email, password)
-        : await signUp(email, password, name);
+      const { error } = isLogin ? await signIn(email, password) : await signUp(email, password, name);
 
       if (error) {
         toast({
           title: "Error",
           description: error.message,
-          variant: "destructive"
+          variant: "destructive",
         });
       } else {
         if (!isLogin) {
@@ -49,7 +47,7 @@ export default function Auth() {
             description: "Account created! Please check your email to verify your account.",
           });
         } else {
-          navigate('/');
+          navigate("/");
         }
       }
     } finally {
@@ -63,9 +61,7 @@ export default function Auth() {
         <div className="text-center">
           <img src="/Icon.png" alt="FinTrack Logo" className="w-16 h-16 mx-auto mb-4" />
           <h1 className="text-2xl font-bold">FinTrack</h1>
-          <p className="text-muted-foreground mt-2">
-            {isLogin ? 'Create your account'}
-          </p>
+          <p className="text-muted-foreground mt-2">{isLogin ? "" : "Create your account"}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -120,7 +116,7 @@ export default function Auth() {
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Loading...' : (isLogin ? 'Sign In' : 'Sign Up')}
+            {loading ? "Loading..." : isLogin ? "Sign In" : "Sign Up"}
           </Button>
         </form>
 
@@ -132,7 +128,7 @@ export default function Auth() {
               onClick={() => setIsLogin(!isLogin)}
               className="ml-2 text-primary hover:underline font-medium"
             >
-              {isLogin ? 'Sign up' : 'Sign in'}
+              {isLogin ? "Sign up" : "Sign in"}
             </button>
           </p>
         </div>
