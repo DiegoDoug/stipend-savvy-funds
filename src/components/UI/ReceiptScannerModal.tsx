@@ -8,6 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useReceiptOCR } from "@/hooks/useReceiptOCR";
 import { Progress } from "@/components/ui/progress";
+import { ocrDataSchema, receiptUploadSchema } from "@/lib/validation";
+import { logError, getUserFriendlyErrorMessage } from "@/lib/errorLogger";
 
 interface ReceiptScannerModalProps {
   open: boolean;
@@ -98,20 +100,38 @@ export default function ReceiptScannerModal({
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('receipts')
-        .getPublicUrl(fileName);
+      // Validate OCR data before storing
+      const validatedOCRData = ocrDataSchema.parse({
+        text: ocrResult.text?.substring(0, 5000), // Limit text length
+        vendor: ocrResult.vendor,
+        amount: ocrResult.amount,
+        date: ocrResult.date
+      });
 
-      // Update transaction with receipt URL and OCR data
+      // Validate receipt upload data
+      receiptUploadSchema.parse({
+        transactionId: incomeId,
+        filePath: fileName,
+        ocrData: validatedOCRData
+      });
+
+      // Get signed URL with 1-hour expiration (SECURITY FIX)
+      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+        .from('receipts')
+        .createSignedUrl(fileName, 3600); // 1 hour expiration
+
+      if (signedUrlError) throw signedUrlError;
+
+      // Store only the file path in the database, not the full URL
+      // The signed URL will be regenerated when needed
       const { error: updateError } = await supabase
         .from('transactions')
         .update({ 
-          receipt_url: publicUrl,
-          ocr_text: ocrResult.text,
-          ocr_vendor: ocrResult.vendor,
-          ocr_amount: ocrResult.amount,
-          ocr_date: ocrResult.date
+          receipt_url: fileName, // Store path, not URL
+          ocr_text: validatedOCRData.text,
+          ocr_vendor: validatedOCRData.vendor,
+          ocr_amount: validatedOCRData.amount,
+          ocr_date: validatedOCRData.date
         })
         .eq('id', incomeId)
         .eq('user_id', user.id);
@@ -126,13 +146,24 @@ export default function ReceiptScannerModal({
       onReceiptUploaded();
       onOpenChange(false);
       setCapturedImage(null);
-    } catch (error) {
-      console.error('Error uploading receipt:', error);
-      toast({
-        title: "Upload failed",
-        description: "Failed to upload receipt. Please try again.",
-        variant: "destructive",
-      });
+    } catch (error: any) {
+      logError(error, 'ReceiptScannerModal.handleUpload');
+      
+      // Handle validation errors specifically
+      if (error?.name === 'ZodError') {
+        const firstError = error.errors?.[0];
+        toast({
+          title: "Validation Error",
+          description: firstError?.message || "Receipt data is invalid.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Upload failed",
+          description: getUserFriendlyErrorMessage(error),
+          variant: "destructive",
+        });
+      }
     } finally {
       setUploading(false);
     }

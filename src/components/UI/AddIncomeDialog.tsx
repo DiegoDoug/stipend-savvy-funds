@@ -14,14 +14,17 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus } from "lucide-react";
 import { useCategories } from "@/hooks/useCategories";
 import { useAccountStatus } from "@/hooks/useAccountStatus";
-const addIncomeSchema = z.object({
+import { incomeSchema } from "@/lib/validation";
+import { logError, getUserFriendlyErrorMessage } from "@/lib/errorLogger";
+
+const addIncomeFormSchema = z.object({
   amount: z.string().min(1, "Amount is required").refine(val => !isNaN(Number(val)) && Number(val) > 0, "Amount must be a positive number"),
   description: z.string().min(1, "Description is required").max(100, "Description must be less than 100 characters"),
   category: z.string().min(1, "Category is required"),
   customCategory: z.string().optional(),
   date: z.string().min(1, "Date is required")
 });
-type AddIncomeForm = z.infer<typeof addIncomeSchema>;
+type AddIncomeForm = z.infer<typeof addIncomeFormSchema>;
 interface AddIncomeDialogProps {
   onIncomeAdded?: () => void;
   open?: boolean;
@@ -43,7 +46,7 @@ export default function AddIncomeDialog({
   const { checkAndNotify } = useAccountStatus();
   const incomeCategories = getIncomeCategories();
   const form = useForm<AddIncomeForm>({
-    resolver: zodResolver(addIncomeSchema),
+    resolver: zodResolver(addIncomeFormSchema),
     defaultValues: {
       amount: "",
       description: "",
@@ -84,15 +87,20 @@ export default function AddIncomeDialog({
           return;
         }
       }
+      // Validate with comprehensive schema
+      const validatedData = incomeSchema.parse({
+        amount: Number(data.amount),
+        description: data.description.trim(),
+        category: finalCategory,
+        date: data.date
+      });
+
       const {
         error
       } = await supabase.from('transactions').insert({
         user_id: user.id,
         type: 'income',
-        amount: Number(data.amount),
-        description: data.description,
-        category: finalCategory,
-        date: data.date
+        ...validatedData
       });
       if (error) throw error;
       toast({
@@ -102,13 +110,24 @@ export default function AddIncomeDialog({
       form.reset();
       setOpen(false);
       onIncomeAdded?.();
-    } catch (error) {
-      console.error('Error adding income:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add income. Please try again.",
-        variant: "destructive"
-      });
+    } catch (error: any) {
+      logError(error, 'AddIncomeDialog.onSubmit');
+      
+      // Handle validation errors specifically
+      if (error?.name === 'ZodError') {
+        const firstError = error.errors?.[0];
+        toast({
+          title: "Validation Error",
+          description: firstError?.message || "Please check your input.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: getUserFriendlyErrorMessage(error),
+          variant: "destructive"
+        });
+      }
     } finally {
       setLoading(false);
     }

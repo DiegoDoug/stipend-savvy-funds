@@ -22,6 +22,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useCategories } from "@/hooks/useCategories";
 import { useAccountStatus } from "@/hooks/useAccountStatus";
+import { expenseSchema } from "@/lib/validation";
+import { logError, getUserFriendlyErrorMessage } from "@/lib/errorLogger";
 
 interface AddExpenseDialogProps {
   open?: boolean;
@@ -90,16 +92,21 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
         }
       }
       
+      // Validate input data using zod schema
+      const validatedData = expenseSchema.parse({
+        amount: parseFloat(amount),
+        description: description.trim(),
+        category: finalCategory,
+        date,
+      });
+      
       const { error } = await supabase
         .from("transactions")
         .insert([
           {
             user_id: user.id,
             type: "expense",
-            amount: parseFloat(amount),
-            description,
-            category: finalCategory,
-            date,
+            ...validatedData,
           },
         ]);
 
@@ -116,15 +123,26 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
       setCategory("");
       setCustomCategory("");
       setDate(new Date().toISOString().split('T')[0]);
-      onExpenseAdded();
-      onOpenChange(false);
-    } catch (error) {
-      console.error("Error adding expense:", error);
-      toast({
-        title: "Error",
-        description: "Failed to add expense. Please try again.",
-        variant: "destructive",
-      });
+      onExpenseAdded?.();
+      onOpenChange?.(false);
+    } catch (error: any) {
+      logError(error, 'AddExpenseDialog.handleSubmit');
+      
+      // Handle validation errors specifically
+      if (error?.name === 'ZodError') {
+        const firstError = error.errors?.[0];
+        toast({
+          title: "Validation Error",
+          description: firstError?.message || "Please check your input.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: getUserFriendlyErrorMessage(error),
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
     }
