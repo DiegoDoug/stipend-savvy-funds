@@ -124,16 +124,14 @@ export default function Dashboard() {
         <div className="space-y-4">
           <ProgressBar value={totalSpent} max={totalBudget} showLabel={true} label="Overall Progress" size="lg" />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-...
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">...</div>
         </div>
       </GlowCard>
 
       {/* Recent Activity & Upcoming */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Transactions */}
-        <GlowCard glowColor="blue" customSize={true} className="budget-card w-full h-auto">
+        <div className="budget-card">
           <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
           <div className="space-y-3">
             {recentTransactions.length > 0 ? (
@@ -167,12 +165,12 @@ export default function Dashboard() {
               </div>
             )}
           </div>
-        </GlowCard>
+        </div>
 
         {/* Upcoming & Alerts */}
         <div className="space-y-4">
           {/* Next Refund */}
-          <GlowCard glowColor="green" customSize={true} className="budget-card w-full h-auto">
+          <div className="budget-card">
             <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
               <CreditCard size={18} />
               Next Refund Check
@@ -191,10 +189,10 @@ export default function Dashboard() {
                 <p className="text-sm text-muted-foreground mt-1">Add your first refund check</p>
               </div>
             )}
-          </GlowCard>
+          </div>
 
           {/* Upcoming Transactions */}
-          <GlowCard glowColor="orange" customSize={true} className="budget-card w-full h-auto">
+          <div className="budget-card">
             <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
               <AlertCircle size={18} />
               Upcoming
@@ -233,7 +231,7 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
-          </GlowCard>
+          </div>
         </div>
       </div>
     </div>
