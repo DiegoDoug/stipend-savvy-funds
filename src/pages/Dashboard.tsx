@@ -21,14 +21,7 @@ export default function Dashboard() {
     budgetCategories.length > 0
       ? budgetCategories.reduce((sum, cat) => sum + Number(cat.spent), 0)
       : Object.values(mockBudget).reduce((sum, cat) => sum + cat.spent, 0);
-  // Get next future refund from transactions
-  const nextRefund = transactions
-    .filter((t) => {
-      const transactionDate = new Date(t.date);
-      transactionDate.setHours(0, 0, 0, 0);
-      return t.type === "income" && t.category === "refund" && transactionDate > todayLocal;
-    })
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+
   // Get today's date in user's timezone
   const getUserLocalDate = () => {
     const now = new Date();
@@ -45,18 +38,27 @@ export default function Dashboard() {
 
   const todayLocal = getUserLocalDate();
   todayLocal.setHours(0, 0, 0, 0);
+
+  // NOW define nextRefund AFTER todayLocal is set
+  const nextRefund = transactions
+    .filter((t) => {
+      const transactionDate = new Date(t.date);
+      transactionDate.setHours(0, 0, 0, 0);
+      return t.type === "income" && t.category === "refund" && transactionDate > todayLocal;
+    })
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+
   const [profileData, setProfileData] = useState<{ name: string } | null>(null);
+
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user) return;
-
       const { data } = await supabase.from("profiles").select("name").eq("user_id", user.id).single();
-
       if (data) setProfileData(data);
     };
-
     fetchProfile();
   }, [user]);
+
   // Recent Activity: past and today's transactions (most recent first)
   const recentTransactions = transactions
     .filter((t) => {
