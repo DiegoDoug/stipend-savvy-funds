@@ -387,6 +387,11 @@ export default function Auth() {
                     required
                   />
                 </div>
+                <div>
+                  {" "}
+                  Valid password requirements: • Lowercase letters • Uppercase letters • Numbers and Symbols • 10
+                  characters long
+                </div>
               </div>
 
               <Button
