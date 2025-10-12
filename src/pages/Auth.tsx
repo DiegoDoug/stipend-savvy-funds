@@ -388,9 +388,10 @@ export default function Auth() {
                   />
                 </div>
                 <div>
-                  {" "}
-                  Valid password requirements: • Lowercase letters • Uppercase letters • Numbers and Symbols • 10
-                  characters long
+                  <p>
+                    Valid password requirements: • Lowercase letters • Uppercase letters • Numbers and Symbols • 10
+                    characters long
+                  </p>
                 </div>
               </div>
 
