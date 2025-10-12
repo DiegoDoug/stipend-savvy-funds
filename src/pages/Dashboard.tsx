@@ -185,7 +185,6 @@ export default function Dashboard() {
             </h3>
             {nextRefund ? (
               <div className="bg-accent/30 rounded-lg p-3">
-                <p className="font-medium">{nextRefund.source}</p>
                 <p className="text-2xl font-bold text-success mt-1">${Number(nextRefund.amount).toLocaleString()}</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   Expected: {new Date(nextRefund.date).toLocaleDateString()}
