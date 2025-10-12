@@ -173,6 +173,8 @@ export default function Auth() {
             title: "Success",
             description: "Account created! Please check your email to verify your account.",
           });
+          setIsLogin(true); // Add this line to switch to login form
+          setPassword(""); // Optionally clear the password field
         } else {
           navigate("/");
         }
