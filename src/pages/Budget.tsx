@@ -1,7 +1,16 @@
 import { useState, useEffect } from "react";
 import { PieChart, Edit3, Plus, DollarSign, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -31,13 +40,16 @@ export default function Budget() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Convert budgetCategories array to object format for easier access
-  const budget = budgetCategories.reduce((acc, cat) => {
-    acc[cat.category] = {
-      allocated: Number(cat.allocated),
-      spent: Number(cat.spent)
-    };
-    return acc;
-  }, {} as Record<string, { allocated: number; spent: number }>);
+  const budget = budgetCategories.reduce(
+    (acc, cat) => {
+      acc[cat.category] = {
+        allocated: Number(cat.allocated),
+        spent: Number(cat.spent),
+      };
+      return acc;
+    },
+    {} as Record<string, { allocated: number; spent: number }>,
+  );
 
   const totalAllocated = budgetCategories.reduce((sum, cat) => sum + Number(cat.allocated), 0);
   const totalSpent = budgetCategories.reduce((sum, cat) => sum + Number(cat.spent), 0);
@@ -45,38 +57,38 @@ export default function Budget() {
 
   useEffect(() => {
     if (!user || loading || creatingCategories) return;
-    
+
     const createDefaultCategories = async () => {
       if (budgetCategories.length === 0) {
         setCreatingCategories(true);
-        
+
         try {
           const defaultCategories = [
-            { category: 'essentials', allocated: 400 },
-            { category: 'savings', allocated: 200 },
-            { category: 'personal', allocated: 150 },
-            { category: 'extra', allocated: 100 }
+            { category: "essentials", allocated: 400 },
+            { category: "savings", allocated: 200 },
+            { category: "personal", allocated: 150 },
+            { category: "extra", allocated: 100 },
           ];
 
           const { data, error } = await supabase
-            .from('budget_categories')
+            .from("budget_categories")
             .upsert(
-              defaultCategories.map(cat => ({
+              defaultCategories.map((cat) => ({
                 user_id: user.id,
                 category: cat.category,
                 allocated: cat.allocated,
-                spent: 0
+                spent: 0,
               })),
-              { 
-                onConflict: 'user_id,category',
-                ignoreDuplicates: true
-              }
+              {
+                onConflict: "user_id,category",
+                ignoreDuplicates: true,
+              },
             )
             .select();
 
           if (error) {
             // Only throw error if it's not a duplicate key error
-            if (!error.message.includes('duplicate key value violates unique constraint')) {
+            if (!error.message.includes("duplicate key value violates unique constraint")) {
               throw error;
             }
           } else if (data && data.length > 0) {
@@ -88,7 +100,7 @@ export default function Budget() {
             });
           }
         } catch (error: any) {
-          console.error('Error creating default categories:', error);
+          console.error("Error creating default categories:", error);
           toast({
             title: "Error creating categories",
             description: "Failed to create default categories. Please try refreshing the page.",
@@ -107,10 +119,10 @@ export default function Budget() {
     if (!user || !checkAndNotify()) return;
 
     const { error } = await supabase
-      .from('budget_categories')
+      .from("budget_categories")
       .update({ allocated: newAmount })
-      .eq('user_id', user.id)
-      .eq('category', category);
+      .eq("user_id", user.id)
+      .eq("category", category);
 
     if (error) {
       toast({
@@ -130,22 +142,24 @@ export default function Budget() {
 
   const handleAddCategory = async () => {
     if (!user || !newAmount || !checkAndNotify()) return;
-    
-    const categoryKey = isCustomCategory ? customCategoryName.toLowerCase().replace(/\s+/g, '-') : newCategory;
-    const displayName = isCustomCategory ? customCategoryName : categoryLabels[newCategory as keyof typeof categoryLabels];
-    
+
+    const categoryKey = isCustomCategory ? customCategoryName.toLowerCase().replace(/\s+/g, "-") : newCategory;
+    const displayName = isCustomCategory
+      ? customCategoryName
+      : categoryLabels[newCategory as keyof typeof categoryLabels];
+
     if (!categoryKey || (isCustomCategory && !customCategoryName.trim())) return;
 
     // Check if category already exists
-    const existingCategory = budgetCategories.find(cat => cat.category === categoryKey);
-    
+    const existingCategory = budgetCategories.find((cat) => cat.category === categoryKey);
+
     // If category exists, update it instead of showing an error
     if (existingCategory) {
       const { error } = await supabase
-        .from('budget_categories')
+        .from("budget_categories")
         .update({ allocated: Number(newAmount) })
-        .eq('user_id', user.id)
-        .eq('category', categoryKey);
+        .eq("user_id", user.id)
+        .eq("category", categoryKey);
 
       if (error) {
         toast({
@@ -169,14 +183,12 @@ export default function Budget() {
     }
 
     // Insert new category if it doesn't exist
-    const { error } = await supabase
-      .from('budget_categories')
-      .insert({
-        user_id: user.id,
-        category: categoryKey,
-        allocated: Number(newAmount),
-        spent: 0
-      });
+    const { error } = await supabase.from("budget_categories").insert({
+      user_id: user.id,
+      category: categoryKey,
+      allocated: Number(newAmount),
+      spent: 0,
+    });
 
     if (error) {
       toast({
@@ -202,10 +214,10 @@ export default function Budget() {
     if (!user || !categoryToDelete || !checkAndNotify()) return;
 
     const { error } = await supabase
-      .from('budget_categories')
+      .from("budget_categories")
       .delete()
-      .eq('user_id', user.id)
-      .eq('category', categoryToDelete);
+      .eq("user_id", user.id)
+      .eq("category", categoryToDelete);
 
     if (error) {
       toast({
@@ -221,317 +233,316 @@ export default function Budget() {
         description: `${displayName} category has been deleted and will need to be re-created.`,
       });
     }
-    
+
     setCategoryToDelete(null);
     setIsDeleteDialogOpen(false);
   };
 
   return (
     <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold">Budget Planner</h1>
-            <p className="text-muted-foreground">Manage your monthly allocations</p>
-          </div>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button 
-                className="bg-gradient-to-r from-primary to-primary-glow"
-                disabled={!isActive}
-              >
-                <Plus size={18} className="mr-2" />
-                Add Category
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add New Budget Category</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold">Budget Planner</h1>
+          <p className="text-muted-foreground">Manage your monthly allocations</p>
+        </div>
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-to-r from-primary to-primary-glow" disabled={!isActive}>
+              <Plus size={18} className="mr-2" />
+              Add Category
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Budget Category</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Category</label>
+                <Select
+                  value={newCategory}
+                  onValueChange={(value) => {
+                    setNewCategory(value);
+                    setIsCustomCategory(value === "custom");
+                    if (value !== "custom") {
+                      setCustomCategoryName("");
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(categoryLabels).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="custom">Custom Category</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {isCustomCategory && (
                 <div>
-                  <label className="text-sm font-medium">Category</label>
-                  <Select 
-                    value={newCategory} 
-                    onValueChange={(value) => {
-                      setNewCategory(value);
-                      setIsCustomCategory(value === 'custom');
-                      if (value !== 'custom') {
-                        setCustomCategoryName("");
-                      }
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(categoryLabels).map(([key, label]) => (
-                        <SelectItem key={key} value={key}>{label}</SelectItem>
-                      ))}
-                      <SelectItem value="custom">Custom Category</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                {isCustomCategory && (
-                  <div>
-                    <label className="text-sm font-medium">Custom Category Name</label>
-                    <Input
-                      type="text"
-                      placeholder="Enter category name"
-                      value={customCategoryName}
-                      onChange={(e) => setCustomCategoryName(e.target.value)}
-                    />
-                  </div>
-                )}
-                
-                <div>
-                  <label className="text-sm font-medium">Budget Amount</label>
+                  <label className="text-sm font-medium">Custom Category Name</label>
                   <Input
-                    type="number"
-                    placeholder="Enter amount"
-                    value={newAmount}
-                    onChange={(e) => setNewAmount(e.target.value)}
+                    type="text"
+                    placeholder="Enter category name"
+                    value={customCategoryName}
+                    onChange={(e) => setCustomCategoryName(e.target.value)}
                   />
                 </div>
-                <Button 
-                  onClick={handleAddCategory}
-                  className="w-full"
-                  disabled={!newAmount || (!newCategory || (isCustomCategory && !customCategoryName.trim()))}
-                >
-                  Add Category
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
+              )}
 
-        {/* Budget Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <GlowCard glowColor="blue" customSize={true} className="stat-card w-full h-auto">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                <DollarSign size={20} className="text-primary" />
-              </div>
               <div>
-                <p className="text-sm text-muted-foreground">Monthly Income</p>
-                <p className="text-xl font-bold">${stats.totalIncome.toLocaleString()}</p>
+                <label className="text-sm font-medium">Budget Amount</label>
+                <Input
+                  type="number"
+                  placeholder="Enter amount"
+                  value={newAmount}
+                  onChange={(e) => setNewAmount(e.target.value)}
+                />
               </div>
+              <Button
+                onClick={handleAddCategory}
+                className="w-full"
+                disabled={!newAmount || !newCategory || (isCustomCategory && !customCategoryName.trim())}
+              >
+                Add Category
+              </Button>
             </div>
-          </GlowCard>
-          
-          <GlowCard glowColor="orange" customSize={true} className="stat-card w-full h-auto">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-warning/10 rounded-lg flex items-center justify-center">
-                <PieChart size={20} className="text-warning" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Spent</p>
-                <p className="text-xl font-bold">${stats.totalExpenses.toLocaleString()}</p>
-              </div>
-            </div>
-          </GlowCard>
+          </DialogContent>
+        </Dialog>
+      </div>
 
-          <GlowCard glowColor="green" customSize={true} className="stat-card w-full h-auto">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
-                <DollarSign size={20} className="text-success" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Remaining</p>
-                <p className="text-xl font-bold text-success">${remaining.toLocaleString()}</p>
-              </div>
+      {/* Budget Summary */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <GlowCard glowColor="blue" customSize={true} className="stat-card w-full h-auto">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+              <DollarSign size={20} className="text-primary" />
             </div>
-          </GlowCard>
-        </div>
-
-        {/* Overall Progress */}
-        <GlowCard glowColor="purple" customSize={true} className="budget-card w-full h-auto">
-          <h2 className="text-lg font-semibold mb-4">Overall Budget Progress</h2>
-          <ProgressBar 
-            value={totalSpent} 
-            max={totalAllocated} 
-            showLabel={true}
-            label="Monthly Progress"
-            size="lg"
-          />
+            <div>
+              <p className="text-sm text-muted-foreground">Monthly Income</p>
+              <p className="text-xl font-bold">${stats.totalIncome.toLocaleString()}</p>
+            </div>
+          </div>
         </GlowCard>
 
-        {/* Category Details */}
-        <GlowCard glowColor="blue" customSize={true} className="budget-card w-full h-auto">
-          <h2 className="text-lg font-semibold mb-6">Category Breakdown</h2>
-          <div className="space-y-6">
-            {loading ? (
-              <div className="text-center py-8">Loading budget categories...</div>
-            ) : budgetCategories.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No budget categories found. Default categories will be created automatically.
-              </div>
-            ) : (
-              budgetCategories
-                .filter((categoryData) => Number(categoryData.allocated) > 0)
-                .map((categoryData) => {
+        <GlowCard glowColor="orange" customSize={true} className="stat-card w-full h-auto">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-warning/10 rounded-lg flex items-center justify-center">
+              <PieChart size={20} className="text-warning" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Total Spent</p>
+              <p className="text-xl font-bold">${stats.totalExpenses.toLocaleString()}</p>
+            </div>
+          </div>
+        </GlowCard>
+
+        <GlowCard glowColor="green" customSize={true} className="stat-card w-full h-auto">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
+              <DollarSign size={20} className="text-success" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Remaining</p>
+              <p className="text-xl font-bold text-success">${remaining.toLocaleString()}</p>
+            </div>
+          </div>
+        </GlowCard>
+      </div>
+
+      {/* Overall Progress */}
+      <GlowCard glowColor="purple" customSize={true} className="budget-card w-full h-auto">
+        <h2 className="text-lg font-semibold mb-4">Overall Budget Progress</h2>
+        <ProgressBar value={totalSpent} max={totalAllocated} showLabel={true} label="Monthly Progress" size="lg" />
+      </GlowCard>
+
+      {/* Category Details */}
+      <div className="budget-card">
+        <h2 className="text-lg font-semibold mb-6">Category Breakdown</h2>
+        <div className="space-y-6">
+          {loading ? (
+            <div className="text-center py-8">Loading budget categories...</div>
+          ) : budgetCategories.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No budget categories found. Default categories will be created automatically.
+            </div>
+          ) : (
+            budgetCategories
+              .filter((categoryData) => Number(categoryData.allocated) > 0)
+              .map((categoryData) => {
                 const category = categoryData.category;
                 const data = { allocated: Number(categoryData.allocated), spent: Number(categoryData.spent) };
-              const percentage = data.allocated > 0 ? (data.spent / data.allocated) * 100 : 0;
-              const isEditing = editMode === category;
-              
-              return (
-                <div key={category} className="p-4 bg-accent/20 rounded-lg border border-border/50">
-                  <div className="flex items-center justify-between mb-3">
-                    <CategoryBadge category={category} />
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => isActive && setEditMode(isEditing ? null : category)}
-                        disabled={!isActive}
-                        className="p-2 hover:bg-accent/50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <Edit3 size={16} />
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (isActive) {
-                            setCategoryToDelete(category);
-                            setIsDeleteDialogOpen(true);
-                          } else {
-                            checkAndNotify();
-                          }
-                        }}
-                        disabled={!isActive}
-                        className="p-2 hover:bg-destructive/10 text-destructive rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </div>
+                const percentage = data.allocated > 0 ? (data.spent / data.allocated) * 100 : 0;
+                const isEditing = editMode === category;
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">Allocated</p>
-                      {isEditing ? (
-                        <div className="flex gap-2">
-                          <Input
-                            type="number"
-                            defaultValue={data.allocated}
-                            className="text-lg font-bold"
-                            onBlur={(e) => handleBudgetUpdate(category, Number(e.target.value))}
-                            onKeyDown={(e) => e.key === 'Enter' && handleBudgetUpdate(category, Number(e.currentTarget.value))}
-                          />
-                        </div>
-                      ) : (
-                        <p className="text-lg font-bold">${data.allocated.toLocaleString()}</p>
-                      )}
+                return (
+                  <div key={category} className="p-4 bg-accent/20 rounded-lg border border-border/50">
+                    <div className="flex items-center justify-between mb-3">
+                      <CategoryBadge category={category} />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => isActive && setEditMode(isEditing ? null : category)}
+                          disabled={!isActive}
+                          className="p-2 hover:bg-accent/50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <Edit3 size={16} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (isActive) {
+                              setCategoryToDelete(category);
+                              setIsDeleteDialogOpen(true);
+                            } else {
+                              checkAndNotify();
+                            }
+                          }}
+                          disabled={!isActive}
+                          className="p-2 hover:bg-destructive/10 text-destructive rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </div>
-                    
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">Spent</p>
-                      <p className="text-lg font-bold">${data.spent.toLocaleString()}</p>
-                    </div>
-                    
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">Remaining</p>
-                      <p className={`text-lg font-bold ${
-                        data.allocated - data.spent >= 0 ? 'text-success' : 'text-danger'
-                      }`}>
-                        ${(data.allocated - data.spent).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
 
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Progress</span>
-                      <span>{percentage.toFixed(1)}%</span>
-                    </div>
-                    <ProgressBar value={data.spent} max={data.allocated} />
-                  </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Allocated</p>
+                        {isEditing ? (
+                          <div className="flex gap-2">
+                            <Input
+                              type="number"
+                              defaultValue={data.allocated}
+                              className="text-lg font-bold"
+                              onBlur={(e) => handleBudgetUpdate(category, Number(e.target.value))}
+                              onKeyDown={(e) =>
+                                e.key === "Enter" && handleBudgetUpdate(category, Number(e.currentTarget.value))
+                              }
+                            />
+                          </div>
+                        ) : (
+                          <p className="text-lg font-bold">${data.allocated.toLocaleString()}</p>
+                        )}
+                      </div>
 
-                  {percentage > 90 && (
-                    <div className="mt-3 p-2 bg-warning-light rounded-lg">
-                      <p className="text-sm text-warning-foreground font-medium">
-                        ⚠️ Approaching budget limit for {categoryLabels[category as keyof typeof categoryLabels]}
-                      </p>
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Spent</p>
+                        <p className="text-lg font-bold">${data.spent.toLocaleString()}</p>
+                      </div>
+
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Remaining</p>
+                        <p
+                          className={`text-lg font-bold ${
+                            data.allocated - data.spent >= 0 ? "text-success" : "text-danger"
+                          }`}
+                        >
+                          ${(data.allocated - data.spent).toLocaleString()}
+                        </p>
+                      </div>
                     </div>
-                  )}
-                </div>
-              );
+
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Progress</span>
+                        <span>{percentage.toFixed(1)}%</span>
+                      </div>
+                      <ProgressBar value={data.spent} max={data.allocated} />
+                    </div>
+
+                    {percentage > 90 && (
+                      <div className="mt-3 p-2 bg-warning-light rounded-lg">
+                        <p className="text-sm text-warning-foreground font-medium">
+                          ⚠️ Approaching budget limit for {categoryLabels[category as keyof typeof categoryLabels]}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                );
               })
+          )}
+        </div>
+      </div>
+
+      {/* Transactions Breakdown */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Income Transactions */}
+        <div className="budget-card">
+          <h2 className="text-lg font-semibold mb-4">Income Breakdown</h2>
+          <div className="space-y-3">
+            {loading ? (
+              <div className="text-center py-4">Loading income transactions...</div>
+            ) : (
+              transactions
+                .filter((t) => t.type === "income")
+                .slice(0, 10)
+                .map((transaction) => (
+                  <div
+                    key={transaction.id}
+                    className="flex items-center justify-between p-3 bg-success/5 border border-success/20 rounded-lg"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <CategoryBadge category={transaction.category} />
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(transaction.date).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium">{transaction.description}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-success">+${Number(transaction.amount).toLocaleString()}</p>
+                    </div>
+                  </div>
+                ))
+            )}
+            {transactions.filter((t) => t.type === "income").length === 0 && !loading && (
+              <div className="text-center py-8 text-muted-foreground">No income transactions found</div>
             )}
           </div>
-        </GlowCard>
+        </div>
 
-        {/* Transactions Breakdown */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Income Transactions */}
-          <div className="budget-card">
-            <h2 className="text-lg font-semibold mb-4">Income Breakdown</h2>
-            <div className="space-y-3">
-              {loading ? (
-                <div className="text-center py-4">Loading income transactions...</div>
-              ) : (
-                transactions
-                  .filter(t => t.type === 'income')
-                  .slice(0, 10)
-                  .map((transaction) => (
-                    <div key={transaction.id} className="flex items-center justify-between p-3 bg-success/5 border border-success/20 rounded-lg">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <CategoryBadge category={transaction.category} />
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(transaction.date).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <p className="text-sm font-medium">{transaction.description}</p>
+        {/* Expense Transactions */}
+        <div className="budget-card">
+          <h2 className="text-lg font-semibold mb-4">Expense Breakdown</h2>
+          <div className="space-y-3">
+            {loading ? (
+              <div className="text-center py-4">Loading expense transactions...</div>
+            ) : (
+              transactions
+                .filter((t) => t.type === "expense")
+                .slice(0, 10)
+                .map((transaction) => (
+                  <div
+                    key={transaction.id}
+                    className="flex items-center justify-between p-3 bg-danger/5 border border-danger/20 rounded-lg"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <CategoryBadge category={transaction.category} />
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(transaction.date).toLocaleDateString()}
+                        </span>
                       </div>
-                      <div className="text-right">
-                        <p className="text-lg font-bold text-success">+${Number(transaction.amount).toLocaleString()}</p>
-                      </div>
+                      <p className="text-sm font-medium">{transaction.description}</p>
                     </div>
-                  ))
-              )}
-              {transactions.filter(t => t.type === 'income').length === 0 && !loading && (
-                <div className="text-center py-8 text-muted-foreground">
-                  No income transactions found
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Expense Transactions */}
-          <div className="budget-card">
-            <h2 className="text-lg font-semibold mb-4">Expense Breakdown</h2>
-            <div className="space-y-3">
-              {loading ? (
-                <div className="text-center py-4">Loading expense transactions...</div>
-              ) : (
-                transactions
-                  .filter(t => t.type === 'expense')
-                  .slice(0, 10)
-                  .map((transaction) => (
-                    <div key={transaction.id} className="flex items-center justify-between p-3 bg-danger/5 border border-danger/20 rounded-lg">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <CategoryBadge category={transaction.category} />
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(transaction.date).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <p className="text-sm font-medium">{transaction.description}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-lg font-bold text-danger">-${Number(transaction.amount).toLocaleString()}</p>
-                      </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-danger">-${Number(transaction.amount).toLocaleString()}</p>
                     </div>
-                  ))
-              )}
-              {transactions.filter(t => t.type === 'expense').length === 0 && !loading && (
-                <div className="text-center py-8 text-muted-foreground">
-                  No expense transactions found
-                </div>
-              )}
-            </div>
+                  </div>
+                ))
+            )}
+            {transactions.filter((t) => t.type === "expense").length === 0 && !loading && (
+              <div className="text-center py-8 text-muted-foreground">No expense transactions found</div>
+            )}
           </div>
         </div>
+      </div>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
@@ -539,18 +550,27 @@ export default function Budget() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Category</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the "{categoryToDelete ? (categoryLabels[categoryToDelete as keyof typeof categoryLabels] || categoryToDelete) : ''}" category? 
-              This action cannot be undone and you will need to re-create this category if you want to use it again.
+              Are you sure you want to delete the "
+              {categoryToDelete
+                ? categoryLabels[categoryToDelete as keyof typeof categoryLabels] || categoryToDelete
+                : ""}
+              " category? This action cannot be undone and you will need to re-create this category if you want to use
+              it again.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setCategoryToDelete(null);
-              setIsDeleteDialogOpen(false);
-            }}>
+            <AlertDialogCancel
+              onClick={() => {
+                setCategoryToDelete(null);
+                setIsDeleteDialogOpen(false);
+              }}
+            >
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteCategory} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={handleDeleteCategory}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
