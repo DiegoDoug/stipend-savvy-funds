@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Mail, Lock, User, Shield, TrendingUp, DollarSign } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { CheckCircle2, Circle } from "lucide-react";
 
 function FloatingShape({
   className,
@@ -388,10 +389,32 @@ export default function Auth() {
                   />
                 </div>
                 <div>
-                  <p>
-                    Valid password requirements: • Lowercase letters • Uppercase letters • Numbers and Symbols • 10
-                    characters long
-                  </p>
+                  <div className="bg-white/4 border border-white/12 rounded-lg p-4 backdrop-blur-sm mt-1">
+                    <div className="space-y-1 text-sm text-white/60 mt-2">
+                      {[
+                        { label: "At least 10 characters", test: password.length >= 10 },
+                        { label: "Contains lowercase letter", test: /[a-z]/.test(password) },
+                        { label: "Contains uppercase letter", test: /[A-Z]/.test(password) },
+                        { label: "Contains number", test: /\d/.test(password) },
+                        { label: "Contains symbol", test: /[!@#$%^&*(),.?":{}|<>]/.test(password) },
+                      ].map((req, i) => (
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: i * 0.05 }}
+                          className="flex items-center gap-2"
+                        >
+                          {req.test ? (
+                            <CheckCircle2 className="h-4 w-4 text-teal-400" />
+                          ) : (
+                            <Circle className="h-4 w-4 text-white/20" />
+                          )}
+                          <span className={req.test ? "text-teal-400" : "text-white/40"}>{req.label}</span>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
 
