@@ -21,8 +21,14 @@ export default function Dashboard() {
     budgetCategories.length > 0
       ? budgetCategories.reduce((sum, cat) => sum + Number(cat.spent), 0)
       : Object.values(mockBudget).reduce((sum, cat) => sum + cat.spent, 0);
-  const nextRefund = refunds.find((r) => r.status === "pending") || refunds[0];
-
+  // Get next future refund from transactions
+  const nextRefund = transactions
+    .filter((t) => {
+      const transactionDate = new Date(t.date);
+      transactionDate.setHours(0, 0, 0, 0);
+      return t.type === "income" && t.category === "refund" && transactionDate > todayLocal;
+    })
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
   // Get today's date in user's timezone
   const getUserLocalDate = () => {
     const now = new Date();
@@ -61,12 +67,12 @@ export default function Dashboard() {
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5);
 
-  // Upcoming: future scheduled transactions (chronological order)
+  // Upcoming: future scheduled transactions (chronological order), excluding refunds
   const upcomingTransactions = transactions
     .filter((t) => {
       const transactionDate = new Date(t.date);
       transactionDate.setHours(0, 0, 0, 0);
-      return transactionDate > todayLocal;
+      return transactionDate > todayLocal && !(t.type === "income" && t.category === "refund");
     })
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .slice(0, 5);
