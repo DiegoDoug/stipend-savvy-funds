@@ -353,8 +353,6 @@ export default function Expenses() {
                 >
                   <Pencil size={16} />
                 </Button>
-                  <Pencil size={16} />
-                </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button
