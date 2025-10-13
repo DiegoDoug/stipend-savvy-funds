@@ -1,372 +1,302 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import {
-  Dialog,
-  AlertDialog,
-  Button,
-  Input,
-  Select,
-  Progress,
-} from '@/components/ui/shadcn'; // Import shadcn/ui components
-import { GlowCard, StatCard, CategoryBadge, ProgressBar } from '@/components/custom'; // Custom components
-import { useFinanceData, useAuth, useAccountStatus } from '@/hooks';
-import supabase from '@/lib/supabase';
-import EmojiPicker from '@/components/EmojiPicker'; // Assume a custom emoji picker exists
-import { formatCurrency, formatDate, confetti } from '@/utils'; // Utility functions (assumed to exist)
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { Target, Plus, Trash2 } from 'lucide-react';
 
-// --- Types ---
 type SavingsGoal = {
   id: string;
   user_id: string;
   name: string;
   target_amount: number;
   current_amount: number;
-  category: string;
-  deadline?: string;
-  priority: number;
-  auto_contribute: boolean;
-  contribution_schedule?: string;
-  contribution_amount?: number;
-  round_up_enabled: boolean;
+  target_date: string | null;
+  description: string | null;
+  status: string;
   created_at: string;
   updated_at: string;
-  emoji?: string;
 };
 
-type GoalTransaction = {
-  id: string;
-  goal_id: string;
-  amount: number;
-  transaction_type: 'contribution' | 'withdrawal' | 'auto' | 'round-up' | 'transfer';
-  date: string;
-  description?: string;
-};
-
-// --- Main Component ---
-const GoalsSavings: React.FC = () => {
-  // Auth and hooks
+const Goals: React.FC = () => {
   const { user } = useAuth();
-  const { financeData, loading: financeLoading } = useFinanceData();
-  const { status } = useAccountStatus();
-
-  // State
+  const { toast } = useToast();
   const [goals, setGoals] = useState<SavingsGoal[]>([]);
-  const [goalTransactions, setGoalTransactions] = useState<GoalTransaction[]>([]);
-  const [selectedGoal, setSelectedGoal] = useState<SavingsGoal | null>(null);
-  const [showAddGoal, setShowAddGoal] = useState(false);
-  const [showEditGoal, setShowEditGoal] = useState(false);
-  const [showDeleteGoal, setShowDeleteGoal] = useState(false);
-  const [showContribute, setShowContribute] = useState(false);
-  const [showMultiContribute, setShowMultiContribute] = useState(false);
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [loading, setLoading] = useState(true);
-  const [emptyState, setEmptyState] = useState(false);
+  const [showAddGoal, setShowAddGoal] = useState(false);
+  const [newGoal, setNewGoal] = useState({
+    name: '',
+    target_amount: '',
+    current_amount: '',
+    target_date: '',
+    description: ''
+  });
 
-  // Fetch goals & transactions
   useEffect(() => {
-    if (!user) return;
-    setLoading(true);
+    if (user) {
+      fetchGoals();
+    }
+  }, [user]);
 
-    // Fetch goals
-    supabase
+  const fetchGoals = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    const { data, error } = await supabase
       .from('savings_goals')
       .select('*')
       .eq('user_id', user.id)
-      .then(({ data }) => {
-        setGoals(data || []);
-        setEmptyState(!(data && data.length));
-        setLoading(false);
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to load goals',
+        variant: 'destructive',
       });
+    } else {
+      setGoals(data || []);
+    }
+    setLoading(false);
+  };
 
-    // Fetch transactions
-    supabase
-      .from('goal_transactions')
-      .select('*')
-      .in('goal_id', goals.map(g => g.id))
-      .then(({ data }) => setGoalTransactions(data || []));
-  }, [user, goals.length]);
+  const handleAddGoal = async () => {
+    if (!user || !newGoal.name || !newGoal.target_amount) {
+      toast({
+        title: 'Error',
+        description: 'Please fill in required fields',
+        variant: 'destructive',
+      });
+      return;
+    }
 
-  // --- Derived Data ---
-  const filteredGoals = useMemo(() =>
-    categoryFilter === 'all' ? goals : goals.filter(g => g.category === categoryFilter),
-    [goals, categoryFilter]
-  );
-
-  const totalSaved = useMemo(() =>
-    goals.reduce((sum, g) => sum + (g.current_amount || 0), 0),
-    [goals]
-  );
-
-  const monthlyContributionTotal = useMemo(() => {
-    // Sum up goal_transactions of type 'contribution' and 'auto' in current month
-    const month = new Date().getMonth() + 1;
-    const year = new Date().getFullYear();
-    return goalTransactions
-      .filter(t => ['contribution', 'auto'].includes(t.transaction_type) && new Date(t.date).getMonth() + 1 === month && new Date(t.date).getFullYear() === year)
-      .reduce((sum, t) => sum + t.amount, 0);
-  }, [goalTransactions]);
-
-  const goalsCompletedThisYear = useMemo(() =>
-    goals.filter(g => g.current_amount >= g.target_amount && new Date(g.updated_at).getFullYear() === new Date().getFullYear()).length,
-    [goals]
-  );
-
-  const highestPriorityGoal = useMemo(() =>
-    goals.sort((a, b) => b.priority - a.priority)[0], [goals]
-  );
-
-  // --- UI Handlers ---
-  const handleAddGoal = async (goal: Partial<SavingsGoal>) => {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('savings_goals')
-      .insert([{ ...goal, user_id: user.id }]);
-    if (!error) {
-      setGoals([...goals, data[0]]);
+      .insert([{
+        user_id: user.id,
+        name: newGoal.name,
+        target_amount: parseFloat(newGoal.target_amount),
+        current_amount: parseFloat(newGoal.current_amount) || 0,
+        target_date: newGoal.target_date || null,
+        description: newGoal.description || null,
+        status: 'active'
+      }]);
+
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to create goal',
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Success',
+        description: 'Goal created successfully',
+      });
+      setNewGoal({ name: '', target_amount: '', current_amount: '', target_date: '', description: '' });
       setShowAddGoal(false);
-      confetti();
+      fetchGoals();
     }
   };
 
-  const handleEditGoal = async (goalId: string, updates: Partial<SavingsGoal>) => {
-    await supabase
-      .from('savings_goals')
-      .update(updates)
-      .eq('id', goalId);
-    setGoals(goals.map(g => (g.id === goalId ? { ...g, ...updates } : g)));
-    setShowEditGoal(false);
-  };
-
-  const handleDeleteGoal = async (goalId: string, transferGoalId?: string) => {
-    // If transferGoalId, transfer funds
-    const goal = goals.find(g => g.id === goalId);
-    if (goal && transferGoalId) {
-      const transferGoal = goals.find(g => g.id === transferGoalId);
-      if (transferGoal) {
-        await supabase
-          .from('savings_goals')
-          .update({ current_amount: transferGoal.current_amount + goal.current_amount })
-          .eq('id', transferGoalId);
-      }
-    }
-    await supabase
+  const handleDeleteGoal = async (goalId: string) => {
+    const { error } = await supabase
       .from('savings_goals')
       .delete()
       .eq('id', goalId);
-    setGoals(goals.filter(g => g.id !== goalId));
-    setShowDeleteGoal(false);
-  };
 
-  // Contribution dialog
-  const handleContribute = async (goalId: string, amount: number, type: GoalTransaction['transaction_type'] = 'contribution') => {
-    await supabase.from('goal_transactions').insert([
-      {
-        goal_id: goalId,
-        amount,
-        transaction_type: type,
-        date: new Date().toISOString(),
-      },
-    ]);
-    const goal = goals.find(g => g.id === goalId);
-    if (goal) {
-      await supabase
-        .from('savings_goals')
-        .update({ current_amount: goal.current_amount + amount })
-        .eq('id', goalId);
-      setGoals(goals.map(g => (g.id === goalId ? { ...g, current_amount: goal.current_amount + amount } : g)));
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete goal',
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Success',
+        description: 'Goal deleted successfully',
+      });
+      fetchGoals();
     }
-    setShowContribute(false);
   };
 
-  // --- Intelligence ---
-  // Analyze spending for predictive suggestion
-  const savingsCapacity = useMemo(() => {
-    // Use recent transactions and expenses to estimate surplus
-    const months = 3;
-    const now = new Date();
-    const recentTx = financeData?.transactions?.filter(tx =>
-      now.getTime() - new Date(tx.date).getTime() < months * 30 * 24 * 3600 * 1000
-    );
-    const incomeSum = recentTx?.filter(tx => tx.type === 'income').reduce((sum, tx) => sum + tx.amount, 0) || 0;
-    const expenseSum = recentTx?.filter(tx => tx.type === 'expense').reduce((sum, tx) => sum + tx.amount, 0) || 0;
-    const avgSurplus = ((incomeSum - expenseSum) / months) || 0;
-    return avgSurplus > 0 ? avgSurplus : 0;
-  }, [financeData]);
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+  };
 
-  // --- Render ---
-  return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-3">Goals & Savings</h1>
-      {/* Loading Skeleton */}
-      {loading && <div className="animate-pulse grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{Array(3).fill(<GlowCard loading />)}</div>}
-      {/* Empty State */}
-      {emptyState && !loading && (
-        <div className="flex flex-col items-center justify-center py-8">
-          <img src="/illustrations/goal-empty.svg" alt="" className="w-48 h-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Create Your First Goal</h2>
-          <Button onClick={() => setShowAddGoal(true)}>Add Goal</Button>
-        </div>
-      )}
+  const getProgress = (current: number, target: number) => {
+    return target > 0 ? (current / target) * 100 : 0;
+  };
 
-      {/* Overview Section */}
-      {!loading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-          <GlowCard label="Total Saved" value={formatCurrency(totalSaved)} color="primary" />
-          <GlowCard label="Monthly Contributions" value={formatCurrency(monthlyContributionTotal)} color="blue" />
-          <GlowCard label="Goals Completed" value={goalsCompletedThisYear} color="success" />
-          {highestPriorityGoal && (
-            <GlowCard
-              label={`Priority: ${highestPriorityGoal.name}`}
-              value={`${Math.round((highestPriorityGoal.current_amount / highestPriorityGoal.target_amount) * 100)}%`}
-              color="warning"
-              icon={<CategoryBadge category={highestPriorityGoal.category} emoji={highestPriorityGoal.emoji} />}
-            />
-          )}
-        </div>
-      )}
-
-      {/* Aggregate Progress */}
-      {!loading && goals.length > 0 && (
-        <ProgressBar
-          value={goals.reduce((sum, g) => sum + g.current_amount, 0)}
-          max={goals.reduce((sum, g) => sum + g.target_amount, 0)}
-          label="All Goals Progress"
-        />
-      )}
-
-      {/* Category Filter */}
-      <div className="flex gap-2 mt-4 mb-4">
-        {['all', 'emergency', 'vacation', 'tech', 'education', 'custom'].map(cat => (
-          <Button variant={categoryFilter === cat ? 'solid' : 'outline'} onClick={() => setCategoryFilter(cat)} key={cat}>
-            <CategoryBadge category={cat} />
-          </Button>
-        ))}
-      </div>
-
-      {/* Goal Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredGoals.map(goal => (
-          <GlowCard
-            key={goal.id}
-            label={goal.name}
-            value={`${formatCurrency(goal.current_amount)} / ${formatCurrency(goal.target_amount)}`}
-            color={goal.current_amount >= goal.target_amount ? 'success' : goal.priority >= 4 ? 'warning' : 'primary'}
-            icon={<CategoryBadge category={goal.category} emoji={goal.emoji} />}
-            footer={
-              <div className="flex flex-col gap-2">
-                <ProgressBar
-                  value={goal.current_amount}
-                  max={goal.target_amount}
-                  color={
-                    goal.current_amount / goal.target_amount >= 1
-                      ? 'success'
-                      : goal.current_amount / goal.target_amount >= 0.67
-                      ? 'primary'
-                      : goal.current_amount / goal.target_amount >= 0.34
-                      ? 'warning'
-                      : 'muted'
-                  }
-                  animated={goal.current_amount >= goal.target_amount}
-                />
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={() => { setSelectedGoal(goal); setShowContribute(true); }}>Contribute</Button>
-                  <Button size="sm" variant="outline" onClick={() => { setSelectedGoal(goal); setShowEditGoal(true); }}>Edit</Button>
-                  <Button size="sm" variant="destructive" onClick={() => { setSelectedGoal(goal); setShowDeleteGoal(true); }}>Delete</Button>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-xs">Priority</span>
-                  {'★'.repeat(goal.priority)}{'☆'.repeat(5 - goal.priority)}
-                  {goal.deadline && (
-                    <span className="ml-2 text-xs text-warning">
-                      {`Time left: ${Math.ceil((new Date(goal.deadline).getTime() - Date.now()) / (24 * 3600 * 1000))} days`}
-                    </span>
-                  )}
-                </div>
-                {/* Urgency / suggestion */}
-                {goal.deadline && goal.current_amount / goal.target_amount < ((new Date(goal.deadline).getTime() - Date.now()) / (30 * 24 * 3600 * 1000)) ? (
-                  <div className="text-xs text-danger">
-                    Need to contribute {formatCurrency((goal.target_amount - goal.current_amount) / ((new Date(goal.deadline).getTime() - Date.now()) / (30 * 24 * 3600 * 1000)))} / month to meet deadline!
-                  </div>
-                ) : null}
-              </div>
-            }
-          />
-        ))}
-      </div>
-
-      {/* Add/Edit Goal Dialog */}
-      <Dialog open={showAddGoal || showEditGoal} onOpenChange={(open) => { setShowAddGoal(false); setShowEditGoal(false); }}>
-        {/* Goal Form Fields */}
-        {/* ... */}
-      </Dialog>
-
-      {/* Delete Goal Dialog */}
-      <AlertDialog open={showDeleteGoal} onOpenChange={setShowDeleteGoal}>
-        {/* Delete confirmation, transfer option */}
-        {/* ... */}
-      </AlertDialog>
-
-      {/* Contribute Dialog */}
-      <Dialog open={showContribute} onOpenChange={setShowContribute}>
-        {/* Manual contribution form for selectedGoal */}
-        {/* ... */}
-      </Dialog>
-
-      {/* Multi-Goal Contribution Dialog */}
-      <Dialog open={showMultiContribute} onOpenChange={setShowMultiContribute}>
-        {/* Sliders/inputs for splitting contribution across goals */}
-        {/* ... */}
-      </Dialog>
-
-      {/* Transaction Log */}
-      {selectedGoal && (
-        <div className="mt-8">
-          <h3 className="text-lg font-semibold mb-2">Transaction History</h3>
-          <div className="flex flex-col gap-2">
-            {goalTransactions
-              .filter(tx => tx.goal_id === selectedGoal.id)
-              .map(tx => (
-                <StatCard
-                  key={tx.id}
-                  label={`${tx.transaction_type[0].toUpperCase() + tx.transaction_type.slice(1)} • ${formatDate(tx.date)}`}
-                  value={formatCurrency(tx.amount)}
-                  description={tx.description}
-                  icon={tx.transaction_type === 'contribution' ? '💰' : tx.transaction_type === 'withdrawal' ? '↩️' : tx.transaction_type === 'auto' ? '🔄' : '🪙'}
-                />
-              ))}
+  if (loading) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-muted rounded w-1/4"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-48 bg-muted rounded"></div>
+            ))}
           </div>
         </div>
-      )}
+      </div>
+    );
+  }
 
-      {/* Behavioral Insights */}
-      <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <GlowCard
-          label="Motivation"
-          value={`You're viewing ${selectedGoal?.name || 'your goals'} X times this week—ready to contribute?`}
-          color="primary"
-        />
-        <GlowCard
-          label="Smart Milestones"
-          value={selectedGoal ? `${Math.round((selectedGoal.current_amount / selectedGoal.target_amount) * 100)}% complete` : 'Track your milestones!'}
-          color={selectedGoal && selectedGoal.current_amount / selectedGoal.target_amount >= 1 ? 'success' : 'primary'}
-          animated={selectedGoal && selectedGoal.current_amount / selectedGoal.target_amount >= 1}
-        />
-        <GlowCard
-          label="Suggestion"
-          value="Your Emergency Fund hasn't received a contribution in 30 days—add $50?"
-          color="warning"
-        />
+  return (
+    <div className="container mx-auto p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">Savings Goals</h1>
+          <p className="text-muted-foreground">Track your financial goals</p>
+        </div>
+        <Dialog open={showAddGoal} onOpenChange={setShowAddGoal}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Goal
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create New Goal</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Goal Name *</Label>
+                <Input
+                  id="name"
+                  value={newGoal.name}
+                  onChange={(e) => setNewGoal({ ...newGoal, name: e.target.value })}
+                  placeholder="Emergency Fund"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="target">Target Amount *</Label>
+                <Input
+                  id="target"
+                  type="number"
+                  value={newGoal.target_amount}
+                  onChange={(e) => setNewGoal({ ...newGoal, target_amount: e.target.value })}
+                  placeholder="5000"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="current">Current Amount</Label>
+                <Input
+                  id="current"
+                  type="number"
+                  value={newGoal.current_amount}
+                  onChange={(e) => setNewGoal({ ...newGoal, current_amount: e.target.value })}
+                  placeholder="1000"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="date">Target Date</Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={newGoal.target_date}
+                  onChange={(e) => setNewGoal({ ...newGoal, target_date: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Input
+                  id="description"
+                  value={newGoal.description}
+                  onChange={(e) => setNewGoal({ ...newGoal, description: e.target.value })}
+                  placeholder="For unexpected expenses"
+                />
+              </div>
+              <Button onClick={handleAddGoal} className="w-full">Create Goal</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      {/* Advanced Features, Template, Rebalancer, etc. */}
-      {/* ...Add other dialogs/panels for goal templates, quarterly review, drag-to-reorder priorities, etc... */}
+      {goals.length === 0 ? (
+        <Card className="text-center py-12">
+          <CardContent>
+            <Target className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No Goals Yet</h3>
+            <p className="text-muted-foreground mb-4">Create your first savings goal to get started</p>
+            <Button onClick={() => setShowAddGoal(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Create Goal
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {goals.map(goal => {
+            const progress = getProgress(goal.current_amount, goal.target_amount);
+            const isCompleted = progress >= 100;
 
-      {/* Monthly Summary, Budget Integration */}
-      {/* ...Show year-over-year progress, impulse buy prevention, link to Budget page... */}
+            return (
+              <Card key={goal.id} className={isCompleted ? 'border-primary' : ''}>
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <CardTitle className="text-xl">{goal.name}</CardTitle>
+                      {goal.description && (
+                        <CardDescription className="mt-1">{goal.description}</CardDescription>
+                      )}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeleteGoal(goal.id)}
+                      className="ml-2"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <div className="flex justify-between text-sm mb-2">
+                      <span className="text-muted-foreground">Progress</span>
+                      <span className="font-medium">{progress.toFixed(1)}%</span>
+                    </div>
+                    <Progress value={progress} className="h-2" />
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Current</p>
+                      <p className="text-lg font-bold">{formatCurrency(goal.current_amount)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-muted-foreground">Target</p>
+                      <p className="text-lg font-bold">{formatCurrency(goal.target_amount)}</p>
+                    </div>
+                  </div>
 
-      {/* Confetti animation when goal is completed */}
-      {goals.some(g => g.current_amount >= g.target_amount) && confetti()}
+                  {goal.target_date && (
+                    <div className="text-sm text-muted-foreground">
+                      Target: {new Date(goal.target_date).toLocaleDateString()}
+                    </div>
+                  )}
 
+                  {isCompleted && (
+                    <div className="text-sm font-medium text-primary text-center py-2 bg-primary/10 rounded">
+                      🎉 Goal Completed!
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
 
-export default GoalsSavings;
+export default Goals;
