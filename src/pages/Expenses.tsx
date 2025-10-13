@@ -412,6 +412,14 @@ export default function Expenses() {
 
       {/* Expense Details Dialog */}
       <ExpenseDetailsDialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog} expense={selectedExpense} />
+
+      {/* Edit Expense Dialog */}
+      <EditExpenseDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        expense={editingExpense}
+        onUpdate={handleUpdateExpense}
+      />
     </div>
   );
 }
