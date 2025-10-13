@@ -7,7 +7,7 @@ const dockItems = [
   { label: "Budget", icon: PieChart, path: "/budget" },
   { label: "Income", icon: TrendingUp, path: "/income" },
   { label: "Expenses", icon: CreditCard, path: "/expenses" },
-  { label: "Goals", icon: Target, path: "src/pages/Goals.tsx" },
+  { label: "Goals", icon: Target, path: "src/pages/goals" },
   { label: "Settings", icon: Settings, path: "/account" },
 ];
 
