@@ -36,7 +36,7 @@ export default function Expenses() {
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<any>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
-  const [editingExpense, setEditingExpense] = useState<any>(null);
+  const [editingExpense, setEditingExpense] = useState<any | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
   const { checkAndNotify } = useAccountStatus();
@@ -85,6 +85,7 @@ export default function Expenses() {
     setEditingExpense(expense);
     setShowEditDialog(true);
   };
+
   const handleUpdateExpense = async (amount: number) => {
     if (!editingExpense || !checkAndNotify()) return;
 
@@ -102,15 +103,14 @@ export default function Expenses() {
         description: "The expense entry has been successfully updated.",
       });
 
-      // close dialog and refresh data if needed
+      refetch.transactions();
       setShowEditDialog(false);
       setEditingExpense(null);
-      // optionally trigger reload: fetchExpenses();
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      console.error("Error updating expense:", error);
       toast({
-        title: "Error updating expense",
-        description: "Something went wrong while updating the expense.",
+        title: "Error",
+        description: "Failed to update the expense entry. Please try again.",
         variant: "destructive",
       });
     }
@@ -351,6 +351,8 @@ export default function Expenses() {
                   onClick={() => handleEditExpense(expense)}
                   title="Edit expense"
                 >
+                  <Pencil size={16} />
+                </Button>
                   <Pencil size={16} />
                 </Button>
                 <AlertDialog>
