@@ -18,7 +18,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Sidebar - always visible on desktop (md+), slides in on mobile */}
       <aside 
         className={`
-          fixed left-0 top-0 h-full flex items-center bg-card z-50 shadow-lg
+          fixed left-0 top-0 h-full flex items-center bg-card z-50 shadow-lg border-r border-border/50
           transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}

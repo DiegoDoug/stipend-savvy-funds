@@ -89,12 +89,12 @@ export default function Dashboard() {
     <div className="space-y-6">
       {/* Welcome Header */}
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold">Welcome back{profileData ? `, ${profileData.name}` : ""}! 👋</h1>
-        <p className="text-muted-foreground">Here's your financial overview for this month</p>
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Welcome back{profileData ? `, ${profileData.name}` : ""}! 👋</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">Here's your financial overview for this month</p>
       </div>
 
       {/* Net Worth Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         <StatCard
           title="Available Balance"
           value={`$${Math.max(0, stats.balance).toLocaleString()}`}
@@ -122,9 +122,9 @@ export default function Dashboard() {
 
       {/* Budget Overview */}
       <GlowCard glowColor="purple" customSize={true} className="budget-card rounded-md w-full h-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Monthly Budget Status</h2>
-          <span className="text-sm text-muted-foreground">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <h2 className="text-base sm:text-lg font-semibold">Monthly Budget Status</h2>
+          <span className="text-xs sm:text-sm text-muted-foreground">
             ${totalSpent.toFixed(0)} / ${totalBudget.toFixed(0)}
           </span>
         </div>
@@ -137,10 +137,10 @@ export default function Dashboard() {
       </GlowCard>
 
       {/* Recent Activity & Upcoming */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Recent Transactions */}
         <div className="budget-card">
-          <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
+          <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Recent Activity</h3>
           <div className="space-y-3">
             {recentTransactions.length > 0 ? (
               recentTransactions.map((transaction) => (
@@ -179,8 +179,8 @@ export default function Dashboard() {
         <div className="space-y-4">
           {/* Next Refund */}
           <div className="budget-card">
-            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-              <CreditCard size={18} />
+            <h3 className="text-base sm:text-lg font-semibold mb-3 flex items-center gap-2">
+              <CreditCard size={16} className="sm:w-[18px] sm:h-[18px]" />
               Next Refund Check
             </h3>
             {nextRefund ? (
@@ -200,8 +200,8 @@ export default function Dashboard() {
 
           {/* Upcoming Transactions */}
           <div className="budget-card">
-            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-              <AlertCircle size={18} />
+            <h3 className="text-base sm:text-lg font-semibold mb-3 flex items-center gap-2">
+              <AlertCircle size={16} className="sm:w-[18px] sm:h-[18px]" />
               Upcoming
             </h3>
             <div className="space-y-2">

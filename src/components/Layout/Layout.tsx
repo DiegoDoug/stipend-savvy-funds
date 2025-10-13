@@ -15,10 +15,11 @@ export default function Layout() {
       <div className="flex">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         
-        <div className="flex-1 min-h-screen flex flex-col">
+        {/* Main content area with proper spacing for sidebar on desktop */}
+        <div className="flex-1 min-h-screen flex flex-col md:ml-20 transition-all duration-300">
           <Header onMenuClick={() => setSidebarOpen(true)} />
           
-          <main className="flex-1 p-4 pb-20 md:pb-4 max-w-7xl mx-auto w-full">
+          <main className="flex-1 p-3 sm:p-4 lg:p-6 pb-20 md:pb-4 lg:pb-6 max-w-7xl mx-auto w-full">
             {!isActive && <DeactivationAlert />}
             <Outlet />
           </main>

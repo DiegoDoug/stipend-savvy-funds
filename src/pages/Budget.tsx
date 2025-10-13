@@ -241,10 +241,10 @@ export default function Budget() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Budget Planner</h1>
-          <p className="text-muted-foreground">Manage your monthly allocations</p>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Budget Planner</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Manage your monthly allocations</p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
@@ -318,39 +318,39 @@ export default function Budget() {
       </div>
 
       {/* Budget Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         <GlowCard glowColor="blue" customSize={true} className="stat-card w-full h-auto">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-              <DollarSign size={20} className="text-primary" />
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <DollarSign size={18} className="sm:w-5 sm:h-5 text-primary" />
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Monthly Income</p>
-              <p className="text-xl font-bold">${stats.totalIncome.toLocaleString()}</p>
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm text-muted-foreground">Monthly Income</p>
+              <p className="text-lg sm:text-xl font-bold truncate">${stats.totalIncome.toLocaleString()}</p>
             </div>
           </div>
         </GlowCard>
 
         <GlowCard glowColor="orange" customSize={true} className="stat-card w-full h-auto">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-warning/10 rounded-lg flex items-center justify-center">
-              <PieChart size={20} className="text-warning" />
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-warning/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <PieChart size={18} className="sm:w-5 sm:h-5 text-warning" />
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Total Spent</p>
-              <p className="text-xl font-bold">${stats.totalExpenses.toLocaleString()}</p>
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm text-muted-foreground">Total Spent</p>
+              <p className="text-lg sm:text-xl font-bold truncate">${stats.totalExpenses.toLocaleString()}</p>
             </div>
           </div>
         </GlowCard>
 
-        <GlowCard glowColor="green" customSize={true} className="stat-card w-full h-auto">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
-              <DollarSign size={20} className="text-success" />
+        <GlowCard glowColor="green" customSize={true} className="stat-card w-full h-auto sm:col-span-2 lg:col-span-1">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-success/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <DollarSign size={18} className="sm:w-5 sm:h-5 text-success" />
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Remaining</p>
-              <p className="text-xl font-bold text-success">${remaining.toLocaleString()}</p>
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm text-muted-foreground">Remaining</p>
+              <p className="text-lg sm:text-xl font-bold text-success truncate">${remaining.toLocaleString()}</p>
             </div>
           </div>
         </GlowCard>
@@ -358,13 +358,13 @@ export default function Budget() {
 
       {/* Overall Progress */}
       <GlowCard glowColor="purple" customSize={true} className="budget-card w-full h-auto">
-        <h2 className="text-lg font-semibold mb-4">Overall Budget Progress</h2>
+        <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Overall Budget Progress</h2>
         <ProgressBar value={totalSpent} max={totalAllocated} showLabel={true} label="Monthly Progress" size="lg" />
       </GlowCard>
 
       {/* Category Details */}
       <div className="budget-card">
-        <h2 className="text-lg font-semibold mb-6">Category Breakdown</h2>
+        <h2 className="text-base sm:text-lg font-semibold mb-4 sm:mb-6">Category Breakdown</h2>
         <div className="space-y-6">
           {loading ? (
             <div className="text-center py-8">Loading budget categories...</div>
@@ -382,16 +382,16 @@ export default function Budget() {
                 const isEditing = editMode === category;
 
                 return (
-                  <div key={category} className="p-4 bg-accent/20 rounded-lg border border-border/50">
+                  <div key={category} className="p-3 sm:p-4 bg-accent/20 rounded-lg border border-border/50">
                     <div className="flex items-center justify-between mb-3">
                       <CategoryBadge category={category} />
-                      <div className="flex gap-2">
+                      <div className="flex gap-1.5 sm:gap-2">
                         <button
                           onClick={() => isActive && setEditMode(isEditing ? null : category)}
                           disabled={!isActive}
-                          className="p-2 hover:bg-accent/50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="p-1.5 sm:p-2 hover:bg-accent/50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <Edit3 size={16} />
+                          <Edit3 size={14} className="sm:w-4 sm:h-4" />
                         </button>
                         <button
                           onClick={() => {
@@ -403,14 +403,14 @@ export default function Budget() {
                             }
                           }}
                           disabled={!isActive}
-                          className="p-2 hover:bg-destructive/10 text-destructive rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="p-1.5 sm:p-2 hover:bg-destructive/10 text-destructive rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={14} className="sm:w-4 sm:h-4" />
                         </button>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-3 sm:mb-4">
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">Allocated</p>
                         {isEditing ? (
