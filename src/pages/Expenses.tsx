@@ -36,7 +36,7 @@ export default function Expenses() {
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<any>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
-  const [editingExpense, setEditingExpense] = useState<any | null>(null);
+  const [editingExpense, setEditingExpense] = useState<any>(null);
   const { user } = useAuth();
   const { toast } = useToast();
   const { checkAndNotify } = useAccountStatus();
@@ -85,7 +85,6 @@ export default function Expenses() {
     setEditingExpense(expense);
     setShowEditDialog(true);
   };
-
   const handleUpdateExpense = async (amount: number) => {
     if (!editingExpense || !checkAndNotify()) return;
 
@@ -103,14 +102,15 @@ export default function Expenses() {
         description: "The expense entry has been successfully updated.",
       });
 
-      refetch.transactions();
+      // close dialog and refresh data if needed
       setShowEditDialog(false);
       setEditingExpense(null);
-    } catch (error) {
-      console.error("Error updating expense:", error);
+      // optionally trigger reload: fetchExpenses();
+    } catch (err) {
+      console.error(err);
       toast({
-        title: "Error",
-        description: "Failed to update the expense entry. Please try again.",
+        title: "Error updating expense",
+        description: "Something went wrong while updating the expense.",
         variant: "destructive",
       });
     }
