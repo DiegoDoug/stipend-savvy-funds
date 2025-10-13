@@ -10,7 +10,7 @@ import { Mail, Lock, User, Shield, TrendingUp, DollarSign } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { CheckCircle2, Circle } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@supabase/supabase-js";
 
 function FloatingShape({
   className,
@@ -137,6 +137,9 @@ function PasswordResetDialog({ isOpen, onClose, email }: { isOpen: boolean; onCl
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
+  // Initialize supabase client
+  const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
+
   const handleResetPassword = async () => {
     if (confirmEmail !== email) {
       toast({
@@ -149,37 +152,25 @@ function PasswordResetDialog({ isOpen, onClose, email }: { isOpen: boolean; onCl
 
     setLoading(true);
     try {
-      // First, check if the email exists in the database
-      const { data, error: checkError } = await supabase.auth.signInWithPassword({
-        email: confirmEmail,
-        password: "dummy-password-for-check",
-      });
-
-      // If we get a specific error about invalid credentials, the email exists
-      // If we get an error about email not confirmed or other auth errors, email exists
-      // If we get "Invalid login credentials", we need to check differently
-
-      // Better approach: Try to send the reset email and let Supabase handle it
+      // Send the reset email - Supabase handles checking if email exists
       const { error } = await supabase.auth.resetPasswordForEmail(confirmEmail, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
 
       if (error) {
-        // Supabase returns success even if email doesn't exist (for security)
-        // So we show success message regardless
         toast({
-          title: "Check your email",
-          description: "If an account exists with this email, we've sent you a password reset link",
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
         });
       } else {
         toast({
           title: "Check your email",
           description: "If an account exists with this email, we've sent you a password reset link",
         });
+        onClose();
+        setConfirmEmail("");
       }
-
-      onClose();
-      setConfirmEmail("");
     } catch (error: any) {
       toast({
         title: "Error",
