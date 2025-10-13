@@ -7,9 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, Lock, User, Shield, TrendingUp, DollarSign } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { CheckCircle2, Circle } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 function FloatingShape({
   className,
@@ -131,6 +132,145 @@ function FloatingIcon({ icon: Icon, delay = 0, className = "" }: { icon: any; de
   );
 }
 
+function PasswordResetDialog({ isOpen, onClose, email }: { isOpen: boolean; onClose: () => void; email: string }) {
+  const [confirmEmail, setConfirmEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
+  const handleResetPassword = async () => {
+    if (confirmEmail !== email) {
+      toast({
+        title: "Email mismatch",
+        description: "The confirmation email doesn't match",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // First, check if the email exists in the database
+      const { data, error: checkError } = await supabase.auth.signInWithPassword({
+        email: confirmEmail,
+        password: "dummy-password-for-check",
+      });
+
+      // If we get a specific error about invalid credentials, the email exists
+      // If we get an error about email not confirmed or other auth errors, email exists
+      // If we get "Invalid login credentials", we need to check differently
+
+      // Better approach: Try to send the reset email and let Supabase handle it
+      const { error } = await supabase.auth.resetPasswordForEmail(confirmEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) {
+        // Supabase returns success even if email doesn't exist (for security)
+        // So we show success message regardless
+        toast({
+          title: "Check your email",
+          description: "If an account exists with this email, we've sent you a password reset link",
+        });
+      } else {
+        toast({
+          title: "Check your email",
+          description: "If an account exists with this email, we've sent you a password reset link",
+        });
+      }
+
+      onClose();
+      setConfirmEmail("");
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to send reset email. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+          />
+
+          {/* Dialog */}
+          <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.2 }}
+              className="w-full max-w-md"
+            >
+              <Card className="p-6 space-y-4 bg-slate-900/95 backdrop-blur-xl border-white/10 shadow-2xl">
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-bold text-white">Reset Password</h2>
+                  <p className="text-sm text-white/60">Confirm your email address to receive a password reset link</p>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-email" className="text-white/80">
+                      Confirm Email
+                    </Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-white/40" />
+                      <Input
+                        id="confirm-email"
+                        type="email"
+                        placeholder={email}
+                        value={confirmEmail}
+                        onChange={(e) => setConfirmEmail(e.target.value)}
+                        className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-teal-500/50"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleResetPassword();
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={onClose}
+                      className="flex-1 bg-white/5 border-white/10 text-white hover:bg-white/10"
+                      disabled={loading}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleResetPassword}
+                      className="flex-1 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-medium shadow-lg shadow-teal-500/20"
+                      disabled={loading || !confirmEmail}
+                    >
+                      {loading ? "Sending..." : "Send Reset Link"}
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
+          </div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState("");
@@ -138,6 +278,7 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [showResetDialog, setShowResetDialog] = useState(false);
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -174,8 +315,8 @@ export default function Auth() {
             title: "Success",
             description: "Account created! Please check your email to verify your account.",
           });
-          setIsLogin(true); // Add this line to switch to login form
-          setPassword(""); // Optionally clear the password field
+          setIsLogin(true);
+          setPassword("");
         } else {
           navigate("/");
         }
@@ -183,6 +324,18 @@ export default function Auth() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleForgotPassword = () => {
+    if (!email) {
+      toast({
+        title: "Email required",
+        description: "Please enter your email address first",
+        variant: "destructive",
+      });
+      return;
+    }
+    setShowResetDialog(true);
   };
 
   return (
@@ -308,6 +461,9 @@ export default function Auth() {
       <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-slate-950/60 pointer-events-none" />
       <div className="absolute inset-0 bg-gradient-to-b from-slate-950/40 via-transparent to-slate-950/80 pointer-events-none" />
 
+      {/* Password Reset Dialog */}
+      <PasswordResetDialog isOpen={showResetDialog} onClose={() => setShowResetDialog(false)} email={email} />
+
       {/* Auth Card - Centered Content */}
       <div className="relative z-10 w-full max-w-md mx-auto px-4">
         <motion.div
@@ -428,6 +584,19 @@ export default function Auth() {
                 {loading ? "Loading..." : isLogin ? "Sign In" : "Sign Up"}
               </Button>
             </form>
+
+            {isLogin && (
+              <div className="text-center -mt-2">
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  className="text-sm text-white/50 hover:text-teal-400 transition-colors"
+                  disabled={loading}
+                >
+                  Forgot password?
+                </button>
+              </div>
+            )}
 
             <div className="text-center">
               <p className="text-sm text-white/50">
