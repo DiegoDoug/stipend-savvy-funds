@@ -132,13 +132,20 @@ function FloatingIcon({ icon: Icon, delay = 0, className = "" }: { icon: any; de
   );
 }
 
-function PasswordResetDialog({ isOpen, onClose, email }: { isOpen: boolean; onClose: () => void; email: string }) {
+function PasswordResetDialog({
+  isOpen,
+  onClose,
+  email,
+  supabaseClient,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  email: string;
+  supabaseClient: any;
+}) {
   const [confirmEmail, setConfirmEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-
-  // Initialize supabase client
-  const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
 
   const handleResetPassword = async () => {
     if (confirmEmail !== email) {
@@ -153,7 +160,7 @@ function PasswordResetDialog({ isOpen, onClose, email }: { isOpen: boolean; onCl
     setLoading(true);
     try {
       // Send the reset email - Supabase handles checking if email exists
-      const { error } = await supabase.auth.resetPasswordForEmail(confirmEmail, {
+      const { error } = await supabaseClient.auth.resetPasswordForEmail(confirmEmail, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
 
@@ -273,6 +280,9 @@ export default function Auth() {
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Initialize supabase client at component level
+  const supabase = createClient(import.meta.env.VITE_SUPABASE_URL || "", import.meta.env.VITE_SUPABASE_ANON_KEY || "");
 
   useEffect(() => {
     setMounted(true);
@@ -453,7 +463,12 @@ export default function Auth() {
       <div className="absolute inset-0 bg-gradient-to-b from-slate-950/40 via-transparent to-slate-950/80 pointer-events-none" />
 
       {/* Password Reset Dialog */}
-      <PasswordResetDialog isOpen={showResetDialog} onClose={() => setShowResetDialog(false)} email={email} />
+      <PasswordResetDialog
+        isOpen={showResetDialog}
+        onClose={() => setShowResetDialog(false)}
+        email={email}
+        supabaseClient={supabase}
+      />
 
       {/* Auth Card - Centered Content */}
       <div className="relative z-10 w-full max-w-md mx-auto px-4">
