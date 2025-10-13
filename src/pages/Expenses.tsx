@@ -1,4 +1,5 @@
 import { Pencil } from "lucide-react";
+import EditExpenseDialog from "@/components/UI/EditExpenseDialog";
 import { useState } from "react";
 import { CreditCard, Plus, Search, Filter, Calendar, Trash2, Camera, ExternalLink, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
