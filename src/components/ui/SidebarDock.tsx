@@ -7,7 +7,7 @@ const dockItems = [
   { label: "Budget", icon: PieChart, path: "/budget" },
   { label: "Income", icon: TrendingUp, path: "/income" },
   { label: "Expenses", icon: CreditCard, path: "/expenses" },
-  { label: "Goals", icon: Target, path: "/goals" },
+  { label: "Goals", icon: Target, path: "src/pages/Goals.tsx" },
   { label: "Settings", icon: Settings, path: "/account" },
 ];
 
@@ -20,7 +20,7 @@ export function SidebarDock({ onClose }: { onClose?: () => void }) {
       {dockItems.map((item) => {
         const Icon = item.icon;
         const isActive = location.pathname === item.path;
-        
+
         return (
           <button
             key={item.path}
@@ -31,7 +31,7 @@ export function SidebarDock({ onClose }: { onClose?: () => void }) {
             className={cn(
               "group relative flex flex-col items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl transition-all duration-200",
               "hover:bg-primary/10 hover:scale-105 sm:hover:scale-110",
-              isActive ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground"
+              isActive ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground",
             )}
             title={item.label}
           >
