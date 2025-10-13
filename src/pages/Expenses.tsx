@@ -86,13 +86,23 @@ export default function Expenses() {
     setShowEditDialog(true);
   };
 
-  const handleUpdateExpense = async (amount: number) => {
+  const handleUpdateExpense = async (updates: {
+    description: string;
+    amount: number;
+    date: string;
+    category: string;
+  }) => {
     if (!editingExpense || !checkAndNotify()) return;
 
     try {
       const { error } = await supabase
         .from("transactions")
-        .update({ amount })
+        .update({
+          description: updates.description,
+          amount: updates.amount,
+          date: updates.date,
+          category: updates.category,
+        })
         .eq("id", editingExpense.id)
         .eq("user_id", user?.id);
 
