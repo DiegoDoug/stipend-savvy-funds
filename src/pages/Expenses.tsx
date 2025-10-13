@@ -1,5 +1,4 @@
 import { Pencil } from "lucide-react";
-import EditExpenseDialog from "@/components/UI/EditExpenseDialog";
 import { useState } from "react";
 import { CreditCard, Plus, Search, Filter, Calendar, Trash2, Camera, ExternalLink, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,7 +19,6 @@ import CategoryBadge from "@/components/UI/CategoryBadge";
 import AddExpenseDialog from "@/components/UI/AddExpenseDialog";
 import ReceiptScannerModal from "@/components/UI/ReceiptScannerModal";
 import ExpenseDetailsDialog from "@/components/UI/ExpenseDetailsDialog";
-import EditExpenseDialog from "@/components/UI/EditExpenseDialog"; // adjust path if needed
 import { useFinanceData } from "@/hooks/useFinanceData";
 import { categoryLabels } from "@/lib/mockData";
 import { useAuth } from "@/hooks/useAuth";
