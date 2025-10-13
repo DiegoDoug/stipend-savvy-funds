@@ -31,8 +31,13 @@ export default function EditExpenseDialog({ open, onOpenChange, expense, onUpdat
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const numAmount = parseFloat(amount);
-    if (!isNaN(numAmount) && numAmount > 0) {
-      onUpdate(numAmount);
+    if (!isNaN(numAmount) && numAmount > 0 && description.trim() && date && category) {
+      onUpdate({
+        description: description.trim(),
+        amount: numAmount,
+        date,
+        category,
+      });
     }
   };
 
@@ -47,18 +52,36 @@ export default function EditExpenseDialog({ open, onOpenChange, expense, onUpdat
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label>Description</Label>
-              <div className="text-sm text-muted-foreground">{expense.description}</div>
+              <Label htmlFor="description">Description</Label>
+              <Input
+                id="description"
+                type="text"
+                placeholder="Enter expense description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                required
+              />
             </div>
 
             <div className="grid gap-2">
-              <Label>Category</Label>
-              <div className="text-sm text-muted-foreground capitalize">{expense.category.replace("-", " ")}</div>
+              <Label htmlFor="category">Category</Label>
+              <Select value={category} onValueChange={setCategory} required>
+                <SelectTrigger id="category">
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(categoryLabels).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid gap-2">
-              <Label>Date</Label>
-              <div className="text-sm text-muted-foreground">{new Date(expense.date).toLocaleDateString()}</div>
+              <Label htmlFor="date">Date</Label>
+              <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
             </div>
 
             <div className="grid gap-2">
