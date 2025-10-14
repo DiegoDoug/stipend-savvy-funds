@@ -165,7 +165,7 @@ const SearchBar = ({ placeholder = "Search expenses & income..." }: SearchBarPro
         repeat: Number.POSITIVE_INFINITY,
         repeatType: "reverse",
       }}
-      className="absolute w-3 h-3 rounded-full bg-gradient-to-r from-purple-400 to-pink-400"
+      className="absolute w-3 h-3 rounded-full bg-gradient-to-r from-primary to-primary-glow"
       style={{
         left: `${Math.random() * 100}%`,
         top: `${Math.random() * 100}%`,
@@ -213,7 +213,7 @@ const SearchBar = ({ placeholder = "Search expenses & income..." }: SearchBarPro
           )}
           animate={{
             boxShadow: isClicked
-              ? "0 0 40px rgba(139, 92, 246, 0.5), 0 0 15px rgba(236, 72, 153, 0.7) inset"
+              ? "0 0 40px hsl(var(--primary) / 0.5), 0 0 15px hsl(var(--primary-glow) / 0.7) inset"
               : isFocused
               ? "0 15px 35px rgba(0, 0, 0, 0.2)"
               : "0 0 0 rgba(0, 0, 0, 0)",
@@ -227,10 +227,10 @@ const SearchBar = ({ placeholder = "Search expenses & income..." }: SearchBarPro
               animate={{
                 opacity: 0.15,
                 background: [
-                  "linear-gradient(90deg, #f6d365 0%, #fda085 100%)",
-                  "linear-gradient(90deg, #a1c4fd 0%, #c2e9fb 100%)",
-                  "linear-gradient(90deg, #d4fc79 0%, #96e6a1 100%)",
-                  "linear-gradient(90deg, #f6d365 0%, #fda085 100%)",
+                  "linear-gradient(90deg, hsl(196 78% 52%) 0%, hsl(196 78% 65%) 100%)",
+                  "linear-gradient(90deg, hsl(196 78% 52%) 0%, hsl(262 83% 58%) 100%)",
+                  "linear-gradient(90deg, hsl(262 83% 58%) 0%, hsl(43 85% 75%) 100%)",
+                  "linear-gradient(90deg, hsl(196 78% 52%) 0%, hsl(196 78% 65%) 100%)",
                 ],
               }}
               transition={{ duration: 15, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
@@ -247,7 +247,7 @@ const SearchBar = ({ placeholder = "Search expenses & income..." }: SearchBarPro
           {isClicked && (
             <>
               <motion.div
-                className="absolute inset-0 -z-5 rounded-full bg-purple-400/10"
+                className="absolute inset-0 -z-5 rounded-full bg-primary/10"
                 initial={{ scale: 0, opacity: 0.7 }}
                 animate={{ scale: 2, opacity: 0 }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
@@ -269,7 +269,7 @@ const SearchBar = ({ placeholder = "Search expenses & income..." }: SearchBarPro
               strokeWidth={isFocused ? 2.5 : 2}
               className={cn(
                 "transition-all duration-300",
-                isAnimating ? "text-purple-500" : isFocused ? "text-purple-600" : "text-muted-foreground",
+                isAnimating ? "text-primary" : isFocused ? "text-primary" : "text-muted-foreground",
               )}
             />
           </motion.div>
@@ -289,15 +289,15 @@ const SearchBar = ({ placeholder = "Search expenses & income..." }: SearchBarPro
           />
 
           {isFocused && (
-            <motion.div
-              className="absolute inset-0 rounded-full"
-              initial={{ opacity: 0 }}
-              animate={{
-                opacity: [0, 0.1, 0.2, 0.1, 0],
-                background: "radial-gradient(circle at 50% 0%, rgba(255,255,255,0.8) 0%, transparent 70%)",
-              }}
-              transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, repeatType: "loop" }}
-            />
+          <motion.div
+            className="absolute inset-0 rounded-full"
+            initial={{ opacity: 0 }}
+            animate={{
+              opacity: [0, 0.1, 0.2, 0.1, 0],
+              background: "radial-gradient(circle at 50% 0%, hsl(var(--primary) / 0.3) 0%, transparent 70%)",
+            }}
+            transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, repeatType: "loop" }}
+          />
           )}
         </motion.div>
       </motion.form>
