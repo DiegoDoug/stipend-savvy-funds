@@ -1,7 +1,8 @@
 import { Pencil } from "lucide-react";
 import EditExpenseDialog from "@/components/UI/EditExpenseDialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CreditCard, Plus, Search, Filter, Calendar, Trash2, Camera, ExternalLink, Eye } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -27,6 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccountStatus } from "@/hooks/useAccountStatus";
 export default function Expenses() {
+  const location = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState("date");
@@ -41,6 +43,17 @@ export default function Expenses() {
   const { toast } = useToast();
   const { checkAndNotify } = useAccountStatus();
   const { transactions, loading, refetch } = useFinanceData();
+
+  useEffect(() => {
+    if (location.state?.openExpenseId && transactions.length > 0) {
+      const expense = transactions.find(t => t.id === location.state.openExpenseId && t.type === 'expense');
+      if (expense) {
+        setSelectedExpense(expense);
+        setShowDetailsDialog(true);
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [location.state, transactions]);
 
   const handleDeleteExpense = async (expenseId: string) => {
     if (!checkAndNotify()) return;

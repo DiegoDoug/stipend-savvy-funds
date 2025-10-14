@@ -3,6 +3,7 @@ import { Menu, Bell } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import ProfileDialog from "@/components/UI/ProfileDialog";
+import { SearchBar } from "@/components/ui/search-bar";
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -28,7 +29,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
   return (
     <header className="bg-card border-b border-border/50 px-3 sm:px-4 lg:px-6 py-2.5 sm:py-3 sticky top-0 z-40">
-      <div className="flex items-center justify-between max-w-7xl mx-auto">
+      <div className="flex items-center justify-between gap-4 max-w-7xl mx-auto">
         <div className="flex items-center gap-2 sm:gap-3">
           <div>
             <h1 className="text-base sm:text-lg lg:text-xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
@@ -36,6 +37,10 @@ export default function Header({ onMenuClick }: HeaderProps) {
             </h1>
             <p className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">Student Finance Manager</p>
           </div>
+        </div>
+
+        <div className="flex-1 max-w-md hidden md:block">
+          <SearchBar />
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">

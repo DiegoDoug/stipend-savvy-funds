@@ -1,8 +1,10 @@
-import { useState, useMemo } from "react";
-import { TrendingUp, Calendar, DollarSign, Gift, Trash2, Plus, Pencil, Clock } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { TrendingUp, Calendar, DollarSign, Gift, Trash2, Plus, Pencil, Clock, Eye } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import StatCard from "@/components/UI/StatCard";
 import AddIncomeDialog from "@/components/UI/AddIncomeDialog";
 import EditIncomeDialog from "@/components/UI/EditIncomeDialog";
+import IncomeDetailsDialog from "@/components/UI/IncomeDetailsDialog";
 import { useFinanceData } from "@/hooks/useFinanceData";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -22,14 +24,28 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAccountStatus } from "@/hooks/useAccountStatus";
 
 export default function Income() {
+  const location = useLocation();
   const [selectedPeriod, setSelectedPeriod] = useState("month");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [editingIncome, setEditingIncome] = useState<any | null>(null);
+  const [selectedIncome, setSelectedIncome] = useState<any | null>(null);
   const { user } = useAuth();
   const { transactions, loading, refetch } = useFinanceData();
   const { toast } = useToast();
   const { checkAndNotify } = useAccountStatus();
+
+  useEffect(() => {
+    if (location.state?.openIncomeId && transactions.length > 0) {
+      const income = transactions.find(t => t.id === location.state.openIncomeId && t.type === 'income');
+      if (income) {
+        setSelectedIncome(income);
+        setShowDetailsDialog(true);
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [location.state, transactions]);
 
   const handleEditIncome = (income: any) => {
     if (!checkAndNotify()) return;
@@ -270,6 +286,18 @@ export default function Income() {
                   <Button
                     variant="ghost"
                     size="sm"
+                    className="text-primary hover:text-primary/80"
+                    onClick={() => {
+                      setSelectedIncome(income);
+                      setShowDetailsDialog(true);
+                    }}
+                    title="View details"
+                  >
+                    <Eye size={16} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     className="text-muted-foreground hover:text-primary"
                     onClick={() => handleEditIncome(income)}
                   >
@@ -413,6 +441,18 @@ export default function Income() {
                   <Button
                     variant="ghost"
                     size="sm"
+                    className="text-primary hover:text-primary/80"
+                    onClick={() => {
+                      setSelectedIncome(income);
+                      setShowDetailsDialog(true);
+                    }}
+                    title="View details"
+                  >
+                    <Eye size={16} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     className="text-muted-foreground hover:text-primary"
                     onClick={() => handleEditIncome(income)}
                   >
@@ -472,6 +512,13 @@ export default function Income() {
           onUpdate={handleUpdateIncome}
         />
       )}
+
+      {/* Income Details Dialog */}
+      <IncomeDetailsDialog
+        open={showDetailsDialog}
+        onOpenChange={setShowDetailsDialog}
+        income={selectedIncome}
+      />
     </div>
   );
 }
