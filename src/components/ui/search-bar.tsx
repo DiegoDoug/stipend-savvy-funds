@@ -34,7 +34,7 @@ interface SearchBarProps {
   placeholder?: string
 }
 
-const SearchBar = ({ placeholder = "Search expenses & income..." }: SearchBarProps) => {
+const SearchBar = ({ placeholder = "Search expenses & incomes" }: SearchBarProps) => {
   const { user } = useAuth()
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
