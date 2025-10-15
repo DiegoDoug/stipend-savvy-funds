@@ -454,8 +454,6 @@ export default function Budget() {
                       </div>
                       <ProgressBar value={data.spent} max={data.allocated} />
                     </div>
-
-                    {percentage > 90 && {}}
                   </div>
                 );
               })
