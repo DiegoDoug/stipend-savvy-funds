@@ -457,9 +457,9 @@ export default function Budget() {
 
                     {percentage > 90 && (
                       <div className="mt-3 p-2 bg-warning-light rounded-lg">
-                        <p className="text-sm text-warning-foreground font-medium">
+                        {/* <p className="text-sm text-warning-foreground font-medium">
                           ⚠️ Approaching budget limit for {categoryLabels[category as keyof typeof categoryLabels]}
-                        </p>
+                        </p>*/}
                       </div>
                     )}
                   </div>
