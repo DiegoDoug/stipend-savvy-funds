@@ -655,7 +655,11 @@ export default function Auth() {
                 {isLogin ? "Don't have an account?" : "Already have an account?"}
                 <button
                   type="button"
-                  onClick={() => setIsLogin(!isLogin)}
+                  onClick={() => {
+                    setIsLogin(!isLogin);
+                    setPassword("");
+                    setConfirmPassword("");
+                  }}
                   className="ml-2 text-teal-400 hover:text-teal-300 font-medium transition-colors"
                 >
                   {isLogin ? "Sign up" : "Sign in"}
