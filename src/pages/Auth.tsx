@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Lock, User, Shield, TrendingUp, DollarSign } from "lucide-react";
+import { Mail, Lock, User, Shield, TrendingUp, DollarSign, Eye, EyeOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { CheckCircle2, Circle } from "lucide-react";
@@ -274,6 +274,9 @@ export default function Auth() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
@@ -299,6 +302,17 @@ export default function Auth() {
         return;
       }
 
+      // Check if passwords match in signup mode
+      if (!isLogin && password !== confirmPassword) {
+        toast({
+          title: "Error",
+          description: "Passwords do not match",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
       const { error } = isLogin ? await signIn(email, password) : await signUp(email, password, name);
 
       if (error) {
@@ -315,6 +329,7 @@ export default function Auth() {
           });
           setIsLogin(true);
           setPassword("");
+          setConfirmPassword("");
         } else {
           navigate("/");
         }
@@ -539,13 +554,20 @@ export default function Auth() {
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-white/40" />
                   <Input
                     id="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-teal-500/50"
+                    className="pl-10 pr-10 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-teal-500/50"
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 text-white/40 hover:text-white/60 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
                 <div>
                   {!isLogin && (
@@ -578,6 +600,33 @@ export default function Auth() {
                   )}
                 </div>
               </div>
+
+              {!isLogin && (
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password" className="text-white/80">
+                    Confirm Password
+                  </Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-white/40" />
+                    <Input
+                      id="confirm-password"
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="Confirm your password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="pl-10 pr-10 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-teal-500/50"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-3 text-white/40 hover:text-white/60 transition-colors"
+                    >
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <Button
                 type="submit"
