@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { ExternalLink, Calendar, DollarSign, Store, FileText } from "lucide-react";
+import { ExternalLink, Calendar, DollarSign, Store, FileText, Upload } from "lucide-react";
 import { format } from "date-fns";
+import ReceiptScannerModal from "./ReceiptScannerModal";
 
 interface Transaction {
   id: string;
@@ -21,16 +23,33 @@ interface ExpenseDetailsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   expense: Transaction | null;
+  onRefresh?: () => void;
 }
 
 export default function ExpenseDetailsDialog({
   open,
   onOpenChange,
-  expense
+  expense,
+  onRefresh
 }: ExpenseDetailsDialogProps) {
+  const [showScanner, setShowScanner] = useState(false);
+
   if (!expense) return null;
 
+  const handleReceiptUploaded = () => {
+    if (onRefresh) {
+      onRefresh();
+    }
+  };
+
   return (
+    <>
+      <ReceiptScannerModal
+        open={showScanner}
+        onOpenChange={setShowScanner}
+        incomeId={expense.id}
+        onReceiptUploaded={handleReceiptUploaded}
+      />
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -106,22 +125,29 @@ export default function ExpenseDetailsDialog({
           )}
 
           {/* Receipt Image */}
-          {expense.receipt_url && (
-            <>
-              <Separator />
-              <div className="space-y-3">
-                <h3 className="font-semibold text-lg">Receipt Image</h3>
-                <Button
-                  onClick={() => window.open(expense.receipt_url, '_blank')}
-                  variant="outline"
-                  className="w-full"
-                >
-                  <ExternalLink size={18} className="mr-2" />
-                  View Full Receipt
-                </Button>
-              </div>
-            </>
-          )}
+          <Separator />
+          <div className="space-y-3">
+            <h3 className="font-semibold text-lg">Receipt</h3>
+            {expense.receipt_url ? (
+              <Button
+                onClick={() => window.open(expense.receipt_url, '_blank')}
+                variant="outline"
+                className="w-full"
+              >
+                <ExternalLink size={18} className="mr-2" />
+                View Full Receipt
+              </Button>
+            ) : (
+              <Button
+                onClick={() => setShowScanner(true)}
+                variant="outline"
+                className="w-full"
+              >
+                <Upload size={18} className="mr-2" />
+                Upload Receipt
+              </Button>
+            )}
+          </div>
 
           {/* Raw OCR Text */}
           {expense.ocr_text && (
@@ -140,5 +166,6 @@ export default function ExpenseDetailsDialog({
         </div>
       </DialogContent>
     </Dialog>
+    </>
   );
 }

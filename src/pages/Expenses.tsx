@@ -434,7 +434,12 @@ export default function Expenses() {
       )}
 
       {/* Expense Details Dialog */}
-      <ExpenseDetailsDialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog} expense={selectedExpense} />
+      <ExpenseDetailsDialog 
+        open={showDetailsDialog} 
+        onOpenChange={setShowDetailsDialog} 
+        expense={selectedExpense}
+        onRefresh={refetch.transactions}
+      />
 
       {/* Edit Expense Dialog */}
       <EditExpenseDialog
