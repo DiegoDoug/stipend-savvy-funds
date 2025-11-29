@@ -18,6 +18,7 @@ interface BudgetCategory {
   category: string;
   allocated: number;
   spent: number;
+  last_reset?: string;
 }
 
 interface Refund {
@@ -127,6 +128,30 @@ export const useFinanceData = () => {
     };
   };
 
+  const checkAndResetBudgets = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase.rpc('check_and_reset_user_budgets', {
+        p_user_id: user.id,
+        user_tz: 'America/Chicago' // You could get this from user profile
+      });
+
+      if (error) {
+        console.error('Error checking budget reset:', error);
+        return;
+      }
+
+      // If reset occurred, refetch budget categories
+      if (data && data.length > 0 && data[0].reset_occurred) {
+        console.log(`Monthly budget reset: ${data[0].affected_count} categories reset`);
+        await fetchBudgetCategories();
+      }
+    } catch (error) {
+      console.error('Error in budget reset check:', error);
+    }
+  };
+
   useEffect(() => {
     if (user) {
       const fetchAllData = async () => {
@@ -136,6 +161,8 @@ export const useFinanceData = () => {
           fetchBudgetCategories(),
           fetchRefunds()
         ]);
+        // Check and reset budgets if needed after loading data
+        await checkAndResetBudgets();
         setLoading(false);
       };
 

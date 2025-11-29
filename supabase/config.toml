@@ -1,1 +1,13 @@
 project_id = "dsbaxkyflpypffnjsjrz"
+
+[functions.send-verification-code]
+verify_jwt = false
+
+[functions.verify-code]
+verify_jwt = false
+
+[functions.delete-user-account]
+verify_jwt = true
+
+[functions.reset-monthly-budgets]
+verify_jwt = false

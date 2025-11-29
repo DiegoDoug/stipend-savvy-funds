@@ -20,6 +20,7 @@ export type Database = {
           category: string
           created_at: string
           id: string
+          last_reset: string | null
           spent: number
           updated_at: string
           user_id: string
@@ -29,6 +30,7 @@ export type Database = {
           category: string
           created_at?: string
           id?: string
+          last_reset?: string | null
           spent?: number
           updated_at?: string
           user_id: string
@@ -38,6 +40,7 @@ export type Database = {
           category?: string
           created_at?: string
           id?: string
+          last_reset?: string | null
           spent?: number
           updated_at?: string
           user_id?: string
@@ -271,12 +274,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_and_reset_user_budgets: {
+        Args: { p_user_id: string; user_tz?: string }
+        Returns: {
+          affected_count: number
+          reset_occurred: boolean
+        }[]
+      }
       cleanup_expired_verification_codes: { Args: never; Returns: undefined }
       date_in_user_tz: {
         Args: { input_date: string; user_tz: string }
         Returns: string
       }
       get_user_local_date: { Args: { user_tz: string }; Returns: string }
+      reset_monthly_budgets: { Args: { user_tz?: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

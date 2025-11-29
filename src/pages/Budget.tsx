@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { PieChart, Edit3, Plus, DollarSign, Trash2 } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { PieChart, Edit3, Plus, DollarSign, Trash2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -55,6 +55,53 @@ export default function Budget() {
   const totalAllocated = budgetCategories.reduce((sum, cat) => sum + Number(cat.allocated), 0);
   const totalSpent = budgetCategories.reduce((sum, cat) => sum + Number(cat.spent), 0);
   const remaining = totalAllocated - totalSpent;
+
+  // Get the last reset date from budget categories
+  const lastResetDate = useMemo(() => {
+    if (budgetCategories.length === 0) return null;
+    
+    // Get the most recent last_reset date
+    const dates = budgetCategories
+      .map(cat => cat.last_reset)
+      .filter(Boolean)
+      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+    
+    return dates[0] || null;
+  }, [budgetCategories]);
+
+  const handleManualReset = async () => {
+    if (!user || !checkAndNotify()) return;
+
+    try {
+      const { data, error } = await supabase.rpc('check_and_reset_user_budgets', {
+        p_user_id: user.id,
+        user_tz: 'America/Chicago'
+      });
+
+      if (error) throw error;
+
+      refetch.budgetCategories();
+      
+      if (data && data.length > 0 && data[0].reset_occurred) {
+        toast({
+          title: "Budget Reset",
+          description: `Successfully reset ${data[0].affected_count} budget categories for the new month.`,
+        });
+      } else {
+        toast({
+          title: "Already Current",
+          description: "Your budgets are already reset for this month.",
+        });
+      }
+    } catch (error) {
+      console.error("Error resetting budgets:", error);
+      toast({
+        title: "Error",
+        description: "Failed to reset budgets. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   useEffect(() => {
     if (!user || loading || creatingCategories) return;
@@ -245,15 +292,32 @@ export default function Budget() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
         <div>
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Budget Planner</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">Manage your monthly allocations</p>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-muted-foreground text-xs sm:text-sm">
+            <p>Manage your monthly allocations</p>
+            {lastResetDate && (
+              <span>
+                • Last reset: {new Date(lastResetDate).toLocaleDateString()}
+              </span>
+            )}
+          </div>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-primary to-primary-glow" disabled={!isActive}>
-              <Plus size={18} className="mr-2" />
-              Add Category
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button
+            onClick={handleManualReset}
+            variant="outline"
+            disabled={!isActive}
+            className="flex items-center gap-2 flex-1 sm:flex-none"
+          >
+            <RefreshCw size={18} />
+            <span>Reset Month</span>
+          </Button>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-to-r from-primary to-primary-glow flex-1 sm:flex-none" disabled={!isActive}>
+                <Plus size={18} className="mr-2" />
+                Add Category
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Add New Budget Category</DialogTitle>
@@ -316,6 +380,7 @@ export default function Budget() {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Budget Summary */}
