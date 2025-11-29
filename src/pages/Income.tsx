@@ -1,13 +1,15 @@
 import { useState, useMemo, useEffect } from "react";
 import { TrendingUp, Calendar, DollarSign, Gift, Trash2, Plus, Pencil, Clock, Eye } from "lucide-react";
 import { useLocation } from "react-router-dom";
+import { DateRange } from "react-day-picker";
 import StatCard from "@/components/UI/StatCard";
 import AddIncomeDialog from "@/components/UI/AddIncomeDialog";
 import EditIncomeDialog from "@/components/UI/EditIncomeDialog";
 import IncomeDetailsDialog from "@/components/UI/IncomeDetailsDialog";
+import { DateRangePicker } from "@/components/UI/DateRangePicker";
 import { useFinanceData } from "@/hooks/useFinanceData";
 import { useAuth } from "@/hooks/useAuth";
-import { getDateRangeForPeriod, getPreviousPeriodRange, isDateInRange } from "@/lib/dateUtils";
+import { getDateRangeForPeriod, getPreviousPeriodRange, isDateInRange, getCustomDateRange } from "@/lib/dateUtils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +29,7 @@ import { useAccountStatus } from "@/hooks/useAccountStatus";
 export default function Income() {
   const location = useLocation();
   const [selectedPeriod, setSelectedPeriod] = useState("month");
+  const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
@@ -36,6 +39,18 @@ export default function Income() {
   const { transactions, loading, refetch, filterByPeriod, filterTransactionsByRange } = useFinanceData();
   const { toast } = useToast();
   const { checkAndNotify } = useAccountStatus();
+
+  const handlePeriodChange = (period: string) => {
+    setSelectedPeriod(period);
+    setCustomDateRange(undefined); // Clear custom range when preset is selected
+  };
+
+  const handleCustomDateRangeChange = (range: DateRange | undefined) => {
+    setCustomDateRange(range);
+    if (range?.from && range?.to) {
+      setSelectedPeriod("custom"); // Set to custom when date range is selected
+    }
+  };
 
   useEffect(() => {
     if (location.state?.openIncomeId && transactions.length > 0) {
@@ -108,14 +123,26 @@ export default function Income() {
 
   const incomeData = useMemo(() => transactions.filter((t) => t.type === "income"), [transactions]);
 
-  // Get date range based on selected period
+  // Get date range based on selected period or custom range
   const currentPeriodRange = useMemo(() => {
+    if (selectedPeriod === "custom" && customDateRange?.from && customDateRange?.to) {
+      return getCustomDateRange(customDateRange.from, customDateRange.to);
+    }
     return getDateRangeForPeriod(selectedPeriod as 'week' | 'month' | 'semester');
-  }, [selectedPeriod]);
+  }, [selectedPeriod, customDateRange]);
 
   const previousPeriodRange = useMemo(() => {
+    if (selectedPeriod === "custom") {
+      // For custom range, calculate the same duration before the start date
+      if (customDateRange?.from && customDateRange?.to) {
+        const duration = customDateRange.to.getTime() - customDateRange.from.getTime();
+        const prevEnd = new Date(customDateRange.from.getTime() - 1);
+        const prevStart = new Date(prevEnd.getTime() - duration);
+        return getCustomDateRange(prevStart, prevEnd);
+      }
+    }
     return getPreviousPeriodRange(selectedPeriod as 'week' | 'month' | 'semester');
-  }, [selectedPeriod]);
+  }, [selectedPeriod, customDateRange]);
 
   // Filter income for current period
   const currentPeriodIncome = useMemo(() => {
@@ -224,11 +251,11 @@ export default function Income() {
       </div>
 
       {/* Period Selector */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {["week", "month", "semester"].map((period) => (
           <button
             key={period}
-            onClick={() => setSelectedPeriod(period)}
+            onClick={() => handlePeriodChange(period)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               selectedPeriod === period ? "bg-primary text-primary-foreground" : "bg-accent/50 hover:bg-accent"
             }`}
@@ -236,14 +263,19 @@ export default function Income() {
             This {period}
           </button>
         ))}
+        <DateRangePicker
+          dateRange={customDateRange}
+          onDateRangeChange={handleCustomDateRangeChange}
+          className="ml-auto"
+        />
       </div>
 
       {/* Income Summary */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <StatCard
-          title={`Total Income (This ${selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)})`}
+          title={selectedPeriod === "custom" ? "Total Income (Custom Range)" : `Total Income (This ${selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)})`}
           value={`$${totalIncome.toLocaleString()}`}
-          change={`${incomeChange} vs last ${selectedPeriod}`}
+          change={selectedPeriod === "custom" ? `${incomeChange} vs previous period` : `${incomeChange} vs last ${selectedPeriod}`}
           changeType={totalIncome >= previousIncome ? "positive" : "negative"}
           icon={<TrendingUp size={24} />}
         />
