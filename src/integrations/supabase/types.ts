@@ -271,18 +271,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      cleanup_expired_verification_codes: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      cleanup_expired_verification_codes: { Args: never; Returns: undefined }
       date_in_user_tz: {
         Args: { input_date: string; user_tz: string }
         Returns: string
       }
-      get_user_local_date: {
-        Args: { user_tz: string }
-        Returns: string
-      }
+      get_user_local_date: { Args: { user_tz: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never

@@ -1,10 +1,10 @@
-import { Pencil } from "lucide-react";
-import EditExpenseDialog from "@/components/UI/EditExpenseDialog";
-import { useState, useEffect } from "react";
-import { CreditCard, Plus, Search, Filter, Calendar, Trash2, Camera, ExternalLink, Eye } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { CreditCard, Plus, Search, Filter, Calendar, Trash2, Camera, ExternalLink, Eye, Pencil } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { getDateRangeForPeriod, getPreviousPeriodRange, isDateInRange } from "@/lib/dateUtils";
+import EditExpenseDialog from "@/components/UI/EditExpenseDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +32,7 @@ export default function Expenses() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState("date");
+  const [selectedPeriod, setSelectedPeriod] = useState("month");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showScannerDialog, setShowScannerDialog] = useState(false);
   const [scanningExpenseId, setScanningExpenseId] = useState<string | null>(null);
@@ -139,14 +140,42 @@ export default function Expenses() {
     }
   };
   const expenses = transactions?.filter((t) => t.type === "expense") || [];
-  const totalExpenses = expenses.reduce((sum, t) => sum + Number(t.amount), 0);
-  const avgDaily = totalExpenses / 30; // Approximate daily average
+  
+  // Calculate period-based expenses
+  const currentPeriodRange = useMemo(() => {
+    return getDateRangeForPeriod(selectedPeriod as 'week' | 'month' | 'semester');
+  }, [selectedPeriod]);
 
-  // Get unique categories from expenses
-  const availableCategories = [...new Set(expenses.map((e) => e.category))].filter(Boolean);
+  const previousPeriodRange = useMemo(() => {
+    return getPreviousPeriodRange(selectedPeriod as 'week' | 'month' | 'semester');
+  }, [selectedPeriod]);
 
-  // Filter and sort expenses
-  const filteredExpenses = expenses
+  const currentPeriodExpenses = useMemo(() => {
+    return expenses.filter((t) => isDateInRange(t.date, currentPeriodRange));
+  }, [expenses, currentPeriodRange]);
+
+  const previousPeriodExpenses = useMemo(() => {
+    return expenses.filter((t) => isDateInRange(t.date, previousPeriodRange));
+  }, [expenses, previousPeriodRange]);
+
+  const totalExpenses = currentPeriodExpenses.reduce((sum, t) => sum + Number(t.amount), 0);
+  const previousTotal = previousPeriodExpenses.reduce((sum, t) => sum + Number(t.amount), 0);
+  
+  const expenseChange = useMemo(() => {
+    if (previousTotal === 0) return totalExpenses > 0 ? '+100%' : 'No change';
+    const change = ((totalExpenses - previousTotal) / previousTotal) * 100;
+    const sign = change > 0 ? '+' : '';
+    return `${sign}${Math.round(change)}%`;
+  }, [totalExpenses, previousTotal]);
+
+  const daysInPeriod = Math.ceil((currentPeriodRange.end.getTime() - currentPeriodRange.start.getTime()) / (1000 * 60 * 60 * 24));
+  const avgDaily = totalExpenses / daysInPeriod;
+
+  // Get unique categories from current period expenses
+  const availableCategories = [...new Set(currentPeriodExpenses.map((e) => e.category))].filter(Boolean);
+
+  // Filter and sort expenses from current period
+  const filteredExpenses = currentPeriodExpenses
     .filter(
       (expense) =>
         expense.description.toLowerCase().includes(searchTerm.toLowerCase()) &&
@@ -157,7 +186,7 @@ export default function Expenses() {
       if (sortBy === "date") return new Date(b.date).getTime() - new Date(a.date).getTime();
       return 0;
     });
-  const categoryTotals = expenses.reduce(
+  const categoryTotals = currentPeriodExpenses.reduce(
     (acc, expense) => {
       const amount = Number(expense.amount);
       acc[expense.category] = (acc[expense.category] || 0) + amount;
@@ -200,19 +229,34 @@ export default function Expenses() {
         </Button>
       </div>
 
+      {/* Period Selector */}
+      <div className="flex gap-2">
+        {["week", "month", "semester"].map((period) => (
+          <button
+            key={period}
+            onClick={() => setSelectedPeriod(period)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              selectedPeriod === period ? "bg-primary text-primary-foreground" : "bg-accent/50 hover:bg-accent"
+            }`}
+          >
+            This {period}
+          </button>
+        ))}
+      </div>
+
       {/* Expense Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard
-          title="Total Spent (Month)"
+          title={`Total Spent (${selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)})`}
           value={`$${totalExpenses.toLocaleString()}`}
-          change="-12% vs last month"
-          changeType="positive"
+          change={`${expenseChange} vs last ${selectedPeriod}`}
+          changeType={totalExpenses <= previousTotal ? "positive" : "negative"}
           icon={<CreditCard size={24} />}
         />
         <StatCard
           title="Daily Average"
           value={`$${avgDaily.toFixed(2)}`}
-          subtitle="Based on 30 days"
+          subtitle={`Based on ${daysInPeriod} days`}
           icon={<Calendar size={24} />}
         />
         <StatCard

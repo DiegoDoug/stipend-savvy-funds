@@ -7,6 +7,7 @@ import EditIncomeDialog from "@/components/UI/EditIncomeDialog";
 import IncomeDetailsDialog from "@/components/UI/IncomeDetailsDialog";
 import { useFinanceData } from "@/hooks/useFinanceData";
 import { useAuth } from "@/hooks/useAuth";
+import { getDateRangeForPeriod, getPreviousPeriodRange, isDateInRange } from "@/lib/dateUtils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,7 +33,7 @@ export default function Income() {
   const [editingIncome, setEditingIncome] = useState<any | null>(null);
   const [selectedIncome, setSelectedIncome] = useState<any | null>(null);
   const { user } = useAuth();
-  const { transactions, loading, refetch } = useFinanceData();
+  const { transactions, loading, refetch, filterByPeriod, filterTransactionsByRange } = useFinanceData();
   const { toast } = useToast();
   const { checkAndNotify } = useAccountStatus();
 
@@ -107,48 +108,64 @@ export default function Income() {
 
   const incomeData = useMemo(() => transactions.filter((t) => t.type === "income"), [transactions]);
 
-  // Get current month's start and end dates
-  const currentMonthRange = useMemo(() => {
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    end.setHours(23, 59, 59, 999);
-    return { start, end };
-  }, []);
+  // Get date range based on selected period
+  const currentPeriodRange = useMemo(() => {
+    return getDateRangeForPeriod(selectedPeriod as 'week' | 'month' | 'semester');
+  }, [selectedPeriod]);
 
-  // Filter income for current month only
-  const currentMonthIncome = useMemo(() => {
-    return incomeData.filter((t) => {
-      const transactionDate = new Date(t.date);
-      return transactionDate >= currentMonthRange.start && transactionDate <= currentMonthRange.end;
-    });
-  }, [incomeData, currentMonthRange]);
+  const previousPeriodRange = useMemo(() => {
+    return getPreviousPeriodRange(selectedPeriod as 'week' | 'month' | 'semester');
+  }, [selectedPeriod]);
 
-  // Filter income for future months
+  // Filter income for current period
+  const currentPeriodIncome = useMemo(() => {
+    return incomeData.filter((t) => isDateInRange(t.date, currentPeriodRange));
+  }, [incomeData, currentPeriodRange]);
+
+  // Filter income for previous period (for percentage change)
+  const previousPeriodIncome = useMemo(() => {
+    return incomeData.filter((t) => isDateInRange(t.date, previousPeriodRange));
+  }, [incomeData, previousPeriodRange]);
+
+  // Filter income for future dates
   const futureIncome = useMemo(() => {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
     return incomeData
       .filter((t) => {
         const transactionDate = new Date(t.date);
-        return transactionDate > currentMonthRange.end;
+        return transactionDate > today;
       })
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [incomeData, currentMonthRange]);
+  }, [incomeData]);
 
   const totalIncome = useMemo(
-    () => currentMonthIncome.reduce((sum, t) => sum + Number(t.amount), 0),
-    [currentMonthIncome],
+    () => currentPeriodIncome.reduce((sum, t) => sum + Number(t.amount), 0),
+    [currentPeriodIncome],
   );
+
+  const previousIncome = useMemo(
+    () => previousPeriodIncome.reduce((sum, t) => sum + Number(t.amount), 0),
+    [previousPeriodIncome],
+  );
+
+  const incomeChange = useMemo(() => {
+    if (previousIncome === 0) return totalIncome > 0 ? '+100%' : 'No change';
+    const change = ((totalIncome - previousIncome) / previousIncome) * 100;
+    const sign = change > 0 ? '+' : '';
+    return `${sign}${Math.round(change)}%`;
+  }, [totalIncome, previousIncome]);
 
   const totalFutureIncome = useMemo(() => futureIncome.reduce((sum, t) => sum + Number(t.amount), 0), [futureIncome]);
 
   const stipendIncome = useMemo(
-    () => currentMonthIncome.filter((t) => t.category === "stipend").reduce((sum, t) => sum + Number(t.amount), 0),
-    [currentMonthIncome],
+    () => currentPeriodIncome.filter((t) => t.category === "stipend").reduce((sum, t) => sum + Number(t.amount), 0),
+    [currentPeriodIncome],
   );
 
   const variableIncome = useMemo(
-    () => currentMonthIncome.filter((t) => t.category !== "stipend").reduce((sum, t) => sum + Number(t.amount), 0),
-    [currentMonthIncome],
+    () => currentPeriodIncome.filter((t) => t.category !== "stipend").reduce((sum, t) => sum + Number(t.amount), 0),
+    [currentPeriodIncome],
   );
 
   const incomeCategories = useMemo(() => {
@@ -160,12 +177,9 @@ export default function Income() {
       .map((category) => {
         const categoryTransactions = incomeData.filter((t) => t.category === category);
 
-        // Current month's total
+        // Current period's total
         const amount = categoryTransactions
-          .filter((t) => {
-            const transactionDate = new Date(t.date);
-            return transactionDate >= currentMonthRange.start && transactionDate <= currentMonthRange.end;
-          })
+          .filter((t) => isDateInRange(t.date, currentPeriodRange))
           .reduce((sum, t) => sum + Number(t.amount), 0);
 
         // Find next expected income (future dates only)
@@ -193,7 +207,7 @@ export default function Income() {
         };
       })
       .filter((category) => category.amount > 0);
-  }, [incomeData, currentMonthRange]);
+  }, [incomeData, currentPeriodRange]);
 
   return (
     <div className="space-y-6">
@@ -227,10 +241,10 @@ export default function Income() {
       {/* Income Summary */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <StatCard
-          title="Total Income (This Month)"
+          title={`Total Income (This ${selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)})`}
           value={`$${totalIncome.toLocaleString()}`}
-          change="+$650 vs last month"
-          changeType="positive"
+          change={`${incomeChange} vs last ${selectedPeriod}`}
+          changeType={totalIncome >= previousIncome ? "positive" : "negative"}
           icon={<TrendingUp size={24} />}
         />
         <StatCard
@@ -420,9 +434,9 @@ export default function Income() {
               </div>
             ))}
           </div>
-        ) : currentMonthIncome.length > 0 ? (
+        ) : currentPeriodIncome.length > 0 ? (
           <div className="space-y-3">
-            {currentMonthIncome.slice(0, 5).map((income) => (
+            {currentPeriodIncome.slice(0, 5).map((income) => (
               <div key={income.id} className="expense-item">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
