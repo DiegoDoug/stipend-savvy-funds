@@ -26,7 +26,8 @@ import { GlowCard } from "@/components/ui/spotlight-card";
 
 export default function Budget() {
   const { user } = useAuth();
-  const { budgetCategories, loading, refetch, stats, transactions } = useFinanceData();
+  const { budgetCategories, loading, refetch, stats, transactions, filterByPeriod } = useFinanceData();
+  const monthStats = filterByPeriod('month');
   const { toast } = useToast();
   const { isActive, checkAndNotify } = useAccountStatus();
   const [editMode, setEditMode] = useState<string | null>(null);
@@ -326,7 +327,8 @@ export default function Budget() {
             </div>
             <div className="min-w-0">
               <p className="text-xs sm:text-sm text-muted-foreground">Monthly Income</p>
-              <p className="text-lg sm:text-xl font-bold truncate">${stats.totalIncome.toLocaleString()}</p>
+              <p className="text-lg sm:text-xl font-bold truncate">${monthStats.totalIncome.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground mt-1">{monthStats.incomeChange.text}</p>
             </div>
           </div>
         </GlowCard>
@@ -338,7 +340,8 @@ export default function Budget() {
             </div>
             <div className="min-w-0">
               <p className="text-xs sm:text-sm text-muted-foreground">Total Spent</p>
-              <p className="text-lg sm:text-xl font-bold truncate">${stats.totalExpenses.toLocaleString()}</p>
+              <p className="text-lg sm:text-xl font-bold truncate">${monthStats.totalExpenses.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground mt-1">{monthStats.expenseChange.text}</p>
             </div>
           </div>
         </GlowCard>
