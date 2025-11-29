@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { getDateRangeForPeriod, getPreviousPeriodRange, isDateInRange, calculatePercentageChange, DateRange } from '@/lib/dateUtils';
 
 interface Transaction {
   id: string;
@@ -40,8 +41,7 @@ export const useFinanceData = () => {
     const { data, error } = await supabase
       .from('transactions')
       .select('*')
-      .order('date', { ascending: false })
-      .limit(10);
+      .order('date', { ascending: false });
 
     if (!error && data) {
       setTransactions(data as Transaction[]);
@@ -73,28 +73,57 @@ export const useFinanceData = () => {
     }
   };
 
-  const calculateFinancialStats = () => {
-    const income = transactions
+  const filterTransactionsByRange = (range: DateRange) => {
+    return transactions.filter(t => isDateInRange(t.date, range));
+  };
+
+  const calculateFinancialStats = (period: 'week' | 'month' | 'semester' | 'year' = 'month') => {
+    const currentRange = getDateRangeForPeriod(period);
+    const previousRange = getPreviousPeriodRange(period);
+
+    const currentTransactions = filterTransactionsByRange(currentRange);
+    const previousTransactions = filterTransactionsByRange(previousRange);
+
+    const currentIncome = currentTransactions
       .filter(t => t.type === 'income')
       .reduce((sum, t) => sum + Number(t.amount), 0);
 
-    const expenses = transactions
+    const previousIncome = previousTransactions
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    const currentExpenses = currentTransactions
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    const previousExpenses = previousTransactions
       .filter(t => t.type === 'expense')
       .reduce((sum, t) => sum + Number(t.amount), 0);
 
     const totalBudget = budgetCategories.reduce((sum, cat) => sum + Number(cat.allocated), 0);
     const totalSpent = budgetCategories.reduce((sum, cat) => sum + Number(cat.spent), 0);
 
-    const balance = income - expenses;
-    const savings = balance * 0.3; // Assume 30% goes to savings
+    const currentBalance = currentIncome - currentExpenses;
+    const previousBalance = previousIncome - previousExpenses;
+    const savings = currentBalance * 0.3; // Assume 30% goes to savings
+
+    const incomeChange = calculatePercentageChange(currentIncome, previousIncome);
+    const expenseChange = calculatePercentageChange(currentExpenses, previousExpenses);
+    const balanceChange = calculatePercentageChange(currentBalance, previousBalance);
 
     return {
-      balance,
+      balance: currentBalance,
       savings,
-      totalIncome: income,
-      totalExpenses: expenses,
+      totalIncome: currentIncome,
+      totalExpenses: currentExpenses,
       totalBudget,
-      totalSpent
+      totalSpent,
+      incomeChange,
+      expenseChange,
+      balanceChange,
+      currentTransactions,
+      previousIncome,
+      previousExpenses
     };
   };
 
@@ -120,6 +149,8 @@ export const useFinanceData = () => {
     refunds,
     loading,
     stats: calculateFinancialStats(),
+    filterByPeriod: (period: 'week' | 'month' | 'semester' | 'year') => calculateFinancialStats(period),
+    filterTransactionsByRange,
     refetch: {
       transactions: fetchTransactions,
       budgetCategories: fetchBudgetCategories,

@@ -12,7 +12,8 @@ import { GlowCard } from "@/components/ui/spotlight-card";
 export default function Dashboard() {
   const { user } = useAuth();
   const [userTimezone] = useState<string>("America/Chicago");
-  const { transactions, budgetCategories, refunds, loading, stats } = useFinanceData();
+  const { transactions, budgetCategories, refunds, loading, stats, filterByPeriod } = useFinanceData();
+  const monthStats = filterByPeriod('month');
   const totalBudget =
     budgetCategories.length > 0
       ? budgetCategories.reduce((sum, cat) => sum + Number(cat.allocated), 0)
@@ -97,24 +98,25 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         <StatCard
           title="Available Balance"
-          value={`$${Math.max(0, stats.balance).toLocaleString()}`}
-          change={transactions.length > 0 ? "+$47.50 this week" : "Add transactions to see changes"}
-          changeType="positive"
+          value={`$${Math.max(0, monthStats.balance).toLocaleString()}`}
+          change={monthStats.balanceChange.text}
+          changeType={monthStats.balanceChange.type}
           icon={<DollarSign size={24} />}
           glowColor="blue"
         />
         <StatCard
           title="Total Savings"
-          value={`$${Math.max(0, stats.savings).toLocaleString()}`}
-          change={transactions.length > 0 ? "+12% this month" : "Start saving today"}
-          changeType="positive"
+          value={`$${Math.max(0, monthStats.savings).toLocaleString()}`}
+          change={monthStats.balanceChange.text}
+          changeType={monthStats.balanceChange.type}
           icon={<PiggyBank size={24} />}
           glowColor="purple"
         />
         <StatCard
           title="Monthly Income"
-          value={`$${stats.totalIncome.toLocaleString()}`}
-          subtitle="Stipend + Refunds"
+          value={`$${monthStats.totalIncome.toLocaleString()}`}
+          change={monthStats.incomeChange.text}
+          changeType={monthStats.incomeChange.type}
           icon={<TrendingUp size={24} />}
           glowColor="green"
         />
