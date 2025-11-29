@@ -8,6 +8,7 @@ import { mockBudget } from "@/lib/mockData";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { GlowCard } from "@/components/ui/spotlight-card";
+import ExportPDFButton from "@/components/UI/ExportPDFButton";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -89,9 +90,29 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
-      <div>
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Welcome back{profileData ? `, ${profileData.name}` : ""}! 👋</h1>
-        <p className="text-sm sm:text-base text-muted-foreground">Here's your financial overview for this month</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Welcome back{profileData ? `, ${profileData.name}` : ""}! 👋</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Here's your financial overview for this month</p>
+        </div>
+        <ExportPDFButton
+          userName={profileData?.name || "User"}
+          availableBalance={Math.max(0, monthStats.balance)}
+          balanceChange={monthStats.balanceChange}
+          totalSavings={Math.max(0, monthStats.savings)}
+          monthlyIncome={monthStats.totalIncome}
+          incomeChange={monthStats.incomeChange}
+          totalBudget={totalBudget}
+          totalSpent={totalSpent}
+          recentTransactions={recentTransactions}
+          upcomingTransactions={upcomingTransactions}
+          budgetCategories={budgetCategories}
+          nextRefund={nextRefund ? {
+            amount: Number(nextRefund.amount),
+            date: nextRefund.date,
+            source: nextRefund.description || "Refund"
+          } : undefined}
+        />
       </div>
 
       {/* Net Worth Cards */}

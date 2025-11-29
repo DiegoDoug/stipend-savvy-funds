@@ -1,0 +1,82 @@
+import { useState } from 'react';
+import { FileDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { generateDashboardPDF } from '@/lib/pdfExport';
+import { toast } from 'sonner';
+
+interface ExportPDFButtonProps {
+  userName: string;
+  availableBalance: number;
+  balanceChange: { value: number; text: string; type: 'positive' | 'negative' | 'neutral' };
+  totalSavings: number;
+  monthlyIncome: number;
+  incomeChange: { value: number; text: string; type: 'positive' | 'negative' | 'neutral' };
+  totalBudget: number;
+  totalSpent: number;
+  recentTransactions: any[];
+  upcomingTransactions: any[];
+  budgetCategories: any[];
+  nextRefund?: {
+    amount: number;
+    date: string;
+    source: string;
+  };
+}
+
+export default function ExportPDFButton({
+  userName,
+  availableBalance,
+  balanceChange,
+  totalSavings,
+  monthlyIncome,
+  incomeChange,
+  totalBudget,
+  totalSpent,
+  recentTransactions,
+  upcomingTransactions,
+  budgetCategories,
+  nextRefund,
+}: ExportPDFButtonProps) {
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+      
+      generateDashboardPDF({
+        userName,
+        availableBalance,
+        balanceChange,
+        totalSavings,
+        monthlyIncome,
+        incomeChange,
+        totalBudget,
+        totalSpent,
+        recentTransactions,
+        upcomingTransactions,
+        budgetCategories,
+        nextRefund,
+      });
+
+      toast.success('PDF exported successfully!');
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      toast.error('Failed to export PDF. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={handleExport}
+      disabled={isExporting}
+      className="gap-2"
+    >
+      <FileDown className="h-4 w-4" />
+      {isExporting ? 'Exporting...' : 'Export PDF'}
+    </Button>
+  );
+}
