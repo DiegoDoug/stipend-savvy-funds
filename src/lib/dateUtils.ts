@@ -121,3 +121,13 @@ export const calculatePercentageChange = (current: number, previous: number): { 
     type: roundedChange > 0 ? 'positive' : 'negative'
   };
 };
+
+export const getCustomDateRange = (from: Date, to: Date): DateRange => {
+  const start = new Date(from);
+  start.setHours(0, 0, 0, 0);
+  
+  const end = new Date(to);
+  end.setHours(23, 59, 59, 999);
+  
+  return { start, end };
+};

@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
 import { CreditCard, Plus, Search, Filter, Calendar, Trash2, Camera, ExternalLink, Eye, Pencil } from "lucide-react";
 import { useLocation } from "react-router-dom";
+import { DateRange } from "react-day-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getDateRangeForPeriod, getPreviousPeriodRange, isDateInRange } from "@/lib/dateUtils";
+import { getDateRangeForPeriod, getPreviousPeriodRange, isDateInRange, getCustomDateRange } from "@/lib/dateUtils";
 import EditExpenseDialog from "@/components/UI/EditExpenseDialog";
+import { DateRangePicker } from "@/components/UI/DateRangePicker";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +35,7 @@ export default function Expenses() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState("date");
   const [selectedPeriod, setSelectedPeriod] = useState("month");
+  const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showScannerDialog, setShowScannerDialog] = useState(false);
   const [scanningExpenseId, setScanningExpenseId] = useState<string | null>(null);
@@ -44,6 +47,18 @@ export default function Expenses() {
   const { toast } = useToast();
   const { checkAndNotify } = useAccountStatus();
   const { transactions, loading, refetch } = useFinanceData();
+
+  const handlePeriodChange = (period: string) => {
+    setSelectedPeriod(period);
+    setCustomDateRange(undefined);
+  };
+
+  const handleCustomDateRangeChange = (range: DateRange | undefined) => {
+    setCustomDateRange(range);
+    if (range?.from && range?.to) {
+      setSelectedPeriod("custom");
+    }
+  };
 
   useEffect(() => {
     if (location.state?.openExpenseId && transactions.length > 0) {
@@ -143,12 +158,23 @@ export default function Expenses() {
   
   // Calculate period-based expenses
   const currentPeriodRange = useMemo(() => {
+    if (selectedPeriod === "custom" && customDateRange?.from && customDateRange?.to) {
+      return getCustomDateRange(customDateRange.from, customDateRange.to);
+    }
     return getDateRangeForPeriod(selectedPeriod as 'week' | 'month' | 'semester');
-  }, [selectedPeriod]);
+  }, [selectedPeriod, customDateRange]);
 
   const previousPeriodRange = useMemo(() => {
+    if (selectedPeriod === "custom") {
+      if (customDateRange?.from && customDateRange?.to) {
+        const duration = customDateRange.to.getTime() - customDateRange.from.getTime();
+        const prevEnd = new Date(customDateRange.from.getTime() - 1);
+        const prevStart = new Date(prevEnd.getTime() - duration);
+        return getCustomDateRange(prevStart, prevEnd);
+      }
+    }
     return getPreviousPeriodRange(selectedPeriod as 'week' | 'month' | 'semester');
-  }, [selectedPeriod]);
+  }, [selectedPeriod, customDateRange]);
 
   const currentPeriodExpenses = useMemo(() => {
     return expenses.filter((t) => isDateInRange(t.date, currentPeriodRange));
@@ -230,11 +256,11 @@ export default function Expenses() {
       </div>
 
       {/* Period Selector */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {["week", "month", "semester"].map((period) => (
           <button
             key={period}
-            onClick={() => setSelectedPeriod(period)}
+            onClick={() => handlePeriodChange(period)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               selectedPeriod === period ? "bg-primary text-primary-foreground" : "bg-accent/50 hover:bg-accent"
             }`}
@@ -242,14 +268,19 @@ export default function Expenses() {
             This {period}
           </button>
         ))}
+        <DateRangePicker
+          dateRange={customDateRange}
+          onDateRangeChange={handleCustomDateRangeChange}
+          className="ml-auto"
+        />
       </div>
 
       {/* Expense Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard
-          title={`Total Spent (${selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)})`}
+          title={selectedPeriod === "custom" ? "Total Spent (Custom Range)" : `Total Spent (${selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)})`}
           value={`$${totalExpenses.toLocaleString()}`}
-          change={`${expenseChange} vs last ${selectedPeriod}`}
+          change={selectedPeriod === "custom" ? `${expenseChange} vs previous period` : `${expenseChange} vs last ${selectedPeriod}`}
           changeType={totalExpenses <= previousTotal ? "positive" : "negative"}
           icon={<CreditCard size={24} />}
         />
