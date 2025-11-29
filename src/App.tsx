@@ -13,6 +13,7 @@ import Expenses from "./pages/Expenses";
 import Auth from "./pages/Auth";
 import Account from "./pages/Account";
 import NotFound from "./pages/NotFound";
+import ResetPassword from "./pages/ResetPassword";
 import type { ReactNode } from "react";
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/auth" element={<Auth />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/" element={
                 <ProtectedRoute>
                   <Layout />
