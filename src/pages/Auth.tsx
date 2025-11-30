@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { CheckCircle2, Circle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { passwordSchema } from "@/lib/validation";
 
 function FloatingShape({
   className,
@@ -280,6 +281,7 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -302,15 +304,32 @@ export default function Auth() {
         return;
       }
 
-      // Check if passwords match in signup mode
-      if (!isLogin && password !== confirmPassword) {
-        toast({
-          title: "Error",
-          description: "Passwords do not match",
-          variant: "destructive",
-        });
-        setLoading(false);
-        return;
+      // Validate password strength for signup
+      if (!isLogin) {
+        const passwordValidation = passwordSchema.safeParse(password);
+        if (!passwordValidation.success) {
+          const errorMessage = passwordValidation.error.issues[0].message;
+          setPasswordError(errorMessage);
+          toast({
+            title: "Invalid Password",
+            description: errorMessage,
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+        setPasswordError(null);
+
+        // Check if passwords match
+        if (password !== confirmPassword) {
+          toast({
+            title: "Error",
+            description: "Passwords do not match",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
       }
 
       const { error } = isLogin ? await signIn(email, password) : await signUp(email, password, name);
@@ -574,11 +593,10 @@ export default function Auth() {
                     <div className="bg-white/4 border border-white/12 rounded-lg p-4 backdrop-blur-sm mt-1">
                       <div className="space-y-1 text-sm text-white/60 mt-2">
                         {[
-                          { label: "At least 10 characters", test: password.length >= 10 },
+                          { label: "At least 8 characters", test: password.length >= 8 },
                           { label: "Contains lowercase letter", test: /[a-z]/.test(password) },
                           { label: "Contains uppercase letter", test: /[A-Z]/.test(password) },
                           { label: "Contains number", test: /\d/.test(password) },
-                          { label: "Contains symbol", test: /[!@#$%^&*(),.?":{}|<>]/.test(password) },
                         ].map((req, i) => (
                           <motion.div
                             key={i}
