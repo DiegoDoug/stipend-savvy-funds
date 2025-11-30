@@ -69,12 +69,17 @@ export default function Income() {
     setShowEditDialog(true);
   };
 
-  const handleUpdateIncome = async (amount: number) => {
+  const handleUpdateIncome = async (data: { amount: number; description: string; category: string; date: string }) => {
     if (!editingIncome || !checkAndNotify()) return;
     try {
       const { error } = await supabase
         .from("transactions")
-        .update({ amount })
+        .update({
+          amount: data.amount,
+          description: data.description,
+          category: data.category,
+          date: data.date
+        })
         .eq("id", editingIncome.id)
         .eq("user_id", user?.id);
 
