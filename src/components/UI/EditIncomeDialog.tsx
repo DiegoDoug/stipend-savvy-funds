@@ -18,7 +18,7 @@ interface EditIncomeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   income: Transaction;
-  onUpdate: (amount: number) => void;
+  onUpdate: (data: { amount: number; description: string; category: string; date: string }) => void;
 }
 
 export default function EditIncomeDialog({
@@ -28,6 +28,9 @@ export default function EditIncomeDialog({
   onUpdate
 }: EditIncomeDialogProps) {
   const [amount, setAmount] = useState(income.amount.toString());
+  const [description, setDescription] = useState(income.description);
+  const [category, setCategory] = useState(income.category);
+  const [date, setDate] = useState(income.date);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,8 +41,12 @@ export default function EditIncomeDialog({
       return;
     }
 
+    if (!description.trim()) {
+      return;
+    }
+
     setLoading(true);
-    await onUpdate(numAmount);
+    await onUpdate({ amount: numAmount, description, category, date });
     setLoading(false);
   };
 
@@ -51,29 +58,42 @@ export default function EditIncomeDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label>Description</Label>
+            <Label htmlFor="description">Description</Label>
             <Input 
-              value={income.description} 
-              disabled 
-              className="bg-muted"
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="e.g., Monthly Stipend"
+              required
             />
           </div>
 
           <div className="space-y-2">
-            <Label>Category</Label>
-            <Input 
-              value={income.category.replace('-', ' ')}
-              disabled 
-              className="bg-muted capitalize"
-            />
+            <Label htmlFor="category">Category</Label>
+            <select
+              id="category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+              required
+            >
+              <option value="stipend">Stipend</option>
+              <option value="scholarship">Scholarship</option>
+              <option value="refund">Refund</option>
+              <option value="side-gig">Side Gig</option>
+              <option value="gift">Gift</option>
+              <option value="other">Other</option>
+            </select>
           </div>
 
           <div className="space-y-2">
-            <Label>Date</Label>
+            <Label htmlFor="date">Date</Label>
             <Input 
-              value={new Date(income.date).toLocaleDateString()}
-              disabled 
-              className="bg-muted"
+              id="date"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              required
             />
           </div>
 
