@@ -44,7 +44,7 @@ export const mockUpcomingTransactions = [
   { id: 3, date: "2024-02-01", amount: 100.00, description: "Monthly Stipend", type: "income" },
 ];
 
-export const categoryLabels = {
+export const categoryLabels: Record<string, string> = {
   essentials: "Essentials",
   savings: "Savings", 
   personal: "Personal",
@@ -53,9 +53,20 @@ export const categoryLabels = {
   education: "Education",
   fun: "Wants/Fun",
   refund: "Refund Holding",
+  transportation: "Transportation",
+  entertainment: "Entertainment",
+  food: "Food & Dining",
+  health: "Health & Wellness",
+  shopping: "Shopping",
+  bills: "Bills & Utilities",
+  stipend: "Stipend",
+  scholarship: "Scholarship",
+  "side-gig": "Side Gig",
+  gift: "Gift/Family",
+  other: "Other",
 };
 
-export const categoryIcons = {
+export const categoryIcons: Record<string, string> = {
   essentials: "🏠",
   savings: "💰",
   personal: "👤",
@@ -64,4 +75,15 @@ export const categoryIcons = {
   education: "📚",
   fun: "🎉",
   refund: "💳",
+  transportation: "🚗",
+  entertainment: "🎬",
+  food: "🍔",
+  health: "🏥",
+  shopping: "🛍️",
+  bills: "📄",
+  stipend: "💵",
+  scholarship: "🎓",
+  "side-gig": "💼",
+  gift: "🎁",
+  other: "📦",
 };

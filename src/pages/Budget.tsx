@@ -17,12 +17,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import ProgressBar from "@/components/UI/ProgressBar";
 import CategoryBadge from "@/components/UI/CategoryBadge";
-import { categoryLabels } from "@/lib/mockData";
 import { useFinanceData } from "@/hooks/useFinanceData";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccountStatus } from "@/hooks/useAccountStatus";
 import { GlowCard } from "@/components/ui/spotlight-card";
+import { useCategories } from "@/hooks/useCategories";
 
 export default function Budget() {
   const { user } = useAuth();
@@ -30,6 +30,7 @@ export default function Budget() {
   const monthStats = filterByPeriod('month');
   const { toast } = useToast();
   const { isActive, checkAndNotify } = useAccountStatus();
+  const { getBudgetCategories, addCustomCategory } = useCategories();
   const [editMode, setEditMode] = useState<string | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newCategory, setNewCategory] = useState("");
@@ -39,6 +40,8 @@ export default function Budget() {
   const [creatingCategories, setCreatingCategories] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  const availableCategories = getBudgetCategories();
 
   // Convert budgetCategories array to object format for easier access
   const budget = budgetCategories.reduce(
@@ -180,9 +183,10 @@ export default function Budget() {
       });
     } else {
       refetch.budgetCategories();
+      const categoryLabel = availableCategories.find(cat => cat.value === category)?.label || category;
       toast({
         title: "Budget updated",
-        description: `${categoryLabels[category as keyof typeof categoryLabels]} budget updated successfully`,
+        description: `${categoryLabel} budget updated successfully`,
       });
     }
     setEditMode(null);
@@ -194,9 +198,15 @@ export default function Budget() {
     const categoryKey = isCustomCategory ? customCategoryName.toLowerCase().replace(/\s+/g, "-") : newCategory;
     const displayName = isCustomCategory
       ? customCategoryName
-      : categoryLabels[newCategory as keyof typeof categoryLabels];
+      : availableCategories.find(cat => cat.value === newCategory)?.label || newCategory;
 
     if (!categoryKey || (isCustomCategory && !customCategoryName.trim())) return;
+
+    // If custom category, add it to custom_categories table first
+    if (isCustomCategory) {
+      const success = await addCustomCategory(categoryKey, customCategoryName, 'both');
+      if (!success) return;
+    }
 
     // Check if category already exists
     const existingCategory = budgetCategories.find((cat) => cat.category === categoryKey);
@@ -275,7 +285,7 @@ export default function Budget() {
       });
     } else {
       refetch.budgetCategories();
-      const displayName = categoryLabels[categoryToDelete as keyof typeof categoryLabels] || categoryToDelete;
+      const displayName = availableCategories.find(cat => cat.value === categoryToDelete)?.label || categoryToDelete;
       toast({
         title: "Category deleted",
         description: `${displayName} category has been deleted and will need to be re-created.`,
@@ -339,9 +349,9 @@ export default function Budget() {
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(categoryLabels).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>
-                        {label}
+                    {availableCategories.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        {cat.label}
                       </SelectItem>
                     ))}
                     <SelectItem value="custom">Custom Category</SelectItem>
@@ -612,7 +622,7 @@ export default function Budget() {
             <AlertDialogDescription>
               Are you sure you want to delete the "
               {categoryToDelete
-                ? categoryLabels[categoryToDelete as keyof typeof categoryLabels] || categoryToDelete
+                ? availableCategories.find(cat => cat.value === categoryToDelete)?.label || categoryToDelete
                 : ""}
               " category? This action cannot be undone and you will need to re-create this category if you want to use
               it again.
