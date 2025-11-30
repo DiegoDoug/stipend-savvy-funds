@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { User, Mail, Lock, Trash2, UserX, LogOut, Calendar, Clock, Globe } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import VerificationCodeDialog from '@/components/UI/VerificationCodeDialog';
 
 interface ProfileData {
   name: string;
@@ -47,6 +48,10 @@ export default function Account() {
   
   // Delete account confirmation
   const [deletePassword, setDeletePassword] = useState('');
+  
+  // Verification dialog
+  const [showVerificationDialog, setShowVerificationDialog] = useState(false);
+  const [verificationAction, setVerificationAction] = useState<'email_change' | 'account_reactivation' | 'account_deletion'>('email_change');
 
   useEffect(() => {
     fetchProfileData();
@@ -178,13 +183,12 @@ export default function Account() {
 
     setLoading(true);
     try {
-      // Reauthenticate user
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user?.email || '',
-        password: emailPassword
+      // Verify password server-side with rate limiting
+      const { error: verifyError } = await supabase.functions.invoke('verify-password', {
+        body: { password: emailPassword }
       });
 
-      if (signInError) throw new Error('Incorrect password');
+      if (verifyError) throw new Error('Password verification failed');
 
       // Update email immediately
       const { error } = await supabase.auth.updateUser({ 
@@ -245,13 +249,12 @@ export default function Account() {
 
     setLoading(true);
     try {
-      // Reauthenticate
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user?.email || '',
-        password: currentPassword
+      // Verify password server-side with rate limiting
+      const { error: verifyError } = await supabase.functions.invoke('verify-password', {
+        body: { password: currentPassword }
       });
 
-      if (signInError) throw new Error('Current password is incorrect');
+      if (verifyError) throw new Error('Current password is incorrect');
 
       // Update password
       const { error } = await supabase.auth.updateUser({
@@ -338,28 +341,51 @@ export default function Account() {
   };
 
   const handleDeleteAccount = async () => {
-    if (!deletePassword) {
-      toast({
-        title: "Error",
-        description: "Please enter your password to confirm deletion",
-        variant: "destructive"
-      });
-      return;
-    }
+    if (!user?.email) return;
+
+    // Show confirmation prompt before sending code
+    const confirmed = window.confirm(
+      'Are you sure you want to delete your account? This action cannot be undone. A verification code will be sent to your email.'
+    );
+    
+    if (!confirmed) return;
 
     setLoading(true);
     try {
-      // Verify password first
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user?.email || '',
-        password: deletePassword
+      // Send verification code
+      const { error: sendError } = await supabase.functions.invoke('send-verification-code', {
+        body: { 
+          actionType: 'account_delete',
+          email: user.email 
+        }
       });
 
-      if (signInError) throw new Error('Incorrect password');
+      if (sendError) throw sendError;
 
-      // Call edge function to delete account
+      toast({
+        title: "Verification Code Sent",
+        description: "Please check your email for the verification code to confirm account deletion.",
+      });
+
+      setShowVerificationDialog(true);
+      setVerificationAction('account_deletion');
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send verification code",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyAccountDelete = async (code: string) => {
+    setLoading(true);
+    try {
+      // Call edge function with verification code
       const { error } = await supabase.functions.invoke('delete-user-account', {
-        body: {}
+        body: { verificationCode: code }
       });
       
       if (error) throw error;
@@ -372,7 +398,6 @@ export default function Account() {
       // Sign out after successful deletion
       await signOut();
     } catch (error: any) {
-      console.error('Delete error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to delete account. Please try again.",
@@ -380,7 +405,6 @@ export default function Account() {
       });
     } finally {
       setLoading(false);
-      setDeletePassword('');
     }
   };
 
@@ -758,51 +782,60 @@ export default function Account() {
               <p className="text-sm text-muted-foreground mb-4">
                 Permanently delete your account and all data. This action cannot be undone.
               </p>
+              <p className="text-sm text-amber-600 dark:text-amber-500 mb-4">
+                A verification code will be sent to your email to confirm this action.
+              </p>
             </div>
             
-            <div className="space-y-4">
-              <div className="p-3 bg-destructive/5 border border-destructive/20 rounded-lg">
-                <Label htmlFor="deleteConfirm" className="text-destructive text-sm font-medium">
-                  Type DELETE to confirm
-                </Label>
-                <Input
-                  id="deleteConfirm"
-                  value={deleteConfirmText}
-                  onChange={(e) => setDeleteConfirmText(e.target.value)}
-                  placeholder="DELETE"
-                  className="mt-2"
-                />
-              </div>
-
-              {deleteConfirmText === 'DELETE' && (
-                <div>
-                  <Label htmlFor="deletePassword" className="text-destructive text-sm font-medium">
-                    Enter your password to confirm deletion
-                  </Label>
-                  <Input
-                    id="deletePassword"
-                    type="password"
-                    value={deletePassword}
-                    onChange={(e) => setDeletePassword(e.target.value)}
-                    placeholder="Your password"
-                    className="mt-2"
-                  />
-                </div>
-              )}
-
-              <Button 
-                variant="destructive"
-                onClick={handleDeleteAccount}
-                disabled={deleteConfirmText !== 'DELETE' || !deletePassword || loading}
-                className="w-full"
-              >
-                {loading ? 'Deleting...' : 'Permanently Delete Account'}
-              </Button>
-            </div>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" disabled={loading}>
+                  Delete Account
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete your account
+                    and remove all your data including transactions, budgets, and goals.
+                    <br /><br />
+                    A verification code will be sent to <strong>{user?.email}</strong> to confirm this action.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={handleDeleteAccount}
+                    className="bg-destructive hover:bg-destructive/90"
+                  >
+                    Send Verification Code
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </Card>
       
+      {/* Verification Code Dialog */}
+      <VerificationCodeDialog
+        open={showVerificationDialog}
+        onOpenChange={setShowVerificationDialog}
+        actionType={verificationAction}
+        email={user?.email || ''}
+        newEmail={verificationAction === 'email_change' ? newEmail : undefined}
+        onVerified={() => {
+          if (verificationAction === 'email_change') {
+            fetchProfileData();
+            setEditingEmail(false);
+            setEmailPassword('');
+            setNewEmail('');
+          } else if (verificationAction === 'account_deletion') {
+            // Already handled in handleVerifyAccountDelete
+          }
+        }}
+      />
     </div>
   );
 }
