@@ -1,4 +1,5 @@
 import { categoryLabels, categoryIcons } from "@/lib/mockData";
+import { useCategories } from "@/hooks/useCategories";
 
 interface CategoryBadgeProps {
   category: string;
@@ -6,6 +7,8 @@ interface CategoryBadgeProps {
 }
 
 export default function CategoryBadge({ category, size = "md" }: CategoryBadgeProps) {
+  const { getAllCategories } = useCategories();
+  const allCategories = getAllCategories();
   const sizes = {
     sm: "text-xs px-2 py-0.5",
     md: "text-sm px-3 py-1", 
@@ -27,6 +30,11 @@ export default function CategoryBadge({ category, size = "md" }: CategoryBadgePr
   };
 
   const getDisplayName = (cat: string) => {
+    // Check custom categories first
+    const customCategory = allCategories.find(c => c.value === cat && c.isCustom);
+    if (customCategory) return customCategory.label;
+    
+    // Then check built-in labels
     return categoryLabels[cat as keyof typeof categoryLabels] || 
            cat.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };

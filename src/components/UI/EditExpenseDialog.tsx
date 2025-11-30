@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { categoryLabels } from "@/lib/mockData";
+import { useCategories } from "@/hooks/useCategories";
 
 interface EditExpenseDialogProps {
   open: boolean;
@@ -14,6 +14,8 @@ interface EditExpenseDialogProps {
 }
 
 export default function EditExpenseDialog({ open, onOpenChange, expense, onUpdate }: EditExpenseDialogProps) {
+  const { getExpenseCategories } = useCategories();
+  const expenseCategories = getExpenseCategories();
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState("");
@@ -70,9 +72,9 @@ export default function EditExpenseDialog({ open, onOpenChange, expense, onUpdat
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(categoryLabels).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
+                  {expenseCategories.map((cat) => (
+                    <SelectItem key={cat.value} value={cat.value}>
+                      {cat.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

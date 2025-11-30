@@ -26,6 +26,8 @@ const defaultExpenseCategories: Category[] = [
   { value: "health", label: "Health & Wellness" },
   { value: "shopping", label: "Shopping" },
   { value: "bills", label: "Bills & Utilities" },
+  { value: "athletic", label: "Athletic/Health" },
+  { value: "fun", label: "Wants/Fun" },
 ];
 
 const defaultIncomeCategories: Category[] = [
@@ -35,6 +37,22 @@ const defaultIncomeCategories: Category[] = [
   { value: "side-gig", label: "Side Gig" },
   { value: "gift", label: "Gift/Family" },
   { value: "other", label: "Other" },
+];
+
+const defaultBudgetCategories: Category[] = [
+  { value: "essentials", label: "Essentials" },
+  { value: "savings", label: "Savings" },
+  { value: "personal", label: "Personal" },
+  { value: "extra", label: "Extra" },
+  { value: "athletic", label: "Athletic/Health" },
+  { value: "education", label: "Education" },
+  { value: "fun", label: "Wants/Fun" },
+  { value: "transportation", label: "Transportation" },
+  { value: "entertainment", label: "Entertainment" },
+  { value: "food", label: "Food & Dining" },
+  { value: "health", label: "Health & Wellness" },
+  { value: "shopping", label: "Shopping" },
+  { value: "bills", label: "Bills & Utilities" },
 ];
 
 export const useCategories = () => {
@@ -142,12 +160,21 @@ export const useCategories = () => {
     }));
     
     // Combine and deduplicate categories
-    const allDefaults = [...defaultExpenseCategories, ...defaultIncomeCategories];
+    const allDefaults = [...defaultExpenseCategories, ...defaultIncomeCategories, ...defaultBudgetCategories];
     const uniqueDefaults = allDefaults.filter((cat, index, self) => 
       index === self.findIndex(c => c.value === cat.value)
     );
     
     return [...uniqueDefaults, ...custom];
+  };
+
+  // Get categories for budget allocation
+  const getBudgetCategories = (): Category[] => {
+    const custom = customCategories
+      .filter(cat => cat.type === 'expense' || cat.type === 'both')
+      .map(cat => ({ value: cat.name, label: cat.label, isCustom: true }));
+    
+    return [...defaultBudgetCategories, ...custom];
   };
 
   return {
@@ -157,6 +184,7 @@ export const useCategories = () => {
     getExpenseCategories,
     getIncomeCategories,
     getAllCategories,
+    getBudgetCategories,
     refetch: fetchCustomCategories,
   };
 };

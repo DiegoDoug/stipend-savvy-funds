@@ -3,6 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useCategories } from "@/hooks/useCategories";
 
 interface Transaction {
   id: string;
@@ -27,6 +29,8 @@ export default function EditIncomeDialog({
   income,
   onUpdate
 }: EditIncomeDialogProps) {
+  const { getIncomeCategories } = useCategories();
+  const incomeCategories = getIncomeCategories();
   const [amount, setAmount] = useState(income.amount.toString());
   const [description, setDescription] = useState(income.description);
   const [category, setCategory] = useState(income.category);
@@ -70,20 +74,18 @@ export default function EditIncomeDialog({
 
           <div className="space-y-2">
             <Label htmlFor="category">Category</Label>
-            <select
-              id="category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-              required
-            >
-              <option value="stipend">Stipend</option>
-              <option value="scholarship">Scholarship</option>
-              <option value="refund">Refund</option>
-              <option value="side-gig">Side Gig</option>
-              <option value="gift">Gift</option>
-              <option value="other">Other</option>
-            </select>
+            <Select value={category} onValueChange={setCategory} required>
+              <SelectTrigger id="category">
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+              <SelectContent>
+                {incomeCategories.map((cat) => (
+                  <SelectItem key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
