@@ -79,25 +79,34 @@ export type Database = {
       }
       goal_progress_history: {
         Row: {
+          added_amount: number | null
+          added_by: string | null
           amount: number
           created_at: string
           goal_id: string
+          goal_name: string | null
           id: string
           recorded_at: string
           user_id: string
         }
         Insert: {
+          added_amount?: number | null
+          added_by?: string | null
           amount: number
           created_at?: string
           goal_id: string
+          goal_name?: string | null
           id?: string
           recorded_at?: string
           user_id: string
         }
         Update: {
+          added_amount?: number | null
+          added_by?: string | null
           amount?: number
           created_at?: string
           goal_id?: string
+          goal_name?: string | null
           id?: string
           recorded_at?: string
           user_id?: string

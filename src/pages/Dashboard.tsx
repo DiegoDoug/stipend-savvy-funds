@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
-import { DollarSign, TrendingUp, PiggyBank, AlertCircle, CreditCard } from "lucide-react";
+import { DollarSign, TrendingUp, PiggyBank, AlertCircle, CreditCard, Target } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import StatCard from "@/components/UI/StatCard";
 import ProgressBar from "@/components/UI/ProgressBar";
 import CategoryBadge from "@/components/UI/CategoryBadge";
-import { useFinanceData } from "@/hooks/useFinanceData";
+import { useFinanceData, GoalContribution } from "@/hooks/useFinanceData";
 import { mockBudget } from "@/lib/mockData";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,9 +12,20 @@ import { GlowCard } from "@/components/ui/spotlight-card";
 import ExportPDFButton from "@/components/UI/ExportPDFButton";
 import { DateRangePicker } from "@/components/UI/DateRangePicker";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { getCustomDateRange, formatDateRange, PeriodType, isDateInRange } from "@/lib/dateUtils";
 
 type DashboardPeriod = PeriodType | 'custom';
+
+type ActivityItem = {
+  id: string;
+  type: 'income' | 'expense' | 'savings';
+  amount: number;
+  description: string;
+  category?: string;
+  date: string;
+  addedBy?: 'user' | 'ai';
+};
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -22,7 +33,7 @@ export default function Dashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState<DashboardPeriod>('month');
   const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>(undefined);
   
-  const { transactions, budgetCategories, refunds, loading, filterByPeriod, filterByCustomRange } = useFinanceData();
+  const { transactions, budgetCategories, refunds, goalContributions, loading, filterByPeriod, filterByCustomRange } = useFinanceData();
 
   // Calculate stats based on selected period or custom range
   const periodStats = useMemo(() => {
@@ -78,9 +89,10 @@ export default function Dashboard() {
     fetchProfile();
   }, [user]);
 
-  // Recent Activity: filter by selected period - show ALL transactions in range
-  const recentTransactions = useMemo(() => {
-    const filtered = transactions.filter((t) => {
+  // Recent Activity: combine transactions and savings contributions
+  const recentActivity = useMemo(() => {
+    // Filter transactions by period
+    const filteredTransactions = transactions.filter((t) => {
       const transactionDate = new Date(t.date);
       transactionDate.setHours(0, 0, 0, 0);
       
@@ -93,9 +105,41 @@ export default function Dashboard() {
       }
       return true;
     });
-    
-    return filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [transactions, todayLocal, periodStats.dateRange]);
+
+    // Map transactions to activity items
+    const transactionItems: ActivityItem[] = filteredTransactions.map((t) => ({
+      id: t.id,
+      type: t.type as 'income' | 'expense',
+      amount: Number(t.amount),
+      description: t.description,
+      category: t.category,
+      date: t.date,
+    }));
+
+    // Filter and map savings contributions
+    const savingsItems: ActivityItem[] = goalContributions
+      .filter((c) => {
+        const recordDate = new Date(c.recorded_at);
+        recordDate.setHours(0, 0, 0, 0);
+        if (recordDate > todayLocal) return false;
+        if (periodStats.dateRange) {
+          return isDateInRange(c.recorded_at, periodStats.dateRange);
+        }
+        return true;
+      })
+      .map((c) => ({
+        id: c.id,
+        type: 'savings' as const,
+        amount: c.added_amount,
+        description: c.goal_name || 'Savings Goal',
+        date: c.recorded_at,
+        addedBy: c.added_by,
+      }));
+
+    // Combine and sort by date
+    return [...transactionItems, ...savingsItems]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [transactions, goalContributions, todayLocal, periodStats.dateRange]);
 
   // Upcoming: future scheduled transactions (always shows future regardless of period)
   const upcomingTransactions = transactions
@@ -162,7 +206,14 @@ export default function Dashboard() {
           incomeChange={periodStats.incomeChange}
           totalBudget={totalBudget}
           totalSpent={totalSpent}
-          recentTransactions={recentTransactions}
+          recentTransactions={recentActivity.filter(a => a.type !== 'savings').map(a => ({
+            id: a.id,
+            type: a.type as 'income' | 'expense',
+            amount: a.amount,
+            description: a.description,
+            category: a.category || '',
+            date: a.date,
+          }))}
           upcomingTransactions={upcomingTransactions}
           budgetCategories={budgetCategories}
           nextRefund={nextRefund ? {
@@ -253,36 +304,58 @@ export default function Dashboard() {
         <div className="budget-card">
           <div className="flex items-center justify-between mb-3 sm:mb-4">
             <h3 className="text-base sm:text-lg font-semibold">Recent Activity</h3>
-            <span className="text-xs text-muted-foreground">{recentTransactions.length} transactions</span>
+            <span className="text-xs text-muted-foreground">{recentActivity.length} items</span>
           </div>
           <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-            {recentTransactions.length > 0 ? (
-              recentTransactions.map((transaction) => (
-                <div key={transaction.id} className="expense-item">
+            {recentActivity.length > 0 ? (
+              recentActivity.map((item) => (
+                <div key={item.id} className="expense-item">
                   <div className="flex items-center gap-3">
                     <div
-                      className={`w-2 h-2 rounded-full ${transaction.type === "income" ? "bg-success" : "bg-primary"}`}
+                      className={`w-2 h-2 rounded-full ${
+                        item.type === "income" ? "bg-success" : 
+                        item.type === "savings" ? "bg-secondary" : 
+                        "bg-primary"
+                      }`}
                     />
                     <div>
-                      <p className="font-medium text-sm">{transaction.description}</p>
-                      <p className="text-xs text-muted-foreground">{new Date(transaction.date).toLocaleDateString()}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-sm">{item.description}</p>
+                        {item.type === 'savings' && item.addedBy && (
+                          <Badge variant="outline" className="text-xs py-0 px-1.5">
+                            {item.addedBy === 'ai' ? '🤖 AI' : '👤 You'}
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {item.type === 'savings' ? 'Savings contribution' : new Date(item.date).toLocaleDateString()}
+                      </p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p
-                      className={`font-semibold ${transaction.type === "income" ? "text-success" : "text-destructive"}`}
+                      className={`font-semibold ${
+                        item.type === "income" ? "text-success" : 
+                        item.type === "savings" ? "text-secondary" : 
+                        "text-destructive"
+                      }`}
                     >
-                      {transaction.type === "income" ? "+" : "-"}${Number(transaction.amount)}
+                      {item.type === "expense" ? "-" : "+"}${item.amount.toLocaleString()}
                     </p>
-                    {transaction.type === "expense" && (
-                      <CategoryBadge category={transaction.category as keyof typeof mockBudget} size="sm" />
+                    {item.type === "savings" && (
+                      <span className="text-xs text-secondary flex items-center justify-end gap-1">
+                        <Target className="w-3 h-3" /> Goal
+                      </span>
+                    )}
+                    {item.type === "expense" && item.category && (
+                      <CategoryBadge category={item.category as keyof typeof mockBudget} size="sm" />
                     )}
                   </div>
                 </div>
               ))
             ) : (
               <div className="text-center py-8 text-muted-foreground">
-                <p>No transactions in this period</p>
+                <p>No activity in this period</p>
                 <p className="text-sm">Try selecting a different date range</p>
               </div>
             )}
