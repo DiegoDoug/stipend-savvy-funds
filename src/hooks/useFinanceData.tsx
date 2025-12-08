@@ -38,12 +38,21 @@ export interface GoalContribution {
   recorded_at: string;
 }
 
+interface SavingsGoal {
+  id: string;
+  name: string;
+  current_amount: number;
+  target_amount: number;
+  status: string;
+}
+
 export const useFinanceData = () => {
   const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [budgetCategories, setBudgetCategories] = useState<BudgetCategory[]>([]);
   const [refunds, setRefunds] = useState<Refund[]>([]);
   const [goalContributions, setGoalContributions] = useState<GoalContribution[]>([]);
+  const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchTransactions = async () => {
@@ -98,6 +107,18 @@ export const useFinanceData = () => {
     }
   };
 
+  const fetchSavingsGoals = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('savings_goals')
+      .select('id, name, current_amount, target_amount, status');
+
+    if (!error && data) {
+      setSavingsGoals(data as SavingsGoal[]);
+    }
+  };
+
   const filterTransactionsByRange = (range: DateRange) => {
     return transactions.filter(t => isDateInRange(t.date, range));
   };
@@ -132,15 +153,30 @@ export const useFinanceData = () => {
 
     const currentBalance = currentIncome - currentExpenses;
     const previousBalance = previousIncome - previousExpenses;
-    const savings = currentBalance * 0.3; // Assume 30% goes to savings
+    
+    // Calculate real savings from savings_goals
+    const totalSavings = savingsGoals
+      .filter(g => g.status === 'active')
+      .reduce((sum, g) => sum + Number(g.current_amount), 0);
+
+    // Calculate savings contributions in current vs previous period
+    const currentContributions = goalContributions
+      .filter(c => isDateInRange(c.recorded_at, currentRange))
+      .reduce((sum, c) => sum + Number(c.added_amount), 0);
+    
+    const previousContributions = goalContributions
+      .filter(c => isDateInRange(c.recorded_at, previousRange))
+      .reduce((sum, c) => sum + Number(c.added_amount), 0);
 
     const incomeChange = calculatePercentageChange(currentIncome, previousIncome);
     const expenseChange = calculatePercentageChange(currentExpenses, previousExpenses);
     const balanceChange = calculatePercentageChange(currentBalance, previousBalance);
+    const savingsChange = calculatePercentageChange(currentContributions, previousContributions);
 
     return {
       balance: currentBalance,
-      savings,
+      savings: totalSavings,
+      savingsContributions: currentContributions,
       totalIncome: currentIncome,
       totalExpenses: currentExpenses,
       totalBudget,
@@ -148,6 +184,7 @@ export const useFinanceData = () => {
       incomeChange,
       expenseChange,
       balanceChange,
+      savingsChange,
       currentTransactions,
       previousIncome,
       previousExpenses,
@@ -197,7 +234,8 @@ export const useFinanceData = () => {
           fetchTransactions(),
           fetchBudgetCategories(),
           fetchRefunds(),
-          fetchGoalContributions()
+          fetchGoalContributions(),
+          fetchSavingsGoals()
         ]);
         // Check and reset budgets if needed after loading data
         await checkAndResetBudgets();
@@ -213,6 +251,7 @@ export const useFinanceData = () => {
     budgetCategories,
     refunds,
     goalContributions,
+    savingsGoals,
     loading,
     stats: calculateFinancialStats(),
     filterByPeriod: (period: PeriodType) => calculateFinancialStats(period),
@@ -222,7 +261,8 @@ export const useFinanceData = () => {
       transactions: fetchTransactions,
       budgetCategories: fetchBudgetCategories,
       refunds: fetchRefunds,
-      goalContributions: fetchGoalContributions
+      goalContributions: fetchGoalContributions,
+      savingsGoals: fetchSavingsGoals
     }
   };
 };
