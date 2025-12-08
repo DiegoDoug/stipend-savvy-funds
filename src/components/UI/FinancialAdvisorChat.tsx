@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Sparkles, Loader2, TrendingUp, PiggyBank, Target, HelpCircle, RotateCcw, History, Trash2, X, Plus, MinusCircle, PlusCircle, Pencil } from 'lucide-react';
+import { Send, Sparkles, Loader2, TrendingUp, PiggyBank, Target, HelpCircle, RotateCcw, History, Trash2, X, Plus, MinusCircle, PlusCircle, Pencil, DollarSign, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
@@ -49,7 +49,12 @@ export type ActionType =
   | 'create_income' 
   | 'edit_goal' 
   | 'edit_expense' 
-  | 'edit_income';
+  | 'edit_income'
+  | 'create_budget'
+  | 'edit_budget'
+  | 'delete_budget'
+  | 'link_goal_to_budget'
+  | 'add_funds_to_goal';
 
 export type SuggestedAction = {
   type: ActionType;
@@ -63,6 +68,11 @@ export type SuggestedAction = {
     category?: string;
     date?: string;
     targetDate?: string;
+    expenseAllocation?: number;
+    savingsAllocation?: number;
+    linkedGoalName?: string;
+    budgetName?: string;
+    goalName?: string;
   };
   displayLabel: string;
 };
@@ -76,12 +86,24 @@ export type FinancialContext = {
     category: string;
     date: string;
     receipt_url?: string | null;
+    budget_id?: string | null;
+    budget_name?: string | null;
   }>;
   budgets: Array<{
     category: string;
     allocated: number;
     spent: number;
     last_reset?: string;
+  }>;
+  budgetsList?: Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    expense_allocation: number;
+    savings_allocation: number;
+    expense_spent: number;
+    linked_savings_goal_id: string | null;
+    linked_goal_name?: string | null;
   }>;
   goals: Array<{
     id: string;
@@ -111,6 +133,8 @@ export type FinancialContext = {
     monthlyExpenses: number;
     totalBudget: number;
     totalSpent: number;
+    totalBudgetAllocated?: number;
+    remainingToAllocate?: number;
     incomeChange: { value: number; text: string; type: 'positive' | 'negative' | 'neutral' };
     expenseChange: { value: number; text: string; type: 'positive' | 'negative' | 'neutral' };
   };
@@ -124,6 +148,12 @@ interface FinancialAdvisorChatProps {
   onEditGoal?: (id: string, data: { name?: string; currentAmount?: number; targetAmount?: number; targetDate?: string; description?: string }) => void;
   onEditExpense?: (id: string, data: { description?: string; amount?: number; category?: string; date?: string }) => void;
   onEditIncome?: (id: string, data: { description?: string; amount?: number; category?: string; date?: string }) => void;
+  // Budget actions
+  onCreateBudget?: (budget: { name: string; expenseAllocation: number; savingsAllocation: number; linkedGoalName?: string; description?: string }) => void;
+  onEditBudget?: (id: string, data: { name?: string; expenseAllocation?: number; savingsAllocation?: number; linkedGoalName?: string; description?: string }) => void;
+  onDeleteBudget?: (id: string, name: string) => void;
+  onLinkGoalToBudget?: (budgetName: string, goalName: string) => void;
+  onAddFundsToGoal?: (goalName: string, amount: number) => void;
 }
 
 // Parse all action types from AI response
@@ -243,6 +273,93 @@ const parseAllActions = (content: string): SuggestedAction[] => {
     }
   }
   
+  // CREATE_BUDGET: Budget Name | $ExpenseAllocation | $SavingsAllocation | LinkedGoalName or "none" | Description
+  const createBudgetPattern = /\[CREATE_BUDGET:\s*([^|]+)\s*\|\s*\$?([\d,]+(?:\.\d{2})?)\s*\|\s*\$?([\d,]+(?:\.\d{2})?)\s*\|\s*([^|]+)\s*(?:\|\s*([^|\]]+))?\s*\]/gi;
+  
+  while ((match = createBudgetPattern.exec(content)) !== null) {
+    const name = match[1].trim();
+    const expenseAllocation = parseFloat(match[2].replace(/,/g, ''));
+    const savingsAllocation = parseFloat(match[3].replace(/,/g, ''));
+    const linkedGoalName = match[4].trim().toLowerCase() === 'none' ? undefined : match[4].trim();
+    const description = match[5]?.trim();
+    
+    if (name && !isNaN(expenseAllocation) && !isNaN(savingsAllocation)) {
+      actions.push({
+        type: 'create_budget',
+        data: { name, expenseAllocation, savingsAllocation, linkedGoalName, description },
+        displayLabel: `Create Budget: ${name} ($${(expenseAllocation + savingsAllocation).toLocaleString()})`,
+      });
+    }
+  }
+  
+  // EDIT_BUDGET: id | Budget Name | $ExpenseAllocation | $SavingsAllocation | LinkedGoalName or "none" | Description
+  const editBudgetPattern = /\[EDIT_BUDGET:\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*\$?([\d,]+(?:\.\d{2})?)\s*\|\s*\$?([\d,]+(?:\.\d{2})?)\s*\|\s*([^|]+)\s*(?:\|\s*([^|\]]+))?\s*\]/gi;
+  
+  while ((match = editBudgetPattern.exec(content)) !== null) {
+    const id = match[1].trim();
+    const name = match[2].trim();
+    const expenseAllocation = parseFloat(match[3].replace(/,/g, ''));
+    const savingsAllocation = parseFloat(match[4].replace(/,/g, ''));
+    const linkedGoalName = match[5].trim().toLowerCase() === 'none' ? undefined : match[5].trim();
+    const description = match[6]?.trim();
+    
+    if (id && name && !isNaN(expenseAllocation) && !isNaN(savingsAllocation)) {
+      actions.push({
+        type: 'edit_budget',
+        data: { id, name, expenseAllocation, savingsAllocation, linkedGoalName, description },
+        displayLabel: `Update Budget: ${name}`,
+      });
+    }
+  }
+  
+  // DELETE_BUDGET: id | Budget Name
+  const deleteBudgetPattern = /\[DELETE_BUDGET:\s*([^|]+)\s*\|\s*([^|\]]+)\s*\]/gi;
+  
+  while ((match = deleteBudgetPattern.exec(content)) !== null) {
+    const id = match[1].trim();
+    const name = match[2].trim();
+    
+    if (id && name) {
+      actions.push({
+        type: 'delete_budget',
+        data: { id, name },
+        displayLabel: `Delete Budget: ${name}`,
+      });
+    }
+  }
+  
+  // LINK_GOAL_TO_BUDGET: BudgetName | GoalName
+  const linkGoalPattern = /\[LINK_GOAL_TO_BUDGET:\s*([^|]+)\s*\|\s*([^|\]]+)\s*\]/gi;
+  
+  while ((match = linkGoalPattern.exec(content)) !== null) {
+    const budgetName = match[1].trim();
+    const goalName = match[2].trim();
+    
+    if (budgetName && goalName) {
+      actions.push({
+        type: 'link_goal_to_budget',
+        data: { budgetName, goalName },
+        displayLabel: `Link "${goalName}" to "${budgetName}"`,
+      });
+    }
+  }
+  
+  // ADD_FUNDS_TO_GOAL: GoalName | $Amount
+  const addFundsPattern = /\[ADD_FUNDS_TO_GOAL:\s*([^|]+)\s*\|\s*\$?([\d,]+(?:\.\d{2})?)\s*\]/gi;
+  
+  while ((match = addFundsPattern.exec(content)) !== null) {
+    const goalName = match[1].trim();
+    const amount = parseFloat(match[2].replace(/,/g, ''));
+    
+    if (goalName && !isNaN(amount) && amount > 0) {
+      actions.push({
+        type: 'add_funds_to_goal',
+        data: { goalName, amount },
+        displayLabel: `Add $${amount.toLocaleString()} to ${goalName}`,
+      });
+    }
+  }
+  
   return actions;
 };
 
@@ -255,6 +372,11 @@ const cleanAllActionMarkers = (content: string): string => {
     .replace(/\[EDIT_GOAL:\s*[^\]]+\]/gi, '')
     .replace(/\[EDIT_EXPENSE:\s*[^\]]+\]/gi, '')
     .replace(/\[EDIT_INCOME:\s*[^\]]+\]/gi, '')
+    .replace(/\[CREATE_BUDGET:\s*[^\]]+\]/gi, '')
+    .replace(/\[EDIT_BUDGET:\s*[^\]]+\]/gi, '')
+    .replace(/\[DELETE_BUDGET:\s*[^\]]+\]/gi, '')
+    .replace(/\[LINK_GOAL_TO_BUDGET:\s*[^\]]+\]/gi, '')
+    .replace(/\[ADD_FUNDS_TO_GOAL:\s*[^\]]+\]/gi, '')
     .replace(/\[GOAL:\s*[^\]]+\]/gi, '') // Legacy format
     .trim();
 };
@@ -307,7 +429,16 @@ const getActionIcon = (type: ActionType) => {
     case 'edit_goal':
     case 'edit_expense':
     case 'edit_income':
+    case 'edit_budget':
       return Pencil;
+    case 'create_budget':
+      return Plus;
+    case 'delete_budget':
+      return Trash2;
+    case 'link_goal_to_budget':
+      return Target;
+    case 'add_funds_to_goal':
+      return DollarSign;
     default:
       return Plus;
   }
@@ -324,7 +455,16 @@ const getActionButtonStyle = (type: ActionType) => {
     case 'edit_goal':
     case 'edit_expense':
     case 'edit_income':
+    case 'edit_budget':
       return 'border-secondary/50 hover:bg-secondary/10 hover:border-secondary text-secondary-foreground';
+    case 'create_budget':
+      return 'border-warning/50 hover:bg-warning/10 hover:border-warning text-warning';
+    case 'delete_budget':
+      return 'border-destructive/50 hover:bg-destructive/10 hover:border-destructive text-destructive';
+    case 'link_goal_to_budget':
+      return 'border-primary/50 hover:bg-primary/10 hover:border-primary text-primary';
+    case 'add_funds_to_goal':
+      return 'border-success/50 hover:bg-success/10 hover:border-success text-success';
     default:
       return 'border-primary/50 hover:bg-primary/10 hover:border-primary';
   }
@@ -338,6 +478,11 @@ const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({
   onEditGoal,
   onEditExpense,
   onEditIncome,
+  onCreateBudget,
+  onEditBudget,
+  onDeleteBudget,
+  onLinkGoalToBudget,
+  onAddFundsToGoal,
 }) => {
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
@@ -498,6 +643,43 @@ const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({
             category: data.category,
             date: data.date,
           });
+        }
+        break;
+      case 'create_budget':
+        if (onCreateBudget && data.name && (data.expenseAllocation !== undefined || data.savingsAllocation !== undefined)) {
+          onCreateBudget({
+            name: data.name,
+            expenseAllocation: data.expenseAllocation || 0,
+            savingsAllocation: data.savingsAllocation || 0,
+            linkedGoalName: data.linkedGoalName,
+            description: data.description,
+          });
+        }
+        break;
+      case 'edit_budget':
+        if (onEditBudget && data.id) {
+          onEditBudget(data.id, {
+            name: data.name,
+            expenseAllocation: data.expenseAllocation,
+            savingsAllocation: data.savingsAllocation,
+            linkedGoalName: data.linkedGoalName,
+            description: data.description,
+          });
+        }
+        break;
+      case 'delete_budget':
+        if (onDeleteBudget && data.id && data.name) {
+          onDeleteBudget(data.id, data.name);
+        }
+        break;
+      case 'link_goal_to_budget':
+        if (onLinkGoalToBudget && data.budgetName && data.goalName) {
+          onLinkGoalToBudget(data.budgetName, data.goalName);
+        }
+        break;
+      case 'add_funds_to_goal':
+        if (onAddFundsToGoal && data.goalName && data.amount) {
+          onAddFundsToGoal(data.goalName, data.amount);
         }
         break;
     }

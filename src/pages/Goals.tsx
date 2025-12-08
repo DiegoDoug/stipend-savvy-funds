@@ -33,7 +33,7 @@ type SavingsGoal = {
 const Goals: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { transactions, budgetCategories, stats, refunds } = useFinanceData();
+  const { transactions, budgetCategories, stats, refunds, budgets } = useFinanceData();
   const { customCategories } = useCategories();
   const [goals, setGoals] = useState<SavingsGoal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -395,6 +395,19 @@ const Goals: React.FC = () => {
       spent: b.spent,
       last_reset: b.last_reset,
     })),
+    budgetsList: budgets?.map(b => {
+      const linkedGoal = goals.find(g => g.id === b.linked_savings_goal_id);
+      return {
+        id: b.id,
+        name: b.name,
+        description: null,
+        expense_allocation: b.expense_allocation,
+        savings_allocation: b.savings_allocation,
+        expense_spent: b.expense_spent,
+        linked_savings_goal_id: b.linked_savings_goal_id,
+        linked_goal_name: linkedGoal?.name || null,
+      };
+    }) || [],
     goals: goals.map(g => ({
       id: g.id,
       name: g.name,
@@ -654,6 +667,10 @@ const Goals: React.FC = () => {
               onEditGoal={handleEditGoalFromAI}
               onEditExpense={handleEditExpenseFromAI}
               onEditIncome={handleEditIncomeFromAI}
+              onAddFundsToGoal={(goalName, amount) => {
+                const goal = goals.find(g => g.name.toLowerCase() === goalName.toLowerCase());
+                if (goal) handleAddFunds(goal.id, amount, 'ai');
+              }}
             />
           </div>
         </div>
