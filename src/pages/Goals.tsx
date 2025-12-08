@@ -14,6 +14,7 @@ import { Target, Plus, Trash2, Pencil } from 'lucide-react';
 import FinancialAdvisorChat, { FinancialContext, SuggestedGoal } from '@/components/UI/FinancialAdvisorChat';
 import AIInsightsCard from '@/components/UI/AIInsightsCard';
 import EditGoalDialog from '@/components/UI/EditGoalDialog';
+import GoalProgressChart from '@/components/UI/GoalProgressChart';
 
 type SavingsGoal = {
   id: string;
@@ -315,6 +316,11 @@ const Goals: React.FC = () => {
             budgets={budgetCategories}
             goals={goals}
           />
+
+          {/* Progress Chart */}
+          {goals.length > 0 && (
+            <GoalProgressChart goals={goals} />
+          )}
 
           {/* Savings Goals */}
           <div className="space-y-4">
