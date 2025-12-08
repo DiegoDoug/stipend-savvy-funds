@@ -188,6 +188,156 @@ const Goals: React.FC = () => {
     setShowAddGoal(true);
   }, []);
 
+  // Handle AI-suggested expense creation
+  const handleCreateExpenseFromAI = useCallback(async (expense: { description: string; amount: number; category: string; date: string }) => {
+    if (!user) return;
+    
+    const { error } = await supabase
+      .from('transactions')
+      .insert([{
+        user_id: user.id,
+        type: 'expense',
+        description: expense.description,
+        amount: expense.amount,
+        category: expense.category,
+        date: expense.date,
+      }]);
+
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to create expense',
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Expense Added',
+        description: `Created expense: ${expense.description} ($${expense.amount.toFixed(2)})`,
+      });
+    }
+  }, [user, toast]);
+
+  // Handle AI-suggested income creation
+  const handleCreateIncomeFromAI = useCallback(async (income: { description: string; amount: number; category: string; date: string }) => {
+    if (!user) return;
+    
+    const { error } = await supabase
+      .from('transactions')
+      .insert([{
+        user_id: user.id,
+        type: 'income',
+        description: income.description,
+        amount: income.amount,
+        category: income.category,
+        date: income.date,
+      }]);
+
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to create income',
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Income Added',
+        description: `Created income: ${income.description} ($${income.amount.toFixed(2)})`,
+      });
+    }
+  }, [user, toast]);
+
+  // Handle AI-suggested goal edit
+  const handleEditGoalFromAI = useCallback(async (id: string, data: { name?: string; currentAmount?: number; targetAmount?: number; targetDate?: string; description?: string }) => {
+    if (!user) return;
+    
+    const updateData: Record<string, any> = {};
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.currentAmount !== undefined) updateData.current_amount = data.currentAmount;
+    if (data.targetAmount !== undefined) updateData.target_amount = data.targetAmount;
+    if (data.targetDate !== undefined) updateData.target_date = data.targetDate || null;
+    if (data.description !== undefined) updateData.description = data.description || null;
+    
+    const { error } = await supabase
+      .from('savings_goals')
+      .update(updateData)
+      .eq('id', id)
+      .eq('user_id', user.id);
+
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update goal',
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Goal Updated',
+        description: `Updated goal: ${data.name || 'Goal'}`,
+      });
+      fetchGoals();
+    }
+  }, [user, toast, fetchGoals]);
+
+  // Handle AI-suggested expense edit
+  const handleEditExpenseFromAI = useCallback(async (id: string, data: { description?: string; amount?: number; category?: string; date?: string }) => {
+    if (!user) return;
+    
+    const updateData: Record<string, any> = {};
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.amount !== undefined) updateData.amount = data.amount;
+    if (data.category !== undefined) updateData.category = data.category;
+    if (data.date !== undefined) updateData.date = data.date;
+    
+    const { error } = await supabase
+      .from('transactions')
+      .update(updateData)
+      .eq('id', id)
+      .eq('user_id', user.id);
+
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update expense',
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Expense Updated',
+        description: `Updated expense: ${data.description || 'Expense'}`,
+      });
+    }
+  }, [user, toast]);
+
+  // Handle AI-suggested income edit
+  const handleEditIncomeFromAI = useCallback(async (id: string, data: { description?: string; amount?: number; category?: string; date?: string }) => {
+    if (!user) return;
+    
+    const updateData: Record<string, any> = {};
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.amount !== undefined) updateData.amount = data.amount;
+    if (data.category !== undefined) updateData.category = data.category;
+    if (data.date !== undefined) updateData.date = data.date;
+    
+    const { error } = await supabase
+      .from('transactions')
+      .update(updateData)
+      .eq('id', id)
+      .eq('user_id', user.id);
+
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update income',
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Income Updated',
+        description: `Updated income: ${data.description || 'Income'}`,
+      });
+    }
+  }, [user, toast]);
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
   };
@@ -463,7 +613,15 @@ const Goals: React.FC = () => {
         {/* Right Column - AI Chat */}
         <div className="lg:sticky lg:top-6 h-fit">
           <div className="h-[500px] lg:h-[calc(100vh-12rem)]">
-            <FinancialAdvisorChat financialContext={financialContext} onCreateGoal={handleCreateSuggestedGoal} />
+            <FinancialAdvisorChat 
+              financialContext={financialContext} 
+              onCreateGoal={handleCreateSuggestedGoal}
+              onCreateExpense={handleCreateExpenseFromAI}
+              onCreateIncome={handleCreateIncomeFromAI}
+              onEditGoal={handleEditGoalFromAI}
+              onEditExpense={handleEditExpenseFromAI}
+              onEditIncome={handleEditIncomeFromAI}
+            />
           </div>
         </div>
       </div>

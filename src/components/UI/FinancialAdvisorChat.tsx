@@ -1,9 +1,9 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Sparkles, Loader2, TrendingUp, PiggyBank, Target, HelpCircle, RotateCcw, History, Trash2, X, Plus } from 'lucide-react';
+import { Send, Sparkles, Loader2, TrendingUp, PiggyBank, Target, HelpCircle, RotateCcw, History, Trash2, X, Plus, MinusCircle, PlusCircle, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
@@ -41,6 +41,30 @@ export type SuggestedGoal = {
   currentAmount?: number;
   targetDate?: string;
   description?: string;
+};
+
+export type ActionType = 
+  | 'create_goal' 
+  | 'create_expense' 
+  | 'create_income' 
+  | 'edit_goal' 
+  | 'edit_expense' 
+  | 'edit_income';
+
+export type SuggestedAction = {
+  type: ActionType;
+  data: {
+    id?: string;
+    name?: string;
+    description?: string;
+    amount?: number;
+    targetAmount?: number;
+    currentAmount?: number;
+    category?: string;
+    date?: string;
+    targetDate?: string;
+  };
+  displayLabel: string;
 };
 
 export type FinancialContext = {
@@ -95,38 +119,144 @@ export type FinancialContext = {
 interface FinancialAdvisorChatProps {
   financialContext: FinancialContext;
   onCreateGoal?: (goal: SuggestedGoal) => void;
+  onCreateExpense?: (expense: { description: string; amount: number; category: string; date: string }) => void;
+  onCreateIncome?: (income: { description: string; amount: number; category: string; date: string }) => void;
+  onEditGoal?: (id: string, data: { name?: string; currentAmount?: number; targetAmount?: number; targetDate?: string; description?: string }) => void;
+  onEditExpense?: (id: string, data: { description?: string; amount?: number; category?: string; date?: string }) => void;
+  onEditIncome?: (id: string, data: { description?: string; amount?: number; category?: string; date?: string }) => void;
 }
 
-// Parse goal suggestions from AI response
-const parseGoalSuggestions = (content: string): SuggestedGoal[] => {
-  const goals: SuggestedGoal[] = [];
+// Parse all action types from AI response
+const parseAllActions = (content: string): SuggestedAction[] => {
+  const actions: SuggestedAction[] = [];
   
-  // Match patterns like [GOAL: name | $amount | description | date]
-  const goalPattern = /\[GOAL:\s*([^|]+)\s*\|\s*\$?([\d,]+(?:\.\d{2})?)\s*(?:\|\s*([^|\]]+))?\s*(?:\|\s*(\d{4}-\d{2}-\d{2}))?\s*\]/gi;
+  // CREATE_GOAL: Goal Name | $TargetAmount | Description | Target Date
+  const createGoalPattern = /\[CREATE_GOAL:\s*([^|]+)\s*\|\s*\$?([\d,]+(?:\.\d{2})?)\s*(?:\|\s*([^|\]]+))?\s*(?:\|\s*(\d{4}-\d{2}-\d{2}))?\s*\]/gi;
   let match;
   
-  while ((match = goalPattern.exec(content)) !== null) {
+  while ((match = createGoalPattern.exec(content)) !== null) {
     const name = match[1].trim();
     const amount = parseFloat(match[2].replace(/,/g, ''));
     const description = match[3]?.trim();
     const targetDate = match[4]?.trim();
     
     if (name && !isNaN(amount) && amount > 0) {
-      goals.push({
-        name,
-        targetAmount: amount,
-        description,
-        targetDate,
+      actions.push({
+        type: 'create_goal',
+        data: { name, targetAmount: amount, description, targetDate },
+        displayLabel: `Create Goal: ${name} ($${amount.toLocaleString()})`,
       });
     }
   }
   
-  return goals;
+  // CREATE_EXPENSE: Description | $Amount | Category | Date
+  const createExpensePattern = /\[CREATE_EXPENSE:\s*([^|]+)\s*\|\s*\$?([\d,]+(?:\.\d{2})?)\s*\|\s*([^|]+)\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\]/gi;
+  
+  while ((match = createExpensePattern.exec(content)) !== null) {
+    const description = match[1].trim();
+    const amount = parseFloat(match[2].replace(/,/g, ''));
+    const category = match[3].trim();
+    const date = match[4].trim();
+    
+    if (description && !isNaN(amount) && amount > 0 && category && date) {
+      actions.push({
+        type: 'create_expense',
+        data: { description, amount, category, date },
+        displayLabel: `Add Expense: ${description} ($${amount.toFixed(2)})`,
+      });
+    }
+  }
+  
+  // CREATE_INCOME: Description | $Amount | Category | Date
+  const createIncomePattern = /\[CREATE_INCOME:\s*([^|]+)\s*\|\s*\$?([\d,]+(?:\.\d{2})?)\s*\|\s*([^|]+)\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\]/gi;
+  
+  while ((match = createIncomePattern.exec(content)) !== null) {
+    const description = match[1].trim();
+    const amount = parseFloat(match[2].replace(/,/g, ''));
+    const category = match[3].trim();
+    const date = match[4].trim();
+    
+    if (description && !isNaN(amount) && amount > 0 && category && date) {
+      actions.push({
+        type: 'create_income',
+        data: { description, amount, category, date },
+        displayLabel: `Add Income: ${description} ($${amount.toFixed(2)})`,
+      });
+    }
+  }
+  
+  // EDIT_GOAL: id | Goal Name | $CurrentAmount | $TargetAmount | Target Date | Description
+  const editGoalPattern = /\[EDIT_GOAL:\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*\$?([\d,]+(?:\.\d{2})?)\s*\|\s*\$?([\d,]+(?:\.\d{2})?)\s*(?:\|\s*(\d{4}-\d{2}-\d{2}))?\s*(?:\|\s*([^|\]]+))?\s*\]/gi;
+  
+  while ((match = editGoalPattern.exec(content)) !== null) {
+    const id = match[1].trim();
+    const name = match[2].trim();
+    const currentAmount = parseFloat(match[3].replace(/,/g, ''));
+    const targetAmount = parseFloat(match[4].replace(/,/g, ''));
+    const targetDate = match[5]?.trim();
+    const description = match[6]?.trim();
+    
+    if (id && name && !isNaN(targetAmount)) {
+      actions.push({
+        type: 'edit_goal',
+        data: { id, name, currentAmount, targetAmount, targetDate, description },
+        displayLabel: `Update Goal: ${name}`,
+      });
+    }
+  }
+  
+  // EDIT_EXPENSE: id | Description | $Amount | Category | Date
+  const editExpensePattern = /\[EDIT_EXPENSE:\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*\$?([\d,]+(?:\.\d{2})?)\s*\|\s*([^|]+)\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\]/gi;
+  
+  while ((match = editExpensePattern.exec(content)) !== null) {
+    const id = match[1].trim();
+    const description = match[2].trim();
+    const amount = parseFloat(match[3].replace(/,/g, ''));
+    const category = match[4].trim();
+    const date = match[5].trim();
+    
+    if (id && description && !isNaN(amount) && category && date) {
+      actions.push({
+        type: 'edit_expense',
+        data: { id, description, amount, category, date },
+        displayLabel: `Update Expense: ${description}`,
+      });
+    }
+  }
+  
+  // EDIT_INCOME: id | Description | $Amount | Category | Date
+  const editIncomePattern = /\[EDIT_INCOME:\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*\$?([\d,]+(?:\.\d{2})?)\s*\|\s*([^|]+)\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\]/gi;
+  
+  while ((match = editIncomePattern.exec(content)) !== null) {
+    const id = match[1].trim();
+    const description = match[2].trim();
+    const amount = parseFloat(match[3].replace(/,/g, ''));
+    const category = match[4].trim();
+    const date = match[5].trim();
+    
+    if (id && description && !isNaN(amount) && category && date) {
+      actions.push({
+        type: 'edit_income',
+        data: { id, description, amount, category, date },
+        displayLabel: `Update Income: ${description}`,
+      });
+    }
+  }
+  
+  return actions;
 };
 
-// Remove goal markers from content for display
-const cleanContent = (content: string): string => {
-  return content.replace(/\[GOAL:\s*[^\]]+\]/gi, '').trim();
+// Remove all action markers from content for display
+const cleanAllActionMarkers = (content: string): string => {
+  return content
+    .replace(/\[CREATE_GOAL:\s*[^\]]+\]/gi, '')
+    .replace(/\[CREATE_EXPENSE:\s*[^\]]+\]/gi, '')
+    .replace(/\[CREATE_INCOME:\s*[^\]]+\]/gi, '')
+    .replace(/\[EDIT_GOAL:\s*[^\]]+\]/gi, '')
+    .replace(/\[EDIT_EXPENSE:\s*[^\]]+\]/gi, '')
+    .replace(/\[EDIT_INCOME:\s*[^\]]+\]/gi, '')
+    .replace(/\[GOAL:\s*[^\]]+\]/gi, '') // Legacy format
+    .trim();
 };
 
 const quickPrompts = [
@@ -166,7 +296,49 @@ const generateConversationTitle = (messages: Message[]): string => {
   return 'New Chat';
 };
 
-const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({ financialContext, onCreateGoal }) => {
+const getActionIcon = (type: ActionType) => {
+  switch (type) {
+    case 'create_goal':
+      return Target;
+    case 'create_expense':
+      return MinusCircle;
+    case 'create_income':
+      return PlusCircle;
+    case 'edit_goal':
+    case 'edit_expense':
+    case 'edit_income':
+      return Pencil;
+    default:
+      return Plus;
+  }
+};
+
+const getActionButtonStyle = (type: ActionType) => {
+  switch (type) {
+    case 'create_goal':
+      return 'border-primary/50 hover:bg-primary/10 hover:border-primary text-primary';
+    case 'create_expense':
+      return 'border-destructive/50 hover:bg-destructive/10 hover:border-destructive text-destructive';
+    case 'create_income':
+      return 'border-success/50 hover:bg-success/10 hover:border-success text-success';
+    case 'edit_goal':
+    case 'edit_expense':
+    case 'edit_income':
+      return 'border-secondary/50 hover:bg-secondary/10 hover:border-secondary text-secondary-foreground';
+    default:
+      return 'border-primary/50 hover:bg-primary/10 hover:border-primary';
+  }
+};
+
+const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({ 
+  financialContext, 
+  onCreateGoal,
+  onCreateExpense,
+  onCreateIncome,
+  onEditGoal,
+  onEditExpense,
+  onEditIncome,
+}) => {
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -227,25 +399,6 @@ const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({ financialCo
     return newConvo.id;
   }, [conversations, saveConversations]);
 
-  const updateCurrentConversation = useCallback((newMessages: Message[]) => {
-    if (!activeConversationId) return;
-    
-    const updatedConversations = conversations.map(c => {
-      if (c.id === activeConversationId) {
-        return {
-          ...c,
-          messages: newMessages,
-          title: generateConversationTitle(newMessages),
-          updatedAt: new Date().toISOString(),
-        };
-      }
-      return c;
-    });
-    
-    setConversations(updatedConversations);
-    saveConversations(updatedConversations, activeConversationId);
-  }, [activeConversationId, conversations, saveConversations]);
-
   const switchConversation = (conversationId: string) => {
     const convo = conversations.find(c => c.id === conversationId);
     if (convo) {
@@ -280,6 +433,74 @@ const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({ financialCo
     setActiveConversationId(null);
     setMessages([]);
     saveConversations([], null);
+  };
+
+  const handleAction = (action: SuggestedAction) => {
+    const { type, data } = action;
+    
+    switch (type) {
+      case 'create_goal':
+        if (onCreateGoal && data.name && data.targetAmount) {
+          onCreateGoal({
+            name: data.name,
+            targetAmount: data.targetAmount,
+            description: data.description,
+            targetDate: data.targetDate,
+          });
+        }
+        break;
+      case 'create_expense':
+        if (onCreateExpense && data.description && data.amount && data.category && data.date) {
+          onCreateExpense({
+            description: data.description,
+            amount: data.amount,
+            category: data.category,
+            date: data.date,
+          });
+        }
+        break;
+      case 'create_income':
+        if (onCreateIncome && data.description && data.amount && data.category && data.date) {
+          onCreateIncome({
+            description: data.description,
+            amount: data.amount,
+            category: data.category,
+            date: data.date,
+          });
+        }
+        break;
+      case 'edit_goal':
+        if (onEditGoal && data.id) {
+          onEditGoal(data.id, {
+            name: data.name,
+            currentAmount: data.currentAmount,
+            targetAmount: data.targetAmount,
+            targetDate: data.targetDate,
+            description: data.description,
+          });
+        }
+        break;
+      case 'edit_expense':
+        if (onEditExpense && data.id) {
+          onEditExpense(data.id, {
+            description: data.description,
+            amount: data.amount,
+            category: data.category,
+            date: data.date,
+          });
+        }
+        break;
+      case 'edit_income':
+        if (onEditIncome && data.id) {
+          onEditIncome(data.id, {
+            description: data.description,
+            amount: data.amount,
+            category: data.category,
+            date: data.date,
+          });
+        }
+        break;
+    }
   };
 
   const streamChat = async (userMessage: string) => {
@@ -546,7 +767,7 @@ const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({ financialCo
         {messages.length === 0 ? (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground text-center mb-4">
-              Hi! I'm your financial advisor. Ask me about your spending, savings goals, or get personalized tips.
+              Hi! I'm your financial advisor. Ask me about your spending, savings goals, or get personalized tips. I can also create or edit expenses, incomes, and goals for you!
             </p>
             <div className="grid grid-cols-2 gap-2">
               {quickPrompts.map((qp, i) => (
@@ -567,8 +788,8 @@ const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({ financialCo
         ) : (
           <div className="space-y-4">
             {messages.map((msg, i) => {
-              const suggestedGoals = msg.role === 'assistant' ? parseGoalSuggestions(msg.content) : [];
-              const displayContent = msg.role === 'assistant' ? cleanContent(msg.content) : msg.content;
+              const suggestedActions = msg.role === 'assistant' ? parseAllActions(msg.content) : [];
+              const displayContent = msg.role === 'assistant' ? cleanAllActionMarkers(msg.content) : msg.content;
               
               return (
                 <div
@@ -594,21 +815,26 @@ const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({ financialCo
                     )}
                   </div>
                   
-                  {/* Suggested Goals Buttons */}
-                  {suggestedGoals.length > 0 && onCreateGoal && (
+                  {/* Action Buttons */}
+                  {suggestedActions.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-2 max-w-[85%]">
-                      {suggestedGoals.map((goal, goalIndex) => (
-                        <Button
-                          key={goalIndex}
-                          size="sm"
-                          variant="outline"
-                          className="gap-1.5 text-xs h-8 border-primary/50 hover:bg-primary/10 hover:border-primary"
-                          onClick={() => onCreateGoal(goal)}
-                        >
-                          <Plus className="h-3 w-3" />
-                          Create: {goal.name} (${goal.targetAmount.toLocaleString()})
-                        </Button>
-                      ))}
+                      {suggestedActions.map((action, actionIndex) => {
+                        const Icon = getActionIcon(action.type);
+                        const buttonStyle = getActionButtonStyle(action.type);
+                        
+                        return (
+                          <Button
+                            key={actionIndex}
+                            size="sm"
+                            variant="outline"
+                            className={cn("gap-1.5 text-xs h-8", buttonStyle)}
+                            onClick={() => handleAction(action)}
+                          >
+                            <Icon className="h-3 w-3" />
+                            {action.displayLabel}
+                          </Button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -625,7 +851,7 @@ const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({ financialCo
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about your finances..."
+            placeholder="Ask about your finances or request changes..."
             disabled={isLoading}
             className="flex-1"
           />
