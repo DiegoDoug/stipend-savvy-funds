@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFinanceData } from '@/hooks/useFinanceData';
 import { useCategories } from '@/hooks/useCategories';
 import { useBudgets } from '@/hooks/useBudgets';
-import { Target, Plus, Trash2, Pencil, DollarSign, Wallet, Link2, PiggyBank } from 'lucide-react';
+import { Target, Plus, Trash2, Pencil, DollarSign, Wallet, Link2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FinancialAdvisorChat, { FinancialContext, SuggestedGoal } from '@/components/UI/FinancialAdvisorChat';
@@ -657,16 +657,6 @@ const Goals: React.FC = () => {
           <p className="text-muted-foreground text-sm lg:text-base">Track your financial goals with AI insights</p>
         </div>
         
-        {/* Auto-Savings Summary */}
-        {totalMonthlyAutoSavings > 0 && (
-          <div className="flex items-center gap-3 px-4 py-2 rounded-lg bg-success/10 border border-success/30">
-            <PiggyBank className="w-5 h-5 text-success" />
-            <div>
-              <p className="text-xs text-muted-foreground">Monthly Auto-Savings</p>
-              <p className="font-bold text-success">${totalMonthlyAutoSavings.toLocaleString()}/mo</p>
-            </div>
-          </div>
-        )}
         <Dialog open={showAddGoal} onOpenChange={setShowAddGoal}>
           <DialogTrigger asChild>
             <Button size="sm" className="lg:size-default">
@@ -747,6 +737,7 @@ const Goals: React.FC = () => {
             transactions={transactions}
             budgets={budgetCategories}
             goals={goals}
+            totalMonthlyAutoSavings={totalMonthlyAutoSavings}
           />
 
           {/* Progress Chart */}
