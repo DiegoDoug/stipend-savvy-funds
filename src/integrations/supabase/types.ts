@@ -47,6 +47,56 @@ export type Database = {
         }
         Relationships: []
       }
+      budgets: {
+        Row: {
+          created_at: string
+          description: string | null
+          expense_allocation: number
+          expense_spent: number
+          id: string
+          last_reset: string | null
+          linked_savings_goal_id: string | null
+          name: string
+          savings_allocation: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          expense_allocation?: number
+          expense_spent?: number
+          id?: string
+          last_reset?: string | null
+          linked_savings_goal_id?: string | null
+          name: string
+          savings_allocation?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          expense_allocation?: number
+          expense_spent?: number
+          id?: string
+          last_reset?: string | null
+          linked_savings_goal_id?: string | null
+          name?: string
+          savings_allocation?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budgets_linked_savings_goal_id_fkey"
+            columns: ["linked_savings_goal_id"]
+            isOneToOne: false
+            referencedRelation: "savings_goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_categories: {
         Row: {
           created_at: string
@@ -226,6 +276,7 @@ export type Database = {
       transactions: {
         Row: {
           amount: number
+          budget_id: string | null
           category: string
           created_at: string
           date: string
@@ -242,6 +293,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          budget_id?: string | null
           category: string
           created_at?: string
           date?: string
@@ -258,6 +310,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          budget_id?: string | null
           category?: string
           created_at?: string
           date?: string
@@ -272,7 +325,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "transactions_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "budgets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       verification_codes: {
         Row: {
@@ -331,6 +392,13 @@ export type Database = {
         Returns: string
       }
       get_user_local_date: { Args: { user_tz: string }; Returns: string }
+      process_monthly_savings_transfers: {
+        Args: { p_user_id: string; user_tz?: string }
+        Returns: {
+          total_transferred: number
+          transfers_count: number
+        }[]
+      }
       reset_monthly_budgets: { Args: { user_tz?: string }; Returns: undefined }
     }
     Enums: {
