@@ -29,13 +29,16 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAccountStatus } from "@/hooks/useAccountStatus";
 import { GlowCard } from "@/components/ui/spotlight-card";
 import { useBudgets, Budget } from "@/hooks/useBudgets";
+import { useFinanceData } from "@/hooks/useFinanceData";
 import AddBudgetDialog from "@/components/UI/AddBudgetDialog";
 import EditBudgetDialog from "@/components/UI/EditBudgetDialog";
+import BudgetSpendingTrendsChart from "@/components/UI/BudgetSpendingTrendsChart";
 
 export default function BudgetPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { isActive, checkAndNotify } = useAccountStatus();
+  const { transactions } = useFinanceData();
   const { 
     budgets, 
     loading, 
@@ -201,6 +204,17 @@ export default function BudgetPage() {
           </p>
         )}
       </GlowCard>
+
+      {/* Spending Trends Chart */}
+      <BudgetSpendingTrendsChart 
+        transactions={transactions} 
+        budgets={budgets.map(b => ({
+          id: b.id,
+          name: b.name,
+          expense_allocation: b.expense_allocation,
+          expense_spent: b.expense_spent,
+        }))} 
+      />
 
       {/* Budget Cards */}
       <div className="budget-card">
