@@ -451,9 +451,10 @@ const Goals: React.FC = () => {
   }, [user, deleteBudget, budgetRefetch]);
 
   // Handle AI-suggested goal-to-budget linking
-  const handleLinkGoalToBudgetFromAI = useCallback(async (budgetId: string, goalName: string) => {
+  const handleLinkGoalToBudgetFromAI = useCallback(async (budgetName: string, goalName: string) => {
     if (!user) return;
     
+    // Find goal by name
     const goal = goals.find(g => g.name.toLowerCase() === goalName.toLowerCase());
     if (!goal) {
       toast({
@@ -464,15 +465,26 @@ const Goals: React.FC = () => {
       return;
     }
     
-    const success = await updateBudget(budgetId, { linked_savings_goal_id: goal.id });
+    // Find budget by name
+    const budget = budgets.find(b => b.name.toLowerCase() === budgetName.toLowerCase());
+    if (!budget) {
+      toast({
+        title: 'Budget not found',
+        description: `Could not find a budget named "${budgetName}"`,
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    const success = await updateBudget(budget.id, { linked_savings_goal_id: goal.id });
     if (success) {
       budgetRefetch.budgets();
       toast({
         title: 'Goal linked',
-        description: `Linked "${goal.name}" to the budget`,
+        description: `Linked "${goal.name}" to "${budget.name}"`,
       });
     }
-  }, [user, goals, updateBudget, budgetRefetch, toast]);
+  }, [user, goals, budgets, updateBudget, budgetRefetch, toast]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
