@@ -147,23 +147,36 @@ export const generateDashboardPDF = (data: DashboardData) => {
   if (data.recentTransactions.length > 0) {
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    doc.text('Recent Transactions', margin, yPos);
+    doc.text(`Recent Transactions (${data.recentTransactions.length})`, margin, yPos);
     yPos += 8;
 
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Date', margin, yPos);
-    doc.text('Description', margin + 35, yPos);
-    doc.text('Category', margin + 95, yPos);
-    doc.text('Amount', pageWidth - margin - 30, yPos);
-    yPos += 2;
-    
-    doc.setDrawColor(200, 200, 200);
-    doc.line(margin, yPos, pageWidth - margin, yPos);
-    yPos += 5;
+    const drawTransactionHeader = () => {
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('Date', margin, yPos);
+      doc.text('Description', margin + 35, yPos);
+      doc.text('Category', margin + 95, yPos);
+      doc.text('Amount', pageWidth - margin - 30, yPos);
+      yPos += 2;
+      
+      doc.setDrawColor(200, 200, 200);
+      doc.line(margin, yPos, pageWidth - margin, yPos);
+      yPos += 5;
+    };
+
+    drawTransactionHeader();
 
     doc.setFont('helvetica', 'normal');
-    data.recentTransactions.slice(0, 5).forEach((transaction) => {
+    data.recentTransactions.forEach((transaction) => {
+      // Check if we need a new page
+      if (yPos > doc.internal.pageSize.getHeight() - 30) {
+        doc.addPage();
+        yPos = 20;
+        drawTransactionHeader();
+      }
+      
+      doc.setFontSize(9);
       doc.text(formatDate(transaction.date), margin, yPos);
       doc.text(transaction.description.substring(0, 25), margin + 35, yPos);
       doc.text(transaction.category.substring(0, 15), margin + 95, yPos);
