@@ -8,7 +8,9 @@ import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useFinanceData } from '@/hooks/useFinanceData';
 import { Target, Plus, Trash2 } from 'lucide-react';
+import FinancialAdvisorChat from '@/components/UI/FinancialAdvisorChat';
 
 type SavingsGoal = {
   id: string;
@@ -26,6 +28,7 @@ type SavingsGoal = {
 const Goals: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { transactions, budgetCategories, stats } = useFinanceData();
   const [goals, setGoals] = useState<SavingsGoal[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddGoal, setShowAddGoal] = useState(false);
@@ -295,6 +298,20 @@ const Goals: React.FC = () => {
           })}
         </div>
       )}
+
+      {/* AI Financial Advisor Chat */}
+      <FinancialAdvisorChat
+        financialContext={{
+          transactions: transactions.slice(0, 50), // Send recent 50 transactions
+          budgets: budgetCategories,
+          goals,
+          stats: {
+            balance: stats.balance,
+            monthlyIncome: stats.totalIncome,
+            monthlyExpenses: stats.totalExpenses,
+          },
+        }}
+      />
     </div>
   );
 };
