@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFinanceData } from '@/hooks/useFinanceData';
 import { useCategories } from '@/hooks/useCategories';
 import { Target, Plus, Trash2 } from 'lucide-react';
-import FinancialAdvisorChat, { FinancialContext } from '@/components/UI/FinancialAdvisorChat';
+import FinancialAdvisorChat, { FinancialContext, SuggestedGoal } from '@/components/UI/FinancialAdvisorChat';
 import AIInsightsCard from '@/components/UI/AIInsightsCard';
 
 type SavingsGoal = {
@@ -130,6 +130,18 @@ const Goals: React.FC = () => {
       fetchGoals();
     }
   };
+
+  // Handle AI suggested goal creation
+  const handleCreateSuggestedGoal = useCallback((goal: SuggestedGoal) => {
+    setNewGoal({
+      name: goal.name,
+      target_amount: goal.targetAmount.toString(),
+      current_amount: goal.currentAmount?.toString() || '0',
+      target_date: goal.targetDate || '',
+      description: goal.description || '',
+    });
+    setShowAddGoal(true);
+  }, []);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
@@ -380,7 +392,7 @@ const Goals: React.FC = () => {
         {/* Right Column - AI Chat */}
         <div className="lg:sticky lg:top-6 h-fit">
           <div className="h-[500px] lg:h-[calc(100vh-12rem)]">
-            <FinancialAdvisorChat financialContext={financialContext} />
+            <FinancialAdvisorChat financialContext={financialContext} onCreateGoal={handleCreateSuggestedGoal} />
           </div>
         </div>
       </div>

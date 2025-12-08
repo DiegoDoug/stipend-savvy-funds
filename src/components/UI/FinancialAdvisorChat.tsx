@@ -1,9 +1,9 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Sparkles, Loader2, TrendingUp, PiggyBank, Target, HelpCircle, RotateCcw, History, Trash2, X } from 'lucide-react';
+import { Send, Sparkles, Loader2, TrendingUp, PiggyBank, Target, HelpCircle, RotateCcw, History, Trash2, X, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
@@ -34,6 +34,14 @@ type StoredChats = {
 
 const STORAGE_KEY = 'fintrack-advisor-chats';
 const MAX_CONVERSATIONS = 10;
+
+export type SuggestedGoal = {
+  name: string;
+  targetAmount: number;
+  currentAmount?: number;
+  targetDate?: string;
+  description?: string;
+};
 
 export type FinancialContext = {
   transactions: Array<{
@@ -86,7 +94,38 @@ export type FinancialContext = {
 
 interface FinancialAdvisorChatProps {
   financialContext: FinancialContext;
+  onCreateGoal?: (goal: SuggestedGoal) => void;
 }
+
+// Parse goal suggestions from AI response
+const parseGoalSuggestions = (content: string): SuggestedGoal[] => {
+  const goals: SuggestedGoal[] = [];
+  
+  // Match patterns like [GOAL: name | $amount | description]
+  const goalPattern = /\[GOAL:\s*([^|]+)\s*\|\s*\$?([\d,]+(?:\.\d{2})?)\s*(?:\|\s*([^\]]+))?\]/gi;
+  let match;
+  
+  while ((match = goalPattern.exec(content)) !== null) {
+    const name = match[1].trim();
+    const amount = parseFloat(match[2].replace(/,/g, ''));
+    const description = match[3]?.trim();
+    
+    if (name && !isNaN(amount) && amount > 0) {
+      goals.push({
+        name,
+        targetAmount: amount,
+        description,
+      });
+    }
+  }
+  
+  return goals;
+};
+
+// Remove goal markers from content for display
+const cleanContent = (content: string): string => {
+  return content.replace(/\[GOAL:\s*[^\]]+\]/gi, '').trim();
+};
 
 const quickPrompts = [
   { icon: TrendingUp, label: "Analyze spending", prompt: "Analyze my spending patterns and tell me where I'm spending the most. Include specific transaction details." },
@@ -125,7 +164,7 @@ const generateConversationTitle = (messages: Message[]): string => {
   return 'New Chat';
 };
 
-const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({ financialContext }) => {
+const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({ financialContext, onCreateGoal }) => {
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -525,31 +564,54 @@ const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({ financialCo
           </div>
         ) : (
           <div className="space-y-4">
-            {messages.map((msg, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "flex",
-                  msg.role === 'user' ? 'justify-end' : 'justify-start'
-                )}
-              >
+            {messages.map((msg, i) => {
+              const suggestedGoals = msg.role === 'assistant' ? parseGoalSuggestions(msg.content) : [];
+              const displayContent = msg.role === 'assistant' ? cleanContent(msg.content) : msg.content;
+              
+              return (
                 <div
+                  key={i}
                   className={cn(
-                    "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm",
-                    msg.role === 'user'
-                      ? 'bg-primary text-primary-foreground rounded-br-md'
-                      : 'bg-muted text-foreground rounded-bl-md'
+                    "flex flex-col",
+                    msg.role === 'user' ? 'items-end' : 'items-start'
                   )}
                 >
-                  {msg.content || (
-                    <span className="flex items-center gap-2">
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      Thinking...
-                    </span>
+                  <div
+                    className={cn(
+                      "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm",
+                      msg.role === 'user'
+                        ? 'bg-primary text-primary-foreground rounded-br-md'
+                        : 'bg-muted text-foreground rounded-bl-md'
+                    )}
+                  >
+                    {displayContent || (
+                      <span className="flex items-center gap-2">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Thinking...
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Suggested Goals Buttons */}
+                  {suggestedGoals.length > 0 && onCreateGoal && (
+                    <div className="flex flex-wrap gap-2 mt-2 max-w-[85%]">
+                      {suggestedGoals.map((goal, goalIndex) => (
+                        <Button
+                          key={goalIndex}
+                          size="sm"
+                          variant="outline"
+                          className="gap-1.5 text-xs h-8 border-primary/50 hover:bg-primary/10 hover:border-primary"
+                          onClick={() => onCreateGoal(goal)}
+                        >
+                          <Plus className="h-3 w-3" />
+                          Create: {goal.name} (${goal.targetAmount.toLocaleString()})
+                        </Button>
+                      ))}
+                    </div>
                   )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </ScrollArea>
