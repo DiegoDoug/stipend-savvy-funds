@@ -1,15 +1,39 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Sparkles, Loader2, TrendingUp, PiggyBank, Target, HelpCircle, RotateCcw } from 'lucide-react';
+import { Send, Sparkles, Loader2, TrendingUp, PiggyBank, Target, HelpCircle, RotateCcw, History, Trash2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { formatDistanceToNow } from 'date-fns';
 
 type Message = {
   role: 'user' | 'assistant';
   content: string;
 };
+
+type ChatConversation = {
+  id: string;
+  title: string;
+  messages: Message[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+type StoredChats = {
+  activeConversationId: string | null;
+  conversations: ChatConversation[];
+};
+
+const STORAGE_KEY = 'fintrack-advisor-chats';
+const MAX_CONVERSATIONS = 10;
 
 export type FinancialContext = {
   transactions: Array<{
@@ -71,12 +95,66 @@ const quickPrompts = [
   { icon: HelpCircle, label: "Financial tips", prompt: "Give me 3 personalized tips to improve my financial health based on my transaction history." },
 ];
 
+// Helper functions for localStorage
+const loadStoredChats = (): StoredChats => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (error) {
+    console.error('Failed to load chats from localStorage:', error);
+  }
+  return { activeConversationId: null, conversations: [] };
+};
+
+const saveStoredChats = (data: StoredChats) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (error) {
+    console.error('Failed to save chats to localStorage:', error);
+  }
+};
+
+const generateConversationTitle = (messages: Message[]): string => {
+  const firstUserMessage = messages.find(m => m.role === 'user');
+  if (firstUserMessage) {
+    const title = firstUserMessage.content.slice(0, 35);
+    return title.length < firstUserMessage.content.length ? `${title}...` : title;
+  }
+  return 'New Chat';
+};
+
 const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({ financialContext }) => {
+  const [conversations, setConversations] = useState<ChatConversation[]>([]);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Load conversations on mount
+  useEffect(() => {
+    const stored = loadStoredChats();
+    setConversations(stored.conversations);
+    
+    if (stored.activeConversationId) {
+      const activeConvo = stored.conversations.find(c => c.id === stored.activeConversationId);
+      if (activeConvo) {
+        setActiveConversationId(activeConvo.id);
+        setMessages(activeConvo.messages);
+      }
+    }
+  }, []);
+
+  // Save conversations when they change
+  const saveConversations = useCallback((convos: ChatConversation[], activeId: string | null) => {
+    saveStoredChats({
+      activeConversationId: activeId,
+      conversations: convos,
+    });
+  }, []);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -84,7 +162,92 @@ const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({ financialCo
     }
   }, [messages]);
 
+  const createNewConversation = useCallback(() => {
+    const newConvo: ChatConversation = {
+      id: crypto.randomUUID(),
+      title: 'New Chat',
+      messages: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    
+    let updatedConversations = [newConvo, ...conversations];
+    
+    // Limit to MAX_CONVERSATIONS
+    if (updatedConversations.length > MAX_CONVERSATIONS) {
+      updatedConversations = updatedConversations.slice(0, MAX_CONVERSATIONS);
+    }
+    
+    setConversations(updatedConversations);
+    setActiveConversationId(newConvo.id);
+    setMessages([]);
+    saveConversations(updatedConversations, newConvo.id);
+    
+    return newConvo.id;
+  }, [conversations, saveConversations]);
+
+  const updateCurrentConversation = useCallback((newMessages: Message[]) => {
+    if (!activeConversationId) return;
+    
+    const updatedConversations = conversations.map(c => {
+      if (c.id === activeConversationId) {
+        return {
+          ...c,
+          messages: newMessages,
+          title: generateConversationTitle(newMessages),
+          updatedAt: new Date().toISOString(),
+        };
+      }
+      return c;
+    });
+    
+    setConversations(updatedConversations);
+    saveConversations(updatedConversations, activeConversationId);
+  }, [activeConversationId, conversations, saveConversations]);
+
+  const switchConversation = (conversationId: string) => {
+    const convo = conversations.find(c => c.id === conversationId);
+    if (convo) {
+      setActiveConversationId(convo.id);
+      setMessages(convo.messages);
+      saveConversations(conversations, convo.id);
+    }
+  };
+
+  const deleteConversation = (conversationId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updatedConversations = conversations.filter(c => c.id !== conversationId);
+    setConversations(updatedConversations);
+    
+    if (activeConversationId === conversationId) {
+      if (updatedConversations.length > 0) {
+        setActiveConversationId(updatedConversations[0].id);
+        setMessages(updatedConversations[0].messages);
+        saveConversations(updatedConversations, updatedConversations[0].id);
+      } else {
+        setActiveConversationId(null);
+        setMessages([]);
+        saveConversations(updatedConversations, null);
+      }
+    } else {
+      saveConversations(updatedConversations, activeConversationId);
+    }
+  };
+
+  const clearAllHistory = () => {
+    setConversations([]);
+    setActiveConversationId(null);
+    setMessages([]);
+    saveConversations([], null);
+  };
+
   const streamChat = async (userMessage: string) => {
+    // Create new conversation if none exists
+    let currentConvoId = activeConversationId;
+    if (!currentConvoId) {
+      currentConvoId = createNewConversation();
+    }
+
     const newMessages: Message[] = [...messages, { role: 'user', content: userMessage }];
     setMessages(newMessages);
     setInput('');
@@ -119,7 +282,8 @@ const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({ financialCo
       let textBuffer = '';
 
       // Add empty assistant message to update
-      setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+      const messagesWithAssistant = [...newMessages, { role: 'assistant' as const, content: '' }];
+      setMessages(messagesWithAssistant);
 
       while (true) {
         const { done, value } = await reader.read();
@@ -185,6 +349,43 @@ const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({ financialCo
           } catch { /* ignore */ }
         }
       }
+
+      // Save conversation after response completes
+      const finalMessages = [...newMessages, { role: 'assistant' as const, content: assistantContent }];
+      
+      // Update conversation in state and storage
+      const updatedConversations = conversations.map(c => {
+        if (c.id === currentConvoId) {
+          return {
+            ...c,
+            messages: finalMessages,
+            title: generateConversationTitle(finalMessages),
+            updatedAt: new Date().toISOString(),
+          };
+        }
+        return c;
+      });
+      
+      // If this was a new conversation, add it
+      if (!conversations.find(c => c.id === currentConvoId)) {
+        const newConvo: ChatConversation = {
+          id: currentConvoId,
+          title: generateConversationTitle(finalMessages),
+          messages: finalMessages,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        let newConversations = [newConvo, ...conversations];
+        if (newConversations.length > MAX_CONVERSATIONS) {
+          newConversations = newConversations.slice(0, MAX_CONVERSATIONS);
+        }
+        setConversations(newConversations);
+        saveConversations(newConversations, currentConvoId);
+      } else {
+        setConversations(updatedConversations);
+        saveConversations(updatedConversations, currentConvoId);
+      }
+
     } catch (error) {
       console.error('Chat error:', error);
       setMessages(prev => [
@@ -208,8 +409,7 @@ const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({ financialCo
   };
 
   const handleNewChat = () => {
-    setMessages([]);
-    setInput('');
+    createNewConversation();
   };
 
   return (
@@ -225,7 +425,68 @@ const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({ financialCo
             <p className="text-xs text-muted-foreground">AI-powered savings assistant</p>
           </div>
         </div>
-        {messages.length > 0 && (
+        <div className="flex items-center gap-1">
+          {/* History Dropdown */}
+          {conversations.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <History className="h-4 w-4 mr-1" />
+                  History
+                  <span className="ml-1 text-xs bg-muted rounded-full px-1.5">
+                    {conversations.length}
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64 bg-popover">
+                <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                  Recent Conversations
+                </div>
+                <DropdownMenuSeparator />
+                <ScrollArea className="max-h-64">
+                  {conversations.map((convo) => (
+                    <DropdownMenuItem
+                      key={convo.id}
+                      className={cn(
+                        "flex items-center justify-between cursor-pointer",
+                        activeConversationId === convo.id && "bg-accent"
+                      )}
+                      onClick={() => switchConversation(convo.id)}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm truncate font-medium">{convo.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(convo.updatedAt), { addSuffix: true })}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 ml-2 hover:bg-destructive/20 hover:text-destructive"
+                        onClick={(e) => deleteConversation(convo.id, e)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </DropdownMenuItem>
+                  ))}
+                </ScrollArea>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive cursor-pointer"
+                  onClick={clearAllHistory}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Clear All History
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          
+          {/* New Chat Button */}
           <Button
             variant="ghost"
             size="sm"
@@ -236,7 +497,7 @@ const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({ financialCo
             <RotateCcw className="h-4 w-4 mr-1" />
             New Chat
           </Button>
-        )}
+        </div>
       </CardHeader>
 
       {/* Messages */}
