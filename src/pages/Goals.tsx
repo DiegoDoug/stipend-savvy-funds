@@ -11,7 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useFinanceData } from '@/hooks/useFinanceData';
 import { useCategories } from '@/hooks/useCategories';
 import { useBudgets } from '@/hooks/useBudgets';
-import { Target, Plus, Trash2, Pencil, DollarSign } from 'lucide-react';
+import { Target, Plus, Trash2, Pencil, DollarSign, Wallet } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import FinancialAdvisorChat, { FinancialContext, SuggestedGoal } from '@/components/UI/FinancialAdvisorChat';
 import AIInsightsCard from '@/components/UI/AIInsightsCard';
 import EditGoalDialog from '@/components/UI/EditGoalDialog';
@@ -494,6 +495,24 @@ const Goals: React.FC = () => {
     return target > 0 ? (current / target) * 100 : 0;
   };
 
+  // Create a lookup from goal ID to linked budget(s)
+  const goalToBudgetMap = React.useMemo(() => {
+    const map: Record<string, { id: string; name: string; savingsAllocation: number }[]> = {};
+    budgets.forEach(b => {
+      if (b.linked_savings_goal_id) {
+        if (!map[b.linked_savings_goal_id]) {
+          map[b.linked_savings_goal_id] = [];
+        }
+        map[b.linked_savings_goal_id].push({
+          id: b.id,
+          name: b.name,
+          savingsAllocation: b.savings_allocation,
+        });
+      }
+    });
+    return map;
+  }, [budgets]);
+
   const financialContext: FinancialContext = {
     transactions: transactions.map(t => ({
       id: t.id,
@@ -754,6 +773,25 @@ const Goals: React.FC = () => {
                         {goal.target_date && (
                           <div className="text-xs text-muted-foreground">
                             Target: {new Date(goal.target_date).toLocaleDateString()}
+                          </div>
+                        )}
+
+                        {/* Linked Budget Indicator */}
+                        {goalToBudgetMap[goal.id] && goalToBudgetMap[goal.id].length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                            {goalToBudgetMap[goal.id].map(linkedBudget => (
+                              <Badge 
+                                key={linkedBudget.id} 
+                                variant="outline" 
+                                className="text-xs gap-1 bg-secondary/10 border-secondary/30 text-secondary-foreground"
+                              >
+                                <Wallet className="w-3 h-3" />
+                                {linkedBudget.name}
+                                <span className="text-muted-foreground">
+                                  +${linkedBudget.savingsAllocation}/mo
+                                </span>
+                              </Badge>
+                            ))}
                           </div>
                         )}
 
