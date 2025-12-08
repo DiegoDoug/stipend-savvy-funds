@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFinanceData } from '@/hooks/useFinanceData';
 import { useCategories } from '@/hooks/useCategories';
 import { useBudgets } from '@/hooks/useBudgets';
-import { Target, Plus, Trash2, Pencil, DollarSign, Wallet, Link2 } from 'lucide-react';
+import { Target, Plus, Trash2, Pencil, DollarSign, Wallet, Link2, Calendar, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FinancialAdvisorChat, { FinancialContext, SuggestedGoal } from '@/components/UI/FinancialAdvisorChat';
@@ -499,6 +499,29 @@ const Goals: React.FC = () => {
     return target > 0 ? (current / target) * 100 : 0;
   };
 
+  // Calculate projected completion date based on auto-savings rate
+  const getProjectedCompletion = (goalId: string, currentAmount: number, targetAmount: number) => {
+    const linkedBudgets = goalToBudgetMap[goalId];
+    if (!linkedBudgets || linkedBudgets.length === 0) return null;
+    
+    const monthlyAutoSavings = linkedBudgets.reduce((sum, b) => sum + b.savingsAllocation, 0);
+    if (monthlyAutoSavings <= 0) return null;
+    
+    const remaining = targetAmount - currentAmount;
+    if (remaining <= 0) return { completed: true };
+    
+    const monthsToComplete = Math.ceil(remaining / monthlyAutoSavings);
+    const projectedDate = new Date();
+    projectedDate.setMonth(projectedDate.getMonth() + monthsToComplete);
+    
+    return {
+      completed: false,
+      months: monthsToComplete,
+      date: projectedDate,
+      monthlyRate: monthlyAutoSavings,
+    };
+  };
+
   // Create a lookup from goal ID to linked budget(s)
   const goalToBudgetMap = React.useMemo(() => {
     const map: Record<string, { id: string; name: string; savingsAllocation: number }[]> = {};
@@ -838,10 +861,32 @@ const Goals: React.FC = () => {
                         </div>
 
                         {goal.target_date && (
-                          <div className="text-xs text-muted-foreground">
+                          <div className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
                             Target: {new Date(goal.target_date).toLocaleDateString()}
                           </div>
                         )}
+
+                        {/* Projected Completion */}
+                        {!isCompleted && (() => {
+                          const projection = getProjectedCompletion(goal.id, goal.current_amount, goal.target_amount);
+                          if (!projection || projection.completed) return null;
+                          
+                          return (
+                            <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 border border-primary/20">
+                              <Clock className="w-4 h-4 text-primary shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs text-muted-foreground">Projected completion</p>
+                                <p className="text-sm font-medium text-primary">
+                                  {projection.date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                                  <span className="text-xs text-muted-foreground ml-1">
+                                    ({projection.months} month{projection.months !== 1 ? 's' : ''})
+                                  </span>
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })()}
 
                         {/* Linked Budget Indicator */}
                         {goalToBudgetMap[goal.id] && goalToBudgetMap[goal.id].length > 0 && (
