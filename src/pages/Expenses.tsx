@@ -33,6 +33,7 @@ export default function Expenses() {
   const location = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedBudget, setSelectedBudget] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState("date");
   const [selectedPeriod, setSelectedPeriod] = useState("month");
   const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>();
@@ -211,12 +212,16 @@ export default function Expenses() {
   // Get unique categories from current period expenses
   const availableCategories = [...new Set(currentPeriodExpenses.map((e) => e.category))].filter(Boolean);
 
+  // Get unique budgets from current period expenses
+  const availableBudgets = [...new Set(currentPeriodExpenses.map((e) => e.budget_id).filter(Boolean))] as string[];
+
   // Filter and sort expenses from current period
   const filteredExpenses = currentPeriodExpenses
     .filter(
       (expense) =>
         expense.description.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        (selectedCategory === null || expense.category === selectedCategory),
+        (selectedCategory === null || expense.category === selectedCategory) &&
+        (selectedBudget === null || expense.budget_id === selectedBudget),
     )
     .sort((a, b) => {
       if (sortBy === "amount") return Number(b.amount) - Number(a.amount);
@@ -345,6 +350,28 @@ export default function Expenses() {
               </button>
             ))}
           </div>
+
+          {/* Budget Filter */}
+          {availableBudgets.length > 0 && (
+            <div className="flex gap-2 flex-wrap">
+              <span className="text-sm text-muted-foreground self-center">Budget:</span>
+              <button
+                onClick={() => setSelectedBudget(null)}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${selectedBudget === null ? "bg-secondary text-secondary-foreground" : "bg-accent/50 hover:bg-accent"}`}
+              >
+                All Budgets
+              </button>
+              {availableBudgets.map((budgetId) => (
+                <button
+                  key={budgetId}
+                  onClick={() => setSelectedBudget(budgetId)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${selectedBudget === budgetId ? "bg-secondary text-secondary-foreground" : "bg-accent/50 hover:bg-accent"}`}
+                >
+                  {budgetNameMap[budgetId] || 'Unknown'}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex gap-2 mt-4">

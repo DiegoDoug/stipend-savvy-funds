@@ -298,16 +298,74 @@ export default function Dashboard() {
       {/* Budget Overview */}
       <GlowCard glowColor="purple" customSize={true} className="budget-card rounded-md w-full h-auto">
         <div className="flex items-center justify-between mb-3 sm:mb-4">
-          <h2 className="text-base sm:text-lg font-semibold">Monthly Budget Status</h2>
+          <h2 className="text-base sm:text-lg font-semibold">Budget Status</h2>
           <span className="text-xs sm:text-sm text-muted-foreground">
-            ${totalSpent.toFixed(0)} / ${totalBudget.toFixed(0)}
+            {budgets.length} budget{budgets.length !== 1 ? 's' : ''}
           </span>
         </div>
 
         <div className="space-y-4">
-          <ProgressBar value={totalSpent} max={totalBudget} showLabel={true} label="Overall Progress" size="lg" />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">...</div>
+          {budgets.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {budgets.map((budget) => {
+                const remaining = budget.expense_allocation - budget.expense_spent;
+                const percentSpent = budget.expense_allocation > 0 
+                  ? (budget.expense_spent / budget.expense_allocation) * 100 
+                  : 0;
+                const isOverBudget = budget.expense_spent > budget.expense_allocation;
+                
+                return (
+                  <div key={budget.id} className="p-4 bg-accent/20 rounded-lg border border-border/50">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-medium text-sm">{budget.name}</h3>
+                      {isOverBudget && (
+                        <span className="text-xs text-destructive font-medium">Over budget</span>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      {/* Expense allocation */}
+                      <div>
+                        <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                          <span>Expenses</span>
+                          <span>${budget.expense_spent.toFixed(0)} / ${budget.expense_allocation.toFixed(0)}</span>
+                        </div>
+                        <div className="w-full bg-muted rounded-full h-2">
+                          <div
+                            className={`h-full rounded-full transition-all ${
+                              isOverBudget ? 'bg-destructive' : percentSpent > 80 ? 'bg-secondary' : 'bg-primary'
+                            }`}
+                            style={{ width: `${Math.min(percentSpent, 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Savings allocation */}
+                      {budget.savings_allocation > 0 && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Savings</span>
+                          <span className="text-success">${budget.savings_allocation.toFixed(0)}/mo</span>
+                        </div>
+                      )}
+                      
+                      {/* Remaining */}
+                      <div className="flex justify-between text-sm pt-1 border-t border-border/30">
+                        <span className="text-muted-foreground">Remaining</span>
+                        <span className={remaining >= 0 ? 'text-success font-medium' : 'text-destructive font-medium'}>
+                          ${remaining.toFixed(0)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-6 text-muted-foreground">
+              <p>No budgets created yet</p>
+              <p className="text-sm">Create budgets to track your spending</p>
+            </div>
+          )}
         </div>
       </GlowCard>
 
