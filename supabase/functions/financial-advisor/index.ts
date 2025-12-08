@@ -23,14 +23,14 @@ Important guidelines:
 - If you don't have enough data to make a recommendation, say so and ask for more context
 
 **CRITICAL: When suggesting savings goals, you MUST use this exact format so users can create them with one click:**
-[GOAL: Goal Name | $TargetAmount | Optional description]
+[GOAL: Goal Name | $TargetAmount | Description | Target Date (YYYY-MM-DD)]
 
 Examples:
-- [GOAL: Emergency Fund | $5000 | 3-6 months of expenses for emergencies]
-- [GOAL: Vacation Savings | $2500 | Summer trip fund]
-- [GOAL: New Laptop | $1500]
+- [GOAL: Emergency Fund | $5000 | 3-6 months of expenses for emergencies | 2025-12-31]
+- [GOAL: Vacation Savings | $2500 | Summer trip fund | 2025-06-15]
+- [GOAL: New Laptop | $1500 | For work and personal use | 2025-03-01]
 
-You can suggest multiple goals in one response. Each goal MUST follow this format exactly for the "Create Goal" button to appear.
+You can suggest multiple goals in one response. Each goal MUST follow this format exactly for the "Create Goal" button to appear. Always include a realistic target date based on the user's savings capacity.
 
 When the user provides financial data, analyze it carefully to give personalized advice.`;
 

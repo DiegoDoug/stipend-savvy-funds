@@ -101,20 +101,22 @@ interface FinancialAdvisorChatProps {
 const parseGoalSuggestions = (content: string): SuggestedGoal[] => {
   const goals: SuggestedGoal[] = [];
   
-  // Match patterns like [GOAL: name | $amount | description]
-  const goalPattern = /\[GOAL:\s*([^|]+)\s*\|\s*\$?([\d,]+(?:\.\d{2})?)\s*(?:\|\s*([^\]]+))?\]/gi;
+  // Match patterns like [GOAL: name | $amount | description | date]
+  const goalPattern = /\[GOAL:\s*([^|]+)\s*\|\s*\$?([\d,]+(?:\.\d{2})?)\s*(?:\|\s*([^|\]]+))?\s*(?:\|\s*(\d{4}-\d{2}-\d{2}))?\s*\]/gi;
   let match;
   
   while ((match = goalPattern.exec(content)) !== null) {
     const name = match[1].trim();
     const amount = parseFloat(match[2].replace(/,/g, ''));
     const description = match[3]?.trim();
+    const targetDate = match[4]?.trim();
     
     if (name && !isNaN(amount) && amount > 0) {
       goals.push({
         name,
         targetAmount: amount,
         description,
+        targetDate,
       });
     }
   }
