@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +24,14 @@ import { useCategories } from "@/hooks/useCategories";
 import { useAccountStatus } from "@/hooks/useAccountStatus";
 import { expenseSchema } from "@/lib/validation";
 import { logError, getUserFriendlyErrorMessage } from "@/lib/errorLogger";
+import { Wallet, AlertCircle } from "lucide-react";
+
+interface Budget {
+  id: string;
+  name: string;
+  expense_allocation: number;
+  expense_spent: number;
+}
 
 interface AddExpenseDialogProps {
   open?: boolean;
@@ -37,8 +45,11 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [customCategory, setCustomCategory] = useState("");
+  const [budgetId, setBudgetId] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [isLoading, setIsLoading] = useState(false);
+  const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [budgetWarning, setBudgetWarning] = useState<string | null>(null);
   
   const { toast } = useToast();
   const { user } = useAuth();
@@ -46,6 +57,46 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
   const { checkAndNotify } = useAccountStatus();
 
   const expenseCategories = getExpenseCategories();
+
+  // Fetch budgets with expense allocation
+  useEffect(() => {
+    const fetchBudgets = async () => {
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from('budgets')
+        .select('id, name, expense_allocation, expense_spent')
+        .gt('expense_allocation', 0)
+        .order('name');
+      
+      if (!error && data) {
+        setBudgets(data as Budget[]);
+      }
+    };
+
+    if (open) {
+      fetchBudgets();
+    }
+  }, [user, open]);
+
+  // Check budget remaining when amount or budget changes
+  useEffect(() => {
+    if (budgetId && amount) {
+      const selectedBudget = budgets.find(b => b.id === budgetId);
+      if (selectedBudget) {
+        const remaining = Number(selectedBudget.expense_allocation) - Number(selectedBudget.expense_spent);
+        const expenseAmount = parseFloat(amount) || 0;
+        
+        if (expenseAmount > remaining) {
+          setBudgetWarning(`This expense exceeds the budget's remaining amount ($${remaining.toLocaleString()})`);
+        } else {
+          setBudgetWarning(null);
+        }
+      }
+    } else {
+      setBudgetWarning(null);
+    }
+  }, [budgetId, amount, budgets]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,10 +114,10 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
       return;
     }
 
-    if (!amount || !description || (!category && !customCategory)) {
+    if (!amount || !description || (!category && !customCategory) || !budgetId) {
       toast({
         title: "Error", 
-        description: "Please fill in all required fields.",
+        description: "Please fill in all required fields including budget.",
         variant: "destructive",
       });
       return;
@@ -106,6 +157,7 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
           {
             user_id: user.id,
             type: "expense",
+            budget_id: budgetId,
             ...validatedData,
           },
         ]);
@@ -122,7 +174,9 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
       setDescription("");
       setCategory("");
       setCustomCategory("");
+      setBudgetId("");
       setDate(new Date().toISOString().split('T')[0]);
+      setBudgetWarning(null);
       onExpenseAdded?.();
       onOpenChange?.(false);
     } catch (error: any) {
@@ -147,6 +201,11 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
       setIsLoading(false);
     }
   };
+
+  const selectedBudget = budgets.find(b => b.id === budgetId);
+  const budgetRemaining = selectedBudget 
+    ? Number(selectedBudget.expense_allocation) - Number(selectedBudget.expense_spent)
+    : 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -183,6 +242,48 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
                 required
               />
             </div>
+
+            {/* Budget Selection */}
+            <div className="grid gap-2">
+              <Label htmlFor="budget" className="flex items-center gap-1.5">
+                <Wallet className="w-3.5 h-3.5 text-warning" />
+                Budget
+              </Label>
+              <Select value={budgetId} onValueChange={setBudgetId} required>
+                <SelectTrigger id="budget">
+                  <SelectValue placeholder="Select a budget" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border border-border shadow-md z-50">
+                  {budgets.length === 0 ? (
+                    <SelectItem value="no-budgets" disabled>
+                      No budgets with expense allocation
+                    </SelectItem>
+                  ) : (
+                    budgets.map((budget) => {
+                      const remaining = Number(budget.expense_allocation) - Number(budget.expense_spent);
+                      return (
+                        <SelectItem key={budget.id} value={budget.id}>
+                          {budget.name} (${remaining.toLocaleString()} remaining)
+                        </SelectItem>
+                      );
+                    })
+                  )}
+                </SelectContent>
+              </Select>
+              {selectedBudget && (
+                <p className="text-xs text-muted-foreground">
+                  Budget: ${Number(selectedBudget.expense_spent).toLocaleString()} / ${Number(selectedBudget.expense_allocation).toLocaleString()} spent
+                </p>
+              )}
+            </div>
+
+            {/* Budget Warning */}
+            {budgetWarning && (
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-warning/10 border border-warning/30 text-warning text-sm">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                {budgetWarning}
+              </div>
+            )}
 
             <div className="grid gap-2">
               <Label htmlFor="category">Category</Label>
@@ -229,12 +330,12 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
+              onClick={() => onOpenChange?.(false)}
               disabled={isLoading}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading || budgets.length === 0}>
               {isLoading ? "Adding..." : "Add Expense"}
             </Button>
           </DialogFooter>
