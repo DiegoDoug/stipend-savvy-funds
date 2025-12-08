@@ -153,10 +153,12 @@ export default function Dashboard() {
         </div>
         <ExportPDFButton
           userName={profileData?.name || "User"}
+          periodLabel={getPeriodLabel()}
+          dateRangeText={periodStats.dateRange ? formatDateRange(periodStats.dateRange) : getPeriodLabel()}
           availableBalance={Math.max(0, periodStats.balance)}
           balanceChange={periodStats.balanceChange}
           totalSavings={Math.max(0, periodStats.savings)}
-          monthlyIncome={periodStats.totalIncome}
+          periodIncome={periodStats.totalIncome}
           incomeChange={periodStats.incomeChange}
           totalBudget={totalBudget}
           totalSpent={totalSpent}

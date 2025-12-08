@@ -6,10 +6,12 @@ import { toast } from 'sonner';
 
 interface ExportPDFButtonProps {
   userName: string;
+  periodLabel: string;
+  dateRangeText: string;
   availableBalance: number;
   balanceChange: { value: number; text: string; type: 'positive' | 'negative' | 'neutral' };
   totalSavings: number;
-  monthlyIncome: number;
+  periodIncome: number;
   incomeChange: { value: number; text: string; type: 'positive' | 'negative' | 'neutral' };
   totalBudget: number;
   totalSpent: number;
@@ -25,10 +27,12 @@ interface ExportPDFButtonProps {
 
 export default function ExportPDFButton({
   userName,
+  periodLabel,
+  dateRangeText,
   availableBalance,
   balanceChange,
   totalSavings,
-  monthlyIncome,
+  periodIncome,
   incomeChange,
   totalBudget,
   totalSpent,
@@ -45,10 +49,12 @@ export default function ExportPDFButton({
       
       generateDashboardPDF({
         userName,
+        periodLabel,
+        dateRangeText,
         availableBalance,
         balanceChange,
         totalSavings,
-        monthlyIncome,
+        periodIncome,
         incomeChange,
         totalBudget,
         totalSpent,
