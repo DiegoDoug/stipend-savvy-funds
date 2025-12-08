@@ -270,7 +270,7 @@ export default function Dashboard() {
                   </div>
                   <div className="text-right">
                     <p
-                      className={`font-semibold ${transaction.type === "income" ? "text-success" : "text-foreground"}`}
+                      className={`font-semibold ${transaction.type === "income" ? "text-success" : "text-destructive"}`}
                     >
                       {transaction.type === "income" ? "+" : "-"}${Number(transaction.amount)}
                     </p>
@@ -335,7 +335,7 @@ export default function Dashboard() {
                     </div>
                     <div className="text-right">
                       <p
-                        className={`font-semibold ${transaction.type === "income" ? "text-success" : "text-foreground"}`}
+                        className={`font-semibold ${transaction.type === "income" ? "text-success" : "text-destructive"}`}
                       >
                         {transaction.type === "income" ? "+" : "-"}${Number(transaction.amount)}
                       </p>
