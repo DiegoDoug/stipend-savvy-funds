@@ -150,9 +150,9 @@ const Goals: React.FC = () => {
     setShowAddFunds(true);
   };
 
-  const handleAddFunds = async (goalId: string, amount: number) => {
+  const handleAddFunds = async (goalId: string, amount: number, addedBy: 'user' | 'ai' = 'user') => {
     const goal = goals.find(g => g.id === goalId);
-    if (!goal) return;
+    if (!goal || !user) return;
 
     const newAmount = goal.current_amount + amount;
     
@@ -167,13 +167,26 @@ const Goals: React.FC = () => {
         description: 'Failed to add funds',
         variant: 'destructive',
       });
-    } else {
-      toast({
-        title: 'Success',
-        description: `Added $${amount.toFixed(2)} to "${goal.name}"`,
-      });
-      fetchGoals();
+      return;
     }
+
+    // Record the contribution in goal_progress_history
+    await supabase
+      .from('goal_progress_history')
+      .insert({
+        goal_id: goalId,
+        user_id: user.id,
+        amount: newAmount,
+        added_amount: amount,
+        added_by: addedBy,
+        goal_name: goal.name,
+      });
+
+    toast({
+      title: 'Success',
+      description: `Added $${amount.toFixed(2)} to "${goal.name}"`,
+    });
+    fetchGoals();
   };
 
   // Handle AI suggested goal creation
@@ -250,6 +263,10 @@ const Goals: React.FC = () => {
   const handleEditGoalFromAI = useCallback(async (id: string, data: { name?: string; currentAmount?: number; targetAmount?: number; targetDate?: string; description?: string }) => {
     if (!user) return;
     
+    // Find the goal to check for amount changes
+    const existingGoal = goals.find(g => g.id === id);
+    if (!existingGoal) return;
+    
     const updateData: Record<string, any> = {};
     if (data.name !== undefined) updateData.name = data.name;
     if (data.currentAmount !== undefined) updateData.current_amount = data.currentAmount;
@@ -269,14 +286,30 @@ const Goals: React.FC = () => {
         description: 'Failed to update goal',
         variant: 'destructive',
       });
-    } else {
-      toast({
-        title: 'Goal Updated',
-        description: `Updated goal: ${data.name || 'Goal'}`,
-      });
-      fetchGoals();
+      return;
     }
-  }, [user, toast, fetchGoals]);
+    
+    // If currentAmount was updated and increased, record the contribution
+    if (data.currentAmount !== undefined && data.currentAmount > existingGoal.current_amount) {
+      const addedAmount = data.currentAmount - existingGoal.current_amount;
+      await supabase
+        .from('goal_progress_history')
+        .insert({
+          goal_id: id,
+          user_id: user.id,
+          amount: data.currentAmount,
+          added_amount: addedAmount,
+          added_by: 'ai',
+          goal_name: data.name || existingGoal.name,
+        });
+    }
+
+    toast({
+      title: 'Goal Updated',
+      description: `Updated goal: ${data.name || existingGoal.name}`,
+    });
+    fetchGoals();
+  }, [user, toast, fetchGoals, goals]);
 
   // Handle AI-suggested expense edit
   const handleEditExpenseFromAI = useCallback(async (id: string, data: { description?: string; amount?: number; category?: string; date?: string }) => {

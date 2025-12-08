@@ -29,11 +29,21 @@ interface Refund {
   status: 'pending' | 'received';
 }
 
+export interface GoalContribution {
+  id: string;
+  goal_id: string;
+  goal_name: string | null;
+  added_amount: number;
+  added_by: 'user' | 'ai';
+  recorded_at: string;
+}
+
 export const useFinanceData = () => {
   const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [budgetCategories, setBudgetCategories] = useState<BudgetCategory[]>([]);
   const [refunds, setRefunds] = useState<Refund[]>([]);
+  const [goalContributions, setGoalContributions] = useState<GoalContribution[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchTransactions = async () => {
@@ -71,6 +81,20 @@ export const useFinanceData = () => {
 
     if (!error && data) {
       setRefunds(data as Refund[]);
+    }
+  };
+
+  const fetchGoalContributions = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('goal_progress_history')
+      .select('id, goal_id, goal_name, added_amount, added_by, recorded_at')
+      .gt('added_amount', 0)
+      .order('recorded_at', { ascending: false });
+
+    if (!error && data) {
+      setGoalContributions(data as GoalContribution[]);
     }
   };
 
@@ -172,7 +196,8 @@ export const useFinanceData = () => {
         await Promise.all([
           fetchTransactions(),
           fetchBudgetCategories(),
-          fetchRefunds()
+          fetchRefunds(),
+          fetchGoalContributions()
         ]);
         // Check and reset budgets if needed after loading data
         await checkAndResetBudgets();
@@ -187,6 +212,7 @@ export const useFinanceData = () => {
     transactions,
     budgetCategories,
     refunds,
+    goalContributions,
     loading,
     stats: calculateFinancialStats(),
     filterByPeriod: (period: PeriodType) => calculateFinancialStats(period),
@@ -195,7 +221,8 @@ export const useFinanceData = () => {
     refetch: {
       transactions: fetchTransactions,
       budgetCategories: fetchBudgetCategories,
-      refunds: fetchRefunds
+      refunds: fetchRefunds,
+      goalContributions: fetchGoalContributions
     }
   };
 };

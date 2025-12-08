@@ -8,7 +8,7 @@ interface StatCardProps {
   changeType?: "positive" | "negative" | "neutral";
   icon?: ReactNode;
   subtitle?: string;
-  glowColor?: 'blue' | 'purple' | 'green' | 'red' | 'orange';
+  glowColor?: 'blue' | 'purple' | 'green' | 'red' | 'orange' | 'yellow';
 }
 
 export default function StatCard({
