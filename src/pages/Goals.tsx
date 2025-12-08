@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFinanceData } from '@/hooks/useFinanceData';
 import { useCategories } from '@/hooks/useCategories';
 import { useBudgets } from '@/hooks/useBudgets';
-import { Target, Plus, Trash2, Pencil, DollarSign, Wallet, Link2, Calendar, Clock } from 'lucide-react';
+import { Target, Plus, Trash2, Pencil, DollarSign, Wallet, Link2, Calendar, Clock, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FinancialAdvisorChat, { FinancialContext, SuggestedGoal } from '@/components/UI/FinancialAdvisorChat';
@@ -872,15 +872,28 @@ const Goals: React.FC = () => {
                           const projection = getProjectedCompletion(goal.id, goal.current_amount, goal.target_amount);
                           if (!projection || projection.completed) return null;
                           
+                          // Check if projection is after target date
+                          const isLate = goal.target_date && projection.date > new Date(goal.target_date);
+                          
                           return (
-                            <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 border border-primary/20">
-                              <Clock className="w-4 h-4 text-primary shrink-0" />
+                            <div className={`flex items-center gap-2 p-2 rounded-lg ${
+                              isLate 
+                                ? 'bg-destructive/10 border border-destructive/30' 
+                                : 'bg-primary/5 border border-primary/20'
+                            }`}>
+                              {isLate ? (
+                                <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
+                              ) : (
+                                <Clock className="w-4 h-4 text-primary shrink-0" />
+                              )}
                               <div className="flex-1 min-w-0">
-                                <p className="text-xs text-muted-foreground">Projected completion</p>
-                                <p className="text-sm font-medium text-primary">
+                                <p className={`text-xs ${isLate ? 'text-destructive' : 'text-muted-foreground'}`}>
+                                  {isLate ? 'Behind schedule' : 'Projected completion'}
+                                </p>
+                                <p className={`text-sm font-medium ${isLate ? 'text-destructive' : 'text-primary'}`}>
                                   {projection.date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                                  <span className="text-xs text-muted-foreground ml-1">
-                                    ({projection.months} month{projection.months !== 1 ? 's' : ''})
+                                  <span className={`text-xs ml-1 ${isLate ? 'text-destructive/80' : 'text-muted-foreground'}`}>
+                                    ({projection.months} month{projection.months !== 1 ? 's' : ''}{isLate ? ' late' : ''})
                                   </span>
                                 </p>
                               </div>
