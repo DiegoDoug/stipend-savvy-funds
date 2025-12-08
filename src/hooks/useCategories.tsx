@@ -96,12 +96,33 @@ export const useCategories = () => {
   const addCustomCategory = async (name: string, label: string, type: 'income' | 'expense' | 'both') => {
     if (!user) return false;
 
+    // Normalize the category name
+    const normalizedName = name.toLowerCase().replace(/\s+/g, '-');
+
+    // Check if category already exists in default categories
+    const allDefaults = [...defaultExpenseCategories, ...defaultIncomeCategories, ...defaultBudgetCategories];
+    const existsInDefaults = allDefaults.some(cat => cat.value === normalizedName);
+    
+    if (existsInDefaults) {
+      // Category already exists as a default - just return success (no need to create)
+      return true;
+    }
+
+    // Check if category already exists in user's custom categories
+    const existsInCustom = customCategories.some(cat => cat.name === normalizedName);
+    
+    if (existsInCustom) {
+      // Category already exists as custom - just return success
+      return true;
+    }
+
+    // Only try to insert if it's truly new
     try {
       const { error } = await supabase
         .from('custom_categories')
         .insert({
           user_id: user.id,
-          name: name.toLowerCase().replace(/\s+/g, '-'),
+          name: normalizedName,
           label,
           type
         });
@@ -115,20 +136,18 @@ export const useCategories = () => {
       });
       return true;
     } catch (error: any) {
-      console.error('Error adding custom category:', error);
+      // Handle race condition - if insert fails due to duplicate, still return success
       if (error.code === '23505') {
-        toast({
-          title: "Error",
-          description: "Category already exists",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to add custom category",
-          variant: "destructive",
-        });
+        await fetchCustomCategories(); // Refresh to get the existing category
+        return true; // Category exists, so return success
       }
+      
+      console.error('Error adding custom category:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add custom category",
+        variant: "destructive",
+      });
       return false;
     }
   };
