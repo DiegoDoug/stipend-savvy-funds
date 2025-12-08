@@ -5,7 +5,9 @@ export interface DateRange {
   end: Date;
 }
 
-export const getDateRangeForPeriod = (period: 'week' | 'month' | 'semester' | 'year', referenceDate: Date = new Date()): DateRange => {
+export type PeriodType = 'week' | 'month' | 'quarter' | 'semester' | 'year';
+
+export const getDateRangeForPeriod = (period: PeriodType, referenceDate: Date = new Date()): DateRange => {
   const today = new Date(referenceDate);
   today.setHours(0, 0, 0, 0);
 
@@ -19,6 +21,14 @@ export const getDateRangeForPeriod = (period: 'week' | 'month' | 'semester' | 'y
     case 'month':
       return {
         start: startOfMonth(today),
+        end: endOfMonth(today)
+      };
+    
+    case 'quarter':
+      // 3 months period
+      const quarterStart = startOfMonth(addMonths(today, -2));
+      return {
+        start: quarterStart,
         end: endOfMonth(today)
       };
     
@@ -45,7 +55,7 @@ export const getDateRangeForPeriod = (period: 'week' | 'month' | 'semester' | 'y
   }
 };
 
-export const getPreviousPeriodRange = (period: 'week' | 'month' | 'semester' | 'year', referenceDate: Date = new Date()): DateRange => {
+export const getPreviousPeriodRange = (period: PeriodType, referenceDate: Date = new Date()): DateRange => {
   const today = new Date(referenceDate);
   today.setHours(0, 0, 0, 0);
 
@@ -62,6 +72,15 @@ export const getPreviousPeriodRange = (period: 'week' | 'month' | 'semester' | '
       return {
         start: startOfMonth(prevMonthDate),
         end: endOfMonth(prevMonthDate)
+      };
+    
+    case 'quarter':
+      // Previous 3 months before the current quarter
+      const prevQuarterEnd = addMonths(startOfMonth(today), -3);
+      const prevQuarterStart = addMonths(prevQuarterEnd, -2);
+      return {
+        start: startOfMonth(prevQuarterStart),
+        end: endOfMonth(prevQuarterEnd)
       };
     
     case 'semester':

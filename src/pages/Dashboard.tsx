@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { DollarSign, TrendingUp, PiggyBank, AlertCircle, CreditCard } from "lucide-react";
+import { DateRange } from "react-day-picker";
 import StatCard from "@/components/UI/StatCard";
 import ProgressBar from "@/components/UI/ProgressBar";
 import CategoryBadge from "@/components/UI/CategoryBadge";
@@ -9,12 +10,29 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { GlowCard } from "@/components/ui/spotlight-card";
 import ExportPDFButton from "@/components/UI/ExportPDFButton";
+import { DateRangePicker } from "@/components/UI/DateRangePicker";
+import { Button } from "@/components/ui/button";
+import { getCustomDateRange, formatDateRange, PeriodType, isDateInRange } from "@/lib/dateUtils";
+
+type DashboardPeriod = PeriodType | 'custom';
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [userTimezone] = useState<string>("America/Chicago");
-  const { transactions, budgetCategories, refunds, loading, stats, filterByPeriod } = useFinanceData();
-  const monthStats = filterByPeriod('month');
+  const [selectedPeriod, setSelectedPeriod] = useState<DashboardPeriod>('month');
+  const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>(undefined);
+  
+  const { transactions, budgetCategories, refunds, loading, filterByPeriod, filterByCustomRange } = useFinanceData();
+
+  // Calculate stats based on selected period or custom range
+  const periodStats = useMemo(() => {
+    if (selectedPeriod === 'custom' && customDateRange?.from && customDateRange?.to) {
+      const range = getCustomDateRange(customDateRange.from, customDateRange.to);
+      return filterByCustomRange(range);
+    }
+    return filterByPeriod(selectedPeriod === 'custom' ? 'month' : selectedPeriod);
+  }, [selectedPeriod, customDateRange, filterByPeriod, filterByCustomRange]);
+
   const totalBudget =
     budgetCategories.length > 0
       ? budgetCategories.reduce((sum, cat) => sum + Number(cat.allocated), 0)
@@ -27,7 +45,6 @@ export default function Dashboard() {
   // Get today's date in user's timezone
   const getUserLocalDate = () => {
     const now = new Date();
-    // Convert to user's timezone and get just the date part
     const localDateStr = now.toLocaleDateString("en-US", {
       timeZone: userTimezone,
       year: "numeric",
@@ -41,7 +58,7 @@ export default function Dashboard() {
   const todayLocal = getUserLocalDate();
   todayLocal.setHours(0, 0, 0, 0);
 
-  // NOW define nextRefund AFTER todayLocal is set
+  // Next refund (always looks at future regardless of period)
   const nextRefund = transactions
     .filter((t) => {
       const transactionDate = new Date(t.date);
@@ -61,17 +78,28 @@ export default function Dashboard() {
     fetchProfile();
   }, [user]);
 
-  // Recent Activity: past and today's transactions (most recent first)
-  const recentTransactions = transactions
-    .filter((t) => {
+  // Recent Activity: filter by selected period or show last 5 transactions up to today
+  const recentTransactions = useMemo(() => {
+    const filtered = transactions.filter((t) => {
       const transactionDate = new Date(t.date);
       transactionDate.setHours(0, 0, 0, 0);
-      return transactionDate <= todayLocal;
-    })
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 5);
+      
+      // Must be in the past or today
+      if (transactionDate > todayLocal) return false;
+      
+      // If custom range or period selected, filter by date range
+      if (periodStats.dateRange) {
+        return isDateInRange(t.date, periodStats.dateRange);
+      }
+      return true;
+    });
+    
+    return filtered
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 5);
+  }, [transactions, todayLocal, periodStats.dateRange]);
 
-  // Upcoming: future scheduled transactions (chronological order), excluding refunds
+  // Upcoming: future scheduled transactions (always shows future regardless of period)
   const upcomingTransactions = transactions
     .filter((t) => {
       const transactionDate = new Date(t.date);
@@ -80,6 +108,35 @@ export default function Dashboard() {
     })
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .slice(0, 5);
+
+  const handlePeriodChange = (period: DashboardPeriod) => {
+    setSelectedPeriod(period);
+    if (period !== 'custom') {
+      setCustomDateRange(undefined);
+    }
+  };
+
+  const handleCustomDateChange = (range: DateRange | undefined) => {
+    setCustomDateRange(range);
+    if (range?.from && range?.to) {
+      setSelectedPeriod('custom');
+    }
+  };
+
+  const getPeriodLabel = (): string => {
+    switch (selectedPeriod) {
+      case 'week': return 'This Week';
+      case 'month': return 'This Month';
+      case 'quarter': return 'Last 3 Months';
+      case 'custom': 
+        if (customDateRange?.from && customDateRange?.to) {
+          return formatDateRange(getCustomDateRange(customDateRange.from, customDateRange.to));
+        }
+        return 'Custom Range';
+      default: return 'This Month';
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -87,21 +144,22 @@ export default function Dashboard() {
       </div>
     );
   }
+
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Welcome back{profileData ? `, ${profileData.name}` : ""}! 👋</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">Here's your financial overview for this month</p>
+          <p className="text-sm sm:text-base text-muted-foreground">Here's your financial overview for {getPeriodLabel().toLowerCase()}</p>
         </div>
         <ExportPDFButton
           userName={profileData?.name || "User"}
-          availableBalance={Math.max(0, monthStats.balance)}
-          balanceChange={monthStats.balanceChange}
-          totalSavings={Math.max(0, monthStats.savings)}
-          monthlyIncome={monthStats.totalIncome}
-          incomeChange={monthStats.incomeChange}
+          availableBalance={Math.max(0, periodStats.balance)}
+          balanceChange={periodStats.balanceChange}
+          totalSavings={Math.max(0, periodStats.savings)}
+          monthlyIncome={periodStats.totalIncome}
+          incomeChange={periodStats.incomeChange}
           totalBudget={totalBudget}
           totalSpent={totalSpent}
           recentTransactions={recentTransactions}
@@ -115,29 +173,59 @@ export default function Dashboard() {
         />
       </div>
 
+      {/* Period Selector */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          variant={selectedPeriod === 'week' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => handlePeriodChange('week')}
+        >
+          This Week
+        </Button>
+        <Button
+          variant={selectedPeriod === 'month' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => handlePeriodChange('month')}
+        >
+          This Month
+        </Button>
+        <Button
+          variant={selectedPeriod === 'quarter' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => handlePeriodChange('quarter')}
+        >
+          3 Months
+        </Button>
+        <DateRangePicker
+          dateRange={customDateRange}
+          onDateRangeChange={handleCustomDateChange}
+          className="w-auto"
+        />
+      </div>
+
       {/* Net Worth Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         <StatCard
           title="Available Balance"
-          value={`$${Math.max(0, monthStats.balance).toLocaleString()}`}
-          change={monthStats.balanceChange.text}
-          changeType={monthStats.balanceChange.type}
+          value={`$${Math.max(0, periodStats.balance).toLocaleString()}`}
+          change={periodStats.balanceChange.text}
+          changeType={periodStats.balanceChange.type}
           icon={<DollarSign size={24} />}
           glowColor="blue"
         />
         <StatCard
           title="Total Savings"
-          value={`$${Math.max(0, monthStats.savings).toLocaleString()}`}
-          change={monthStats.balanceChange.text}
-          changeType={monthStats.balanceChange.type}
+          value={`$${Math.max(0, periodStats.savings).toLocaleString()}`}
+          change={periodStats.balanceChange.text}
+          changeType={periodStats.balanceChange.type}
           icon={<PiggyBank size={24} />}
           glowColor="purple"
         />
         <StatCard
-          title="Monthly Income"
-          value={`$${monthStats.totalIncome.toLocaleString()}`}
-          change={monthStats.incomeChange.text}
-          changeType={monthStats.incomeChange.type}
+          title={`${selectedPeriod === 'week' ? 'Weekly' : selectedPeriod === 'quarter' ? 'Quarterly' : selectedPeriod === 'custom' ? 'Period' : 'Monthly'} Income`}
+          value={`$${periodStats.totalIncome.toLocaleString()}`}
+          change={periodStats.incomeChange.text}
+          changeType={periodStats.incomeChange.type}
           icon={<TrendingUp size={24} />}
           glowColor="green"
         />
@@ -191,8 +279,8 @@ export default function Dashboard() {
               ))
             ) : (
               <div className="text-center py-8 text-muted-foreground">
-                <p>No transactions yet</p>
-                <p className="text-sm">Start by adding your first transaction</p>
+                <p>No transactions in this period</p>
+                <p className="text-sm">Try selecting a different date range</p>
               </div>
             )}
           </div>

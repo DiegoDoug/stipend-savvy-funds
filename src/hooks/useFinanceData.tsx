@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { getDateRangeForPeriod, getPreviousPeriodRange, isDateInRange, calculatePercentageChange, DateRange } from '@/lib/dateUtils';
+import { getDateRangeForPeriod, getPreviousPeriodRange, isDateInRange, calculatePercentageChange, DateRange, PeriodType } from '@/lib/dateUtils';
 
 interface Transaction {
   id: string;
@@ -78,9 +78,11 @@ export const useFinanceData = () => {
     return transactions.filter(t => isDateInRange(t.date, range));
   };
 
-  const calculateFinancialStats = (period: 'week' | 'month' | 'semester' | 'year' = 'month') => {
-    const currentRange = getDateRangeForPeriod(period);
-    const previousRange = getPreviousPeriodRange(period);
+  const calculateFinancialStats = (period: PeriodType = 'month', customRange?: DateRange) => {
+    const currentRange = customRange || getDateRangeForPeriod(period);
+    const previousRange = customRange 
+      ? getPreviousCustomRange(customRange)
+      : getPreviousPeriodRange(period);
 
     const currentTransactions = filterTransactionsByRange(currentRange);
     const previousTransactions = filterTransactionsByRange(previousRange);
@@ -124,8 +126,19 @@ export const useFinanceData = () => {
       balanceChange,
       currentTransactions,
       previousIncome,
-      previousExpenses
+      previousExpenses,
+      dateRange: currentRange
     };
+  };
+
+  // Helper to get previous range for custom date ranges
+  const getPreviousCustomRange = (range: DateRange): DateRange => {
+    const duration = range.end.getTime() - range.start.getTime();
+    const previousEnd = new Date(range.start.getTime() - 1);
+    previousEnd.setHours(23, 59, 59, 999);
+    const previousStart = new Date(previousEnd.getTime() - duration);
+    previousStart.setHours(0, 0, 0, 0);
+    return { start: previousStart, end: previousEnd };
   };
 
   const checkAndResetBudgets = async () => {
@@ -176,7 +189,8 @@ export const useFinanceData = () => {
     refunds,
     loading,
     stats: calculateFinancialStats(),
-    filterByPeriod: (period: 'week' | 'month' | 'semester' | 'year') => calculateFinancialStats(period),
+    filterByPeriod: (period: PeriodType) => calculateFinancialStats(period),
+    filterByCustomRange: (range: DateRange) => calculateFinancialStats('month', range),
     filterTransactionsByRange,
     refetch: {
       transactions: fetchTransactions,
