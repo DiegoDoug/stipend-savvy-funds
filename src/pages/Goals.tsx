@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFinanceData } from '@/hooks/useFinanceData';
 import { Target, Plus, Trash2 } from 'lucide-react';
 import FinancialAdvisorChat from '@/components/UI/FinancialAdvisorChat';
+import AIInsightsCard from '@/components/UI/AIInsightsCard';
 
 type SavingsGoal = {
   id: string;
@@ -136,15 +137,28 @@ const Goals: React.FC = () => {
     return target > 0 ? (current / target) * 100 : 0;
   };
 
+  const financialContext = {
+    transactions: transactions.slice(0, 50),
+    budgets: budgetCategories,
+    goals,
+    stats: {
+      balance: stats.balance,
+      monthlyIncome: stats.totalIncome,
+      monthlyExpenses: stats.totalExpenses,
+    },
+  };
+
   if (loading) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-4 lg:p-6">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-muted rounded w-1/4"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-48 bg-muted rounded"></div>
-            ))}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="h-48 bg-muted rounded"></div>
+              <div className="h-48 bg-muted rounded"></div>
+            </div>
+            <div className="h-[500px] bg-muted rounded"></div>
           </div>
         </div>
       </div>
@@ -152,17 +166,19 @@ const Goals: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto p-4 lg:p-6">
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold">Savings Goals</h1>
-          <p className="text-muted-foreground">Track your financial goals</p>
+          <h1 className="text-2xl lg:text-3xl font-bold">Savings Goals</h1>
+          <p className="text-muted-foreground text-sm lg:text-base">Track your financial goals with AI insights</p>
         </div>
         <Dialog open={showAddGoal} onOpenChange={setShowAddGoal}>
           <DialogTrigger asChild>
-            <Button>
+            <Button size="sm" className="lg:size-default">
               <Plus className="mr-2 h-4 w-4" />
-              Add Goal
+              <span className="hidden sm:inline">Add Goal</span>
+              <span className="sm:hidden">Add</span>
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -223,95 +239,107 @@ const Goals: React.FC = () => {
         </Dialog>
       </div>
 
-      {goals.length === 0 ? (
-        <Card className="text-center py-12">
-          <CardContent>
-            <Target className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Goals Yet</h3>
-            <p className="text-muted-foreground mb-4">Create your first savings goal to get started</p>
-            <Button onClick={() => setShowAddGoal(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Create Goal
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {goals.map(goal => {
-            const progress = getProgress(goal.current_amount, goal.target_amount);
-            const isCompleted = progress >= 100;
+      {/* Two-Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left Column - Insights & Goals */}
+        <div className="space-y-6">
+          {/* AI Insights Card */}
+          <AIInsightsCard
+            stats={financialContext.stats}
+            transactions={transactions}
+            budgets={budgetCategories}
+            goals={goals}
+          />
 
-            return (
-              <Card key={goal.id} className={isCompleted ? 'border-primary' : ''}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-xl">{goal.name}</CardTitle>
-                      {goal.description && (
-                        <CardDescription className="mt-1">{goal.description}</CardDescription>
-                      )}
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDeleteGoal(goal.id)}
-                      className="ml-2"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <div className="flex justify-between text-sm mb-2">
-                      <span className="text-muted-foreground">Progress</span>
-                      <span className="font-medium">{progress.toFixed(1)}%</span>
-                    </div>
-                    <Progress value={progress} className="h-2" />
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Current</p>
-                      <p className="text-lg font-bold">{formatCurrency(goal.current_amount)}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-muted-foreground">Target</p>
-                      <p className="text-lg font-bold">{formatCurrency(goal.target_amount)}</p>
-                    </div>
-                  </div>
-
-                  {goal.target_date && (
-                    <div className="text-sm text-muted-foreground">
-                      Target: {new Date(goal.target_date).toLocaleDateString()}
-                    </div>
-                  )}
-
-                  {isCompleted && (
-                    <div className="text-sm font-medium text-primary text-center py-2 bg-primary/10 rounded">
-                      🎉 Goal Completed!
-                    </div>
-                  )}
+          {/* Savings Goals */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold">Your Goals</h2>
+            
+            {goals.length === 0 ? (
+              <Card className="text-center py-8">
+                <CardContent>
+                  <Target className="mx-auto h-10 w-10 text-muted-foreground mb-3" />
+                  <h3 className="text-base font-semibold mb-2">No Goals Yet</h3>
+                  <p className="text-sm text-muted-foreground mb-4">Create your first savings goal to get started</p>
+                  <Button onClick={() => setShowAddGoal(true)} size="sm">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Goal
+                  </Button>
                 </CardContent>
               </Card>
-            );
-          })}
-        </div>
-      )}
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {goals.map(goal => {
+                  const progress = getProgress(goal.current_amount, goal.target_amount);
+                  const isCompleted = progress >= 100;
 
-      {/* AI Financial Advisor Chat */}
-      <FinancialAdvisorChat
-        financialContext={{
-          transactions: transactions.slice(0, 50), // Send recent 50 transactions
-          budgets: budgetCategories,
-          goals,
-          stats: {
-            balance: stats.balance,
-            monthlyIncome: stats.totalIncome,
-            monthlyExpenses: stats.totalExpenses,
-          },
-        }}
-      />
+                  return (
+                    <Card key={goal.id} className={isCompleted ? 'border-primary' : ''}>
+                      <CardHeader className="pb-2">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <CardTitle className="text-base truncate">{goal.name}</CardTitle>
+                            {goal.description && (
+                              <CardDescription className="mt-1 text-xs truncate">{goal.description}</CardDescription>
+                            )}
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteGoal(goal.id)}
+                            className="ml-2 h-8 w-8 shrink-0"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div>
+                          <div className="flex justify-between text-xs mb-1.5">
+                            <span className="text-muted-foreground">Progress</span>
+                            <span className="font-medium">{progress.toFixed(1)}%</span>
+                          </div>
+                          <Progress value={progress} className="h-2" />
+                        </div>
+                        
+                        <div className="flex justify-between items-center text-sm">
+                          <div>
+                            <p className="text-xs text-muted-foreground">Current</p>
+                            <p className="font-semibold">{formatCurrency(goal.current_amount)}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-muted-foreground">Target</p>
+                            <p className="font-semibold">{formatCurrency(goal.target_amount)}</p>
+                          </div>
+                        </div>
+
+                        {goal.target_date && (
+                          <div className="text-xs text-muted-foreground">
+                            Target: {new Date(goal.target_date).toLocaleDateString()}
+                          </div>
+                        )}
+
+                        {isCompleted && (
+                          <div className="text-xs font-medium text-primary text-center py-1.5 bg-primary/10 rounded">
+                            🎉 Goal Completed!
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Column - AI Chat */}
+        <div className="lg:sticky lg:top-6 h-fit">
+          <div className="h-[500px] lg:h-[calc(100vh-12rem)]">
+            <FinancialAdvisorChat financialContext={financialContext} />
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
