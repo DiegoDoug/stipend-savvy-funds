@@ -22,10 +22,12 @@ interface RefundData {
 
 interface DashboardData {
   userName: string;
+  periodLabel: string;
+  dateRangeText: string;
   availableBalance: number;
   balanceChange: { value: number; text: string; type: 'positive' | 'negative' | 'neutral' };
   totalSavings: number;
-  monthlyIncome: number;
+  periodIncome: number;
   incomeChange: { value: number; text: string; type: 'positive' | 'negative' | 'neutral' };
   totalBudget: number;
   totalSpent: number;
@@ -66,14 +68,16 @@ export const generateDashboardPDF = (data: DashboardData) => {
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100, 100, 100);
+  doc.text(`Period: ${data.periodLabel}`, margin, yPos + 7);
+  doc.text(`Date Range: ${data.dateRangeText}`, margin, yPos + 12);
+  doc.text(`User: ${data.userName}`, margin, yPos + 17);
   doc.text(`Generated: ${new Date().toLocaleDateString('en-US', { 
     month: 'long', 
     day: 'numeric', 
     year: 'numeric' 
-  })}`, margin, yPos + 7);
-  doc.text(`User: ${data.userName}`, margin, yPos + 12);
+  })}`, margin, yPos + 22);
   
-  yPos += 25;
+  yPos += 32;
 
   // Draw separator line
   doc.setDrawColor(200, 200, 200);
@@ -102,7 +106,7 @@ export const generateDashboardPDF = (data: DashboardData) => {
   doc.text(`Total Savings: ${formatCurrency(data.totalSavings)}`, margin, yPos);
   yPos += 6;
 
-  const incomeText = `Monthly Income: ${formatCurrency(data.monthlyIncome)}`;
+  const incomeText = `${data.periodLabel} Income: ${formatCurrency(data.periodIncome)}`;
   const incomeChangeText = `(${data.incomeChange.text})`;
   doc.text(incomeText, margin, yPos);
   doc.setTextColor(data.incomeChange.type === 'positive' ? 0 : data.incomeChange.type === 'negative' ? 200 : 100, 
