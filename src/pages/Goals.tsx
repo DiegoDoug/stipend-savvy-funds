@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useFinanceData } from '@/hooks/useFinanceData';
 import { useCategories } from '@/hooks/useCategories';
+import { useBudgets } from '@/hooks/useBudgets';
 import { Target, Plus, Trash2, Pencil, DollarSign } from 'lucide-react';
 import FinancialAdvisorChat, { FinancialContext, SuggestedGoal } from '@/components/UI/FinancialAdvisorChat';
 import AIInsightsCard from '@/components/UI/AIInsightsCard';
@@ -35,6 +36,12 @@ const Goals: React.FC = () => {
   const { toast } = useToast();
   const { transactions, budgetCategories, stats, refunds, budgets } = useFinanceData();
   const { customCategories } = useCategories();
+  const { 
+    createBudget, 
+    updateBudget, 
+    deleteBudget, 
+    refetch: budgetRefetch 
+  } = useBudgets();
   const [goals, setGoals] = useState<SavingsGoal[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddGoal, setShowAddGoal] = useState(false);
@@ -371,6 +378,102 @@ const Goals: React.FC = () => {
     }
   }, [user, toast]);
 
+  // Handle AI-suggested budget creation
+  const handleCreateBudgetFromAI = useCallback(async (budget: { 
+    name: string; 
+    expenseAllocation: number; 
+    savingsAllocation: number; 
+    description?: string; 
+    linkedGoalName?: string 
+  }) => {
+    if (!user) return;
+    
+    // Find goal ID by name if provided
+    let linkedGoalId: string | undefined;
+    if (budget.linkedGoalName) {
+      const goal = goals.find(g => g.name.toLowerCase() === budget.linkedGoalName!.toLowerCase());
+      linkedGoalId = goal?.id;
+    }
+    
+    const success = await createBudget(
+      budget.name,
+      budget.expenseAllocation,
+      budget.savingsAllocation,
+      budget.description,
+      linkedGoalId
+    );
+    
+    if (success) {
+      budgetRefetch.budgets();
+    }
+  }, [user, goals, createBudget, budgetRefetch]);
+
+  // Handle AI-suggested budget edit
+  const handleEditBudgetFromAI = useCallback(async (id: string, data: { 
+    name?: string; 
+    expenseAllocation?: number; 
+    savingsAllocation?: number; 
+    description?: string; 
+    linkedGoalName?: string 
+  }) => {
+    if (!user) return;
+    
+    const updates: Record<string, any> = {};
+    if (data.name !== undefined) updates.name = data.name;
+    if (data.expenseAllocation !== undefined) updates.expense_allocation = data.expenseAllocation;
+    if (data.savingsAllocation !== undefined) updates.savings_allocation = data.savingsAllocation;
+    if (data.description !== undefined) updates.description = data.description;
+    
+    // Find goal ID by name if provided
+    if (data.linkedGoalName !== undefined) {
+      if (data.linkedGoalName) {
+        const goal = goals.find(g => g.name.toLowerCase() === data.linkedGoalName!.toLowerCase());
+        updates.linked_savings_goal_id = goal?.id || null;
+      } else {
+        updates.linked_savings_goal_id = null;
+      }
+    }
+    
+    const success = await updateBudget(id, updates);
+    if (success) {
+      budgetRefetch.budgets();
+    }
+  }, [user, goals, updateBudget, budgetRefetch]);
+
+  // Handle AI-suggested budget deletion
+  const handleDeleteBudgetFromAI = useCallback(async (id: string) => {
+    if (!user) return;
+    
+    const success = await deleteBudget(id);
+    if (success) {
+      budgetRefetch.budgets();
+    }
+  }, [user, deleteBudget, budgetRefetch]);
+
+  // Handle AI-suggested goal-to-budget linking
+  const handleLinkGoalToBudgetFromAI = useCallback(async (budgetId: string, goalName: string) => {
+    if (!user) return;
+    
+    const goal = goals.find(g => g.name.toLowerCase() === goalName.toLowerCase());
+    if (!goal) {
+      toast({
+        title: 'Goal not found',
+        description: `Could not find a goal named "${goalName}"`,
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    const success = await updateBudget(budgetId, { linked_savings_goal_id: goal.id });
+    if (success) {
+      budgetRefetch.budgets();
+      toast({
+        title: 'Goal linked',
+        description: `Linked "${goal.name}" to the budget`,
+      });
+    }
+  }, [user, goals, updateBudget, budgetRefetch, toast]);
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
   };
@@ -671,6 +774,10 @@ const Goals: React.FC = () => {
                 const goal = goals.find(g => g.name.toLowerCase() === goalName.toLowerCase());
                 if (goal) handleAddFunds(goal.id, amount, 'ai');
               }}
+              onCreateBudget={handleCreateBudgetFromAI}
+              onEditBudget={handleEditBudgetFromAI}
+              onDeleteBudget={handleDeleteBudgetFromAI}
+              onLinkGoalToBudget={handleLinkGoalToBudgetFromAI}
             />
           </div>
         </div>
