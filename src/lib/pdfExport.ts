@@ -37,16 +37,19 @@ interface DashboardData {
   nextRefund?: RefundData;
 }
 
-// Brand colors
-const BRAND_PRIMARY = [45, 212, 191]; // Teal #2DD4BF
-const BRAND_DARK = [15, 23, 42]; // Slate-900
+// Brand colors matching the template
+const BRAND_NAVY = [26, 32, 53]; // Dark navy #1A2035
+const BRAND_CYAN = [45, 212, 191]; // Teal/Cyan #2DD4BF
+const BRAND_PURPLE = [100, 100, 200]; // Purple accent
+const BRAND_YELLOW = [234, 179, 8]; // Yellow accent for section bars
+const BRAND_LIGHT_BG = [243, 244, 246]; // Light gray background
 
 export const generateDashboardPDF = async (data: DashboardData) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 20;
-  let yPos = 20;
+  let yPos = 0;
 
   // Helper function to format currency
   const formatCurrency = (amount: number) => {
@@ -59,13 +62,13 @@ export const generateDashboardPDF = async (data: DashboardData) => {
   // Helper function to format date
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
       year: 'numeric',
     });
   };
 
-  // Load logo images
+  // Load icon image
   const loadImage = (src: string): Promise<HTMLImageElement> => {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -77,197 +80,212 @@ export const generateDashboardPDF = async (data: DashboardData) => {
   };
 
   try {
-    // Try to load logos
-    const [logoImg, iconImg] = await Promise.all([
-      loadImage('/images/fintrack-logo.png').catch(() => null),
-      loadImage('/images/fintrack-icon.png').catch(() => null)
-    ]);
+    const iconImg = await loadImage('/images/fintrack-icon.png').catch(() => null);
 
-    // Header with branding
-    if (iconImg) {
-      doc.addImage(iconImg, 'PNG', margin, yPos - 5, 12, 12);
-    }
+    // ===== HEADER SECTION =====
+    const headerHeight = 65;
     
-    doc.setFontSize(28);
+    // Navy background
+    doc.setFillColor(BRAND_NAVY[0], BRAND_NAVY[1], BRAND_NAVY[2]);
+    doc.rect(0, 0, pageWidth, headerHeight, 'F');
+    
+    // Decorative corner squares - top left
+    doc.setFillColor(100, 100, 180); // Purple
+    doc.rect(0, 0, 25, 30, 'F');
+    doc.setFillColor(70, 130, 180); // Blue
+    doc.rect(25, 0, 20, 20, 'F');
+    
+    // Decorative corner squares - top right
+    doc.setFillColor(240, 230, 200); // Cream
+    doc.rect(pageWidth - 40, 0, 40, 25, 'F');
+    doc.setFillColor(70, 130, 180); // Blue
+    doc.rect(pageWidth - 20, 25, 20, 15, 'F');
+    
+    // FINTRACK text with gradient effect (simulated with two colors)
+    doc.setFontSize(42);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(BRAND_PRIMARY[0], BRAND_PRIMARY[1], BRAND_PRIMARY[2]);
-    doc.text('FinTrack', iconImg ? margin + 15 : margin, yPos + 5);
+    // Cyan part "FIN"
+    doc.setTextColor(BRAND_CYAN[0], BRAND_CYAN[1], BRAND_CYAN[2]);
+    doc.text('FIN', pageWidth / 2 - 45, 30);
+    // Transition to purple "TRACK"
+    doc.setTextColor(130, 140, 200);
+    doc.text('TRACK', pageWidth / 2, 30);
     
-    yPos += 20;
+    // FINANCIAL REPORT subtitle
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 255, 255);
+    doc.text('FINANCIAL REPORT', pageWidth / 2, 50, { align: 'center' });
+    
+    yPos = headerHeight + 15;
 
-    // Branded header bar
-    doc.setFillColor(BRAND_PRIMARY[0], BRAND_PRIMARY[1], BRAND_PRIMARY[2]);
-    doc.rect(margin, yPos, pageWidth - 2 * margin, 1, 'F');
+    // ===== REPORT DETAILS =====
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(60, 60, 60);
+    doc.text(`Date Range: `, margin, yPos);
+    doc.setFont('helvetica', 'normal');
+    doc.text(data.dateRangeText, margin + 28, yPos);
     yPos += 8;
-
-    // Title section
-    doc.setFontSize(10);
+    
+    doc.setFont('helvetica', 'italic');
+    doc.text(`User: `, margin, yPos);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(BRAND_PRIMARY[0], BRAND_PRIMARY[1], BRAND_PRIMARY[2]);
-    doc.text('FinTrack — Branded Financial Report', margin, yPos);
-    yPos += 10;
-
-    doc.setFontSize(22);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(BRAND_DARK[0], BRAND_DARK[1], BRAND_DARK[2]);
-    doc.text('Financial Report', margin, yPos);
-    yPos += 10;
-
-    // Report details
-    doc.setFontSize(10);
+    doc.text(data.userName, margin + 12, yPos);
+    yPos += 8;
+    
+    doc.setFont('helvetica', 'italic');
+    doc.text(`Generated Date: `, margin, yPos);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Period: ${data.periodLabel}`, margin, yPos);
-    yPos += 5;
-    doc.text(`Date Range: ${data.dateRangeText}`, margin, yPos);
-    yPos += 5;
-    doc.text(`User: ${data.userName}`, margin, yPos);
-    yPos += 5;
-    doc.text(`Generated: ${new Date().toLocaleDateString('en-US', { 
+    doc.text(new Date().toLocaleDateString('en-US', { 
       month: 'long', 
       day: 'numeric', 
       year: 'numeric' 
-    })}`, margin, yPos);
-    yPos += 12;
+    }), margin + 38, yPos);
+    yPos += 15;
 
-    // Separator
-    doc.setDrawColor(200, 200, 200);
-    doc.line(margin, yPos, pageWidth - margin, yPos);
-    yPos += 12;
+    // ===== FINANCIAL SUMMARY SECTION =====
+    const drawSectionHeader = (title: string, y: number) => {
+      // Yellow left accent bar
+      doc.setFillColor(BRAND_YELLOW[0], BRAND_YELLOW[1], BRAND_YELLOW[2]);
+      doc.rect(margin, y, 4, 12, 'F');
+      // Navy background
+      doc.setFillColor(BRAND_NAVY[0], BRAND_NAVY[1], BRAND_NAVY[2]);
+      doc.rect(margin + 4, y, pageWidth - 2 * margin - 4, 12, 'F');
+      // White text
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(255, 255, 255);
+      doc.text(title, margin + 10, y + 8);
+    };
 
-    // Financial Summary Section
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(BRAND_DARK[0], BRAND_DARK[1], BRAND_DARK[2]);
-    doc.text('Financial Summary', margin, yPos);
-    yPos += 10;
-
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
-    
-    const balanceText = `Available Balance: ${formatCurrency(data.availableBalance)}`;
-    const balanceChangeText = `(${data.balanceChange.text})`;
-    doc.setTextColor(BRAND_DARK[0], BRAND_DARK[1], BRAND_DARK[2]);
-    doc.text(balanceText, margin, yPos);
-    doc.setTextColor(
-      data.balanceChange.type === 'positive' ? 34 : data.balanceChange.type === 'negative' ? 239 : 100, 
-      data.balanceChange.type === 'positive' ? 197 : data.balanceChange.type === 'negative' ? 68 : 100, 
-      data.balanceChange.type === 'positive' ? 94 : data.balanceChange.type === 'negative' ? 68 : 100
-    );
-    doc.text(balanceChangeText, margin + doc.getTextWidth(balanceText) + 2, yPos);
-    yPos += 7;
-
-    doc.setTextColor(BRAND_DARK[0], BRAND_DARK[1], BRAND_DARK[2]);
-    doc.text(`Total Savings: ${formatCurrency(data.totalSavings)}`, margin, yPos);
-    yPos += 7;
-
-    const incomeText = `${data.periodLabel} Income: ${formatCurrency(data.periodIncome)}`;
-    const incomeChangeText = `(${data.incomeChange.text})`;
-    doc.text(incomeText, margin, yPos);
-    doc.setTextColor(
-      data.incomeChange.type === 'positive' ? 34 : data.incomeChange.type === 'negative' ? 239 : 100, 
-      data.incomeChange.type === 'positive' ? 197 : data.incomeChange.type === 'negative' ? 68 : 100, 
-      data.incomeChange.type === 'positive' ? 94 : data.incomeChange.type === 'negative' ? 68 : 100
-    );
-    doc.text(incomeChangeText, margin + doc.getTextWidth(incomeText) + 2, yPos);
-    yPos += 14;
-
-    // Budget Status Section
-    doc.setTextColor(BRAND_DARK[0], BRAND_DARK[1], BRAND_DARK[2]);
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Budget Status', margin, yPos);
-    yPos += 10;
-
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
-    const budgetPercentage = data.totalBudget > 0 ? Math.round((data.totalSpent / data.totalBudget) * 100) : 0;
-    doc.text(`Spent: ${formatCurrency(data.totalSpent)} / ${formatCurrency(data.totalBudget)} (${budgetPercentage}% used)`, margin, yPos);
-    yPos += 8;
-
-    // Budget progress bar with teal branding
-    const barWidth = pageWidth - 2 * margin;
-    const barHeight = 10;
-    doc.setFillColor(240, 240, 240);
-    doc.roundedRect(margin, yPos, barWidth, barHeight, 2, 2, 'F');
-    
-    if (data.totalBudget > 0) {
-      const fillWidth = Math.min((data.totalSpent / data.totalBudget) * barWidth, barWidth);
-      const fillColor = budgetPercentage >= 90 ? [239, 68, 68] : 
-                        budgetPercentage >= 75 ? [251, 191, 36] : 
-                        BRAND_PRIMARY;
-      doc.setFillColor(fillColor[0], fillColor[1], fillColor[2]);
-      doc.roundedRect(margin, yPos, fillWidth, barHeight, 2, 2, 'F');
-    }
+    drawSectionHeader('FINANCIAL SUMMARY', yPos);
     yPos += 20;
 
-    // Recent Transactions Section
-    if (data.recentTransactions.length > 0) {
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(BRAND_DARK[0], BRAND_DARK[1], BRAND_DARK[2]);
-      doc.text(`Recent Transactions`, margin, yPos);
-      yPos += 10;
+    // 3-column layout for financial summary
+    const colWidth = (pageWidth - 2 * margin) / 3;
+    
+    // Labels
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(40, 40, 40);
+    doc.text('Available Balance', margin, yPos);
+    doc.text('Total Savings', margin + colWidth, yPos);
+    doc.text(`${data.periodLabel} Income`, margin + colWidth * 2, yPos);
+    yPos += 8;
+    
+    // Values
+    doc.setFont('helvetica', 'normal');
+    const balanceText = `${formatCurrency(data.availableBalance)} (${data.balanceChange.text})`;
+    const incomeText = `${formatCurrency(data.periodIncome)} (${data.incomeChange.text})`;
+    doc.text(balanceText, margin, yPos);
+    doc.text(formatCurrency(data.totalSavings), margin + colWidth, yPos);
+    doc.text(incomeText, margin + colWidth * 2, yPos);
+    yPos += 18;
 
-      const drawTransactionHeader = () => {
-        // Table header with teal background
-        doc.setFillColor(BRAND_PRIMARY[0], BRAND_PRIMARY[1], BRAND_PRIMARY[2]);
-        doc.rect(margin, yPos - 4, pageWidth - 2 * margin, 8, 'F');
+    // ===== BUDGET STATUS SECTION =====
+    drawSectionHeader('BUDGET STATUS', yPos);
+    yPos += 20;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(40, 40, 40);
+    const budgetPercentage = data.totalBudget > 0 ? Math.round((data.totalSpent / data.totalBudget) * 100) : 0;
+    doc.text(`Spent: ${formatCurrency(data.totalSpent)} / ${formatCurrency(data.totalBudget)}`, margin, yPos);
+    yPos += 8;
+    doc.text(`Progress: ${budgetPercentage}%`, margin, yPos);
+    yPos += 18;
+
+    // ===== RECENT TRANSACTIONS SECTION =====
+    if (data.recentTransactions.length > 0) {
+      drawSectionHeader('RECENT TRANSACTIONS', yPos);
+      yPos += 18;
+
+      const tableLeft = margin;
+      const tableWidth = pageWidth - 2 * margin;
+      const colWidths = [tableWidth * 0.2, tableWidth * 0.35, tableWidth * 0.25, tableWidth * 0.2];
+
+      const drawTableHeader = () => {
+        // Header row with navy background
+        doc.setFillColor(BRAND_NAVY[0], BRAND_NAVY[1], BRAND_NAVY[2]);
+        doc.rect(tableLeft, yPos, tableWidth, 10, 'F');
         
         doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(255, 255, 255);
-        doc.text('Date', margin + 3, yPos);
-        doc.text('Description', margin + 40, yPos);
-        doc.text('Category', margin + 100, yPos);
-        doc.text('Amount', pageWidth - margin - 25, yPos);
-        yPos += 6;
+        
+        let xPos = tableLeft + 3;
+        doc.text('Date', xPos, yPos + 7);
+        xPos += colWidths[0];
+        doc.text('Description', xPos, yPos + 7);
+        xPos += colWidths[1];
+        doc.text('Category', xPos, yPos + 7);
+        xPos += colWidths[2];
+        doc.text('Amount', xPos, yPos + 7);
+        
+        yPos += 10;
       };
 
-      drawTransactionHeader();
+      drawTableHeader();
 
       doc.setFont('helvetica', 'normal');
-      let isAlternate = false;
       
-      data.recentTransactions.forEach((transaction) => {
+      data.recentTransactions.forEach((transaction, index) => {
         // Check if we need a new page
         if (yPos > pageHeight - 40) {
-          addFooter(doc, pageWidth, pageHeight, margin);
+          addFooter(doc, pageWidth, pageHeight, margin, iconImg);
           doc.addPage();
           yPos = 25;
-          drawTransactionHeader();
-          isAlternate = false;
+          drawTableHeader();
         }
+        
+        const rowHeight = 10;
         
         // Alternating row background
-        if (isAlternate) {
-          doc.setFillColor(248, 250, 252);
-          doc.rect(margin, yPos - 4, pageWidth - 2 * margin, 7, 'F');
+        if (index % 2 === 1) {
+          doc.setFillColor(BRAND_LIGHT_BG[0], BRAND_LIGHT_BG[1], BRAND_LIGHT_BG[2]);
+          doc.rect(tableLeft, yPos, tableWidth, rowHeight, 'F');
         }
-        isAlternate = !isAlternate;
         
+        // Draw cell borders
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.3);
+        let xPos = tableLeft;
+        for (let i = 0; i < colWidths.length; i++) {
+          doc.rect(xPos, yPos, colWidths[i], rowHeight);
+          xPos += colWidths[i];
+        }
+        
+        // Draw cell content
         doc.setFontSize(9);
-        doc.setTextColor(BRAND_DARK[0], BRAND_DARK[1], BRAND_DARK[2]);
-        doc.text(formatDate(transaction.date), margin + 3, yPos);
-        doc.text(transaction.description.substring(0, 20), margin + 40, yPos);
-        doc.text(transaction.category.substring(0, 12), margin + 100, yPos);
+        doc.setTextColor(40, 40, 40);
+        xPos = tableLeft + 3;
+        doc.text(formatDate(transaction.date), xPos, yPos + 7);
+        xPos += colWidths[0];
+        doc.text(transaction.description.substring(0, 25), xPos, yPos + 7);
+        xPos += colWidths[1];
+        doc.text(transaction.category.substring(0, 18), xPos, yPos + 7);
+        xPos += colWidths[2];
         
-        const amountText = formatCurrency(transaction.amount);
+        // Amount with color
+        const amountText = transaction.type === 'expense' 
+          ? `-${formatCurrency(transaction.amount)}` 
+          : formatCurrency(transaction.amount);
         doc.setTextColor(
-          transaction.type === 'expense' ? 239 : 34, 
-          transaction.type === 'expense' ? 68 : 197, 
-          transaction.type === 'expense' ? 68 : 94
+          transaction.type === 'expense' ? 180 : 40, 
+          40, 
+          40
         );
-        doc.text(transaction.type === 'expense' ? `- ${amountText}` : amountText, pageWidth - margin - 25, yPos);
-        yPos += 7;
+        doc.text(amountText, xPos, yPos + 7);
+        
+        yPos += rowHeight;
       });
-      yPos += 8;
     }
 
     // Add footer to last page
-    addFooter(doc, pageWidth, pageHeight, margin);
+    addFooter(doc, pageWidth, pageHeight, margin, iconImg);
 
-    // Save the PDF
+    // Clean up temp file and save
     doc.save(`FinTrack-Report-${new Date().toISOString().split('T')[0]}.pdf`);
 
   } catch (error) {
@@ -275,23 +293,37 @@ export const generateDashboardPDF = async (data: DashboardData) => {
     // Fallback without images
     doc.setFontSize(28);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(BRAND_PRIMARY[0], BRAND_PRIMARY[1], BRAND_PRIMARY[2]);
-    doc.text('FinTrack', margin, yPos + 5);
+    doc.setTextColor(BRAND_CYAN[0], BRAND_CYAN[1], BRAND_CYAN[2]);
+    doc.text('FinTrack', margin, 30);
     doc.save(`FinTrack-Report-${new Date().toISOString().split('T')[0]}.pdf`);
   }
 };
 
 // Footer function
-const addFooter = (doc: jsPDF, pageWidth: number, pageHeight: number, margin: number) => {
-  doc.setFontSize(8);
-  doc.setTextColor(100, 100, 100);
+const addFooter = (doc: jsPDF, pageWidth: number, pageHeight: number, margin: number, iconImg: HTMLImageElement | null) => {
+  // Gray line above footer
+  doc.setDrawColor(200, 200, 200);
+  doc.setLineWidth(0.5);
+  doc.line(margin, pageHeight - 25, pageWidth - margin, pageHeight - 25);
+  
+  // Footer text
+  doc.setFontSize(10);
+  doc.setTextColor(60, 60, 60);
   doc.text(
-    `Generated by FinTrack on ${new Date().toLocaleString('en-US')}`, 
+    `Generated by FinTrack on ${new Date().toLocaleString('en-US', { 
+      month: 'numeric', 
+      day: 'numeric', 
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    })}`, 
     margin, 
-    pageHeight - 10
+    pageHeight - 17
   );
   
-  // Teal accent line at bottom
-  doc.setFillColor(45, 212, 191);
-  doc.rect(margin, pageHeight - 15, pageWidth - 2 * margin, 1, 'F');
+  // Icon on the right
+  if (iconImg) {
+    doc.addImage(iconImg, 'PNG', pageWidth - margin - 20, pageHeight - 30, 20, 20);
+  }
 };
