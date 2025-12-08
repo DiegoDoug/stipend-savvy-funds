@@ -25,6 +25,8 @@ type ActivityItem = {
   category?: string;
   date: string;
   addedBy?: 'user' | 'ai';
+  budgetId?: string;
+  budgetName?: string;
 };
 
 export default function Dashboard() {
@@ -33,7 +35,16 @@ export default function Dashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState<DashboardPeriod>('month');
   const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>(undefined);
   
-  const { transactions, budgetCategories, refunds, goalContributions, loading, filterByPeriod, filterByCustomRange } = useFinanceData();
+  const { transactions, budgetCategories, budgets, refunds, goalContributions, loading, filterByPeriod, filterByCustomRange } = useFinanceData();
+
+  // Create a budget name lookup map
+  const budgetNameMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    budgets.forEach(b => {
+      map[b.id] = b.name;
+    });
+    return map;
+  }, [budgets]);
 
   // Calculate stats based on selected period or custom range
   const periodStats = useMemo(() => {
@@ -114,6 +125,8 @@ export default function Dashboard() {
       description: t.description,
       category: t.category,
       date: t.date,
+      budgetId: t.budget_id || undefined,
+      budgetName: t.budget_id ? budgetNameMap[t.budget_id] : undefined,
     }));
 
     // Filter and map savings contributions
@@ -329,6 +342,9 @@ export default function Dashboard() {
                       </div>
                       <p className="text-xs text-muted-foreground">
                         {item.type === 'savings' ? 'Savings contribution' : new Date(item.date).toLocaleDateString()}
+                        {item.type === 'expense' && item.budgetName && (
+                          <span className="ml-2 text-primary/70">• {item.budgetName}</span>
+                        )}
                       </p>
                     </div>
                   </div>

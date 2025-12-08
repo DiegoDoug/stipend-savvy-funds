@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { getDateRangeForPeriod, getPreviousPeriodRange, isDateInRange, calculatePercentageChange, DateRange, PeriodType } from '@/lib/dateUtils';
 
-interface Transaction {
+export interface Transaction {
   id: string;
   type: 'income' | 'expense';
   amount: number;
@@ -12,6 +12,7 @@ interface Transaction {
   date: string;
   user_id?: string;
   receipt_url?: string | null;
+  budget_id?: string | null;
 }
 
 interface BudgetCategory {
