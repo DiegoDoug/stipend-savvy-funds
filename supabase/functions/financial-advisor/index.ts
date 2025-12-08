@@ -38,61 +38,126 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Build context message with financial data
+    // Build context message with FULL financial data
     let contextMessage = "";
     if (financialContext) {
-      const { transactions, budgets, goals, stats } = financialContext;
+      const { transactions, budgets, goals, stats, refunds, customCategories } = financialContext;
       
-      contextMessage = `\n\nHere is the user's current financial data:\n`;
+      contextMessage = `\n\n=== USER'S COMPLETE FINANCIAL DATA ===\n`;
       
+      // Full stats with trends
       if (stats) {
-        contextMessage += `\n**Financial Summary:**
-- Monthly Income: $${stats.monthlyIncome?.toFixed(2) || '0.00'}
-- Monthly Expenses: $${stats.monthlyExpenses?.toFixed(2) || '0.00'}
-- Available Balance: $${stats.balance?.toFixed(2) || '0.00'}\n`;
+        const incomeChangeText = stats.incomeChange?.text || `${stats.incomeChange?.value >= 0 ? '+' : ''}${stats.incomeChange?.value?.toFixed(1) || '0'}%`;
+        const expenseChangeText = stats.expenseChange?.text || `${stats.expenseChange?.value >= 0 ? '+' : ''}${stats.expenseChange?.value?.toFixed(1) || '0'}%`;
+        
+        contextMessage += `\n## FINANCIAL SUMMARY
+- Available Balance: $${stats.balance?.toFixed(2) || '0.00'}
+- Estimated Savings: $${stats.savings?.toFixed(2) || '0.00'}
+- Monthly Income: $${stats.monthlyIncome?.toFixed(2) || '0.00'} (${incomeChangeText} vs last period)
+- Monthly Expenses: $${stats.monthlyExpenses?.toFixed(2) || '0.00'} (${expenseChangeText} vs last period)
+- Total Budget Allocated: $${stats.totalBudget?.toFixed(2) || '0.00'}
+- Total Budget Spent: $${stats.totalSpent?.toFixed(2) || '0.00'} (${stats.totalBudget > 0 ? ((stats.totalSpent / stats.totalBudget) * 100).toFixed(0) : 0}% utilization)\n`;
       }
       
+      // Full transaction details
       if (transactions && transactions.length > 0) {
         const expenses = transactions.filter((t: any) => t.type === 'expense');
         const incomes = transactions.filter((t: any) => t.type === 'income');
         
-        // Categorize expenses
-        const categoryTotals: Record<string, number> = {};
+        // Categorize expenses with details
+        const categoryTotals: Record<string, { total: number; count: number; transactions: any[] }> = {};
         expenses.forEach((t: any) => {
-          categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
+          if (!categoryTotals[t.category]) {
+            categoryTotals[t.category] = { total: 0, count: 0, transactions: [] };
+          }
+          categoryTotals[t.category].total += t.amount;
+          categoryTotals[t.category].count++;
+          categoryTotals[t.category].transactions.push(t);
         });
         
         const sortedCategories = Object.entries(categoryTotals)
-          .sort(([,a], [,b]) => b - a)
-          .slice(0, 5);
+          .sort(([,a], [,b]) => b.total - a.total);
         
-        contextMessage += `\n**Top Expense Categories (Recent):**\n`;
-        sortedCategories.forEach(([cat, amount]) => {
+        contextMessage += `\n## EXPENSE BREAKDOWN BY CATEGORY\n`;
+        sortedCategories.forEach(([cat, data]) => {
+          contextMessage += `\n### ${cat}: $${data.total.toFixed(2)} (${data.count} transactions)\n`;
+          data.transactions.slice(0, 5).forEach((t: any) => {
+            contextMessage += `  - ${t.date}: "${t.description}" - $${t.amount.toFixed(2)}${t.receipt_url ? ' [has receipt]' : ''}\n`;
+          });
+          if (data.transactions.length > 5) {
+            contextMessage += `  ... and ${data.transactions.length - 5} more transactions\n`;
+          }
+        });
+        
+        // Income breakdown
+        contextMessage += `\n## INCOME SOURCES\n`;
+        const incomeByCategory: Record<string, number> = {};
+        incomes.forEach((t: any) => {
+          incomeByCategory[t.category] = (incomeByCategory[t.category] || 0) + t.amount;
+        });
+        Object.entries(incomeByCategory).sort(([,a], [,b]) => b - a).forEach(([cat, amount]) => {
           contextMessage += `- ${cat}: $${amount.toFixed(2)}\n`;
         });
         
-        contextMessage += `\n**Recent Transactions:** ${transactions.length} total (${incomes.length} incomes, ${expenses.length} expenses)\n`;
-      }
-      
-      if (budgets && budgets.length > 0) {
-        contextMessage += `\n**Budget Status:**\n`;
-        budgets.slice(0, 5).forEach((b: any) => {
-          const percentUsed = b.allocated > 0 ? ((b.spent / b.allocated) * 100).toFixed(0) : 0;
-          contextMessage += `- ${b.category}: $${b.spent?.toFixed(2)}/$${b.allocated?.toFixed(2)} (${percentUsed}% used)\n`;
+        // Recent transaction list
+        contextMessage += `\n## RECENT TRANSACTIONS (Last 20)\n`;
+        transactions.slice(0, 20).forEach((t: any) => {
+          const sign = t.type === 'expense' ? '-' : '+';
+          contextMessage += `- ${t.date} | ${t.type.toUpperCase()} | ${t.category} | "${t.description}" | ${sign}$${t.amount.toFixed(2)}\n`;
         });
+        
+        contextMessage += `\nTotal: ${transactions.length} transactions (${incomes.length} incomes, ${expenses.length} expenses)\n`;
       }
       
-      if (goals && goals.length > 0) {
-        contextMessage += `\n**Current Savings Goals:**\n`;
-        goals.forEach((g: any) => {
-          const progress = g.target_amount > 0 ? ((g.current_amount / g.target_amount) * 100).toFixed(0) : 0;
-          contextMessage += `- ${g.name}: $${g.current_amount?.toFixed(2)}/$${g.target_amount?.toFixed(2)} (${progress}% complete)`;
-          if (g.target_date) {
-            contextMessage += ` - Target: ${g.target_date}`;
+      // Full budget details
+      if (budgets && budgets.length > 0) {
+        contextMessage += `\n## BUDGET STATUS (All Categories)\n`;
+        budgets.forEach((b: any) => {
+          const percentUsed = b.allocated > 0 ? ((b.spent / b.allocated) * 100).toFixed(0) : 0;
+          const status = Number(percentUsed) >= 100 ? '⚠️ OVER BUDGET' : Number(percentUsed) >= 80 ? '⚡ NEAR LIMIT' : '✓ OK';
+          contextMessage += `- ${b.category}: $${b.spent?.toFixed(2)}/$${b.allocated?.toFixed(2)} (${percentUsed}%) ${status}`;
+          if (b.last_reset) {
+            contextMessage += ` [reset: ${b.last_reset}]`;
           }
           contextMessage += `\n`;
         });
       }
+      
+      // Full goals details
+      if (goals && goals.length > 0) {
+        contextMessage += `\n## SAVINGS GOALS\n`;
+        goals.forEach((g: any) => {
+          const progress = g.target_amount > 0 ? ((g.current_amount / g.target_amount) * 100).toFixed(1) : 0;
+          const remaining = g.target_amount - g.current_amount;
+          contextMessage += `- ${g.name}: $${g.current_amount?.toFixed(2)}/$${g.target_amount?.toFixed(2)} (${progress}%)`;
+          contextMessage += ` | Remaining: $${remaining.toFixed(2)}`;
+          if (g.target_date) {
+            contextMessage += ` | Target Date: ${g.target_date}`;
+          }
+          if (g.description) {
+            contextMessage += ` | Note: "${g.description}"`;
+          }
+          contextMessage += ` | Status: ${g.status}\n`;
+        });
+      }
+      
+      // Refunds
+      if (refunds && refunds.length > 0) {
+        contextMessage += `\n## PENDING/RECEIVED REFUNDS\n`;
+        refunds.forEach((r: any) => {
+          contextMessage += `- ${r.date} | ${r.source}: $${r.amount.toFixed(2)} (${r.status})\n`;
+        });
+      }
+      
+      // Custom categories
+      if (customCategories && customCategories.length > 0) {
+        contextMessage += `\n## USER'S CUSTOM CATEGORIES\n`;
+        customCategories.forEach((c: any) => {
+          contextMessage += `- ${c.label} (${c.type})\n`;
+        });
+      }
+      
+      contextMessage += `\n=== END FINANCIAL DATA ===\n`;
     }
 
     const fullSystemPrompt = systemPrompt + contextMessage;
