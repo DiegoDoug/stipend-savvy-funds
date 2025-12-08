@@ -10,9 +10,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useFinanceData } from '@/hooks/useFinanceData';
 import { useCategories } from '@/hooks/useCategories';
-import { Target, Plus, Trash2 } from 'lucide-react';
+import { Target, Plus, Trash2, Pencil } from 'lucide-react';
 import FinancialAdvisorChat, { FinancialContext, SuggestedGoal } from '@/components/UI/FinancialAdvisorChat';
 import AIInsightsCard from '@/components/UI/AIInsightsCard';
+import EditGoalDialog from '@/components/UI/EditGoalDialog';
 
 type SavingsGoal = {
   id: string;
@@ -35,6 +36,8 @@ const Goals: React.FC = () => {
   const [goals, setGoals] = useState<SavingsGoal[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddGoal, setShowAddGoal] = useState(false);
+  const [showEditGoal, setShowEditGoal] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<SavingsGoal | null>(null);
   const [newGoal, setNewGoal] = useState({
     name: '',
     target_amount: '',
@@ -129,6 +132,12 @@ const Goals: React.FC = () => {
       });
       fetchGoals();
     }
+  };
+
+  // Handle editing a goal
+  const handleEditGoal = (goal: SavingsGoal) => {
+    setEditingGoal(goal);
+    setShowEditGoal(true);
   };
 
   // Handle AI suggested goal creation
@@ -339,14 +348,24 @@ const Goals: React.FC = () => {
                               <CardDescription className="mt-1 text-xs truncate">{goal.description}</CardDescription>
                             )}
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteGoal(goal.id)}
-                            className="ml-2 h-8 w-8 shrink-0"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center gap-1 ml-2 shrink-0">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEditGoal(goal)}
+                              className="h-8 w-8"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteGoal(goal.id)}
+                              className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-3">
@@ -396,6 +415,14 @@ const Goals: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Edit Goal Dialog */}
+      <EditGoalDialog
+        open={showEditGoal}
+        onOpenChange={setShowEditGoal}
+        goal={editingGoal}
+        onGoalUpdated={fetchGoals}
+      />
     </div>
   );
 };
