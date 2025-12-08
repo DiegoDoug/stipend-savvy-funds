@@ -47,7 +47,7 @@ export default function ExportPDFButton({
     try {
       setIsExporting(true);
       
-      generateDashboardPDF({
+      await generateDashboardPDF({
         userName,
         periodLabel,
         dateRangeText,
