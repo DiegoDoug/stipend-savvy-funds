@@ -21,6 +21,16 @@ interface BudgetCategory {
   last_reset?: string;
 }
 
+export interface BudgetData {
+  id: string;
+  name: string;
+  expense_allocation: number;
+  savings_allocation: number;
+  expense_spent: number;
+  linked_savings_goal_id: string | null;
+  last_reset: string | null;
+}
+
 interface Refund {
   id: string;
   source: string;
@@ -50,6 +60,7 @@ export const useFinanceData = () => {
   const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [budgetCategories, setBudgetCategories] = useState<BudgetCategory[]>([]);
+  const [budgets, setBudgets] = useState<BudgetData[]>([]);
   const [refunds, setRefunds] = useState<Refund[]>([]);
   const [goalContributions, setGoalContributions] = useState<GoalContribution[]>([]);
   const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([]);
@@ -77,6 +88,18 @@ export const useFinanceData = () => {
 
     if (!error && data) {
       setBudgetCategories(data);
+    }
+  };
+
+  const fetchBudgets = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('budgets')
+      .select('id, name, expense_allocation, savings_allocation, expense_spent, linked_savings_goal_id, last_reset');
+
+    if (!error && data) {
+      setBudgets(data as BudgetData[]);
     }
   };
 
@@ -233,6 +256,7 @@ export const useFinanceData = () => {
         await Promise.all([
           fetchTransactions(),
           fetchBudgetCategories(),
+          fetchBudgets(),
           fetchRefunds(),
           fetchGoalContributions(),
           fetchSavingsGoals()
@@ -249,6 +273,7 @@ export const useFinanceData = () => {
   return {
     transactions,
     budgetCategories,
+    budgets,
     refunds,
     goalContributions,
     savingsGoals,
@@ -260,6 +285,7 @@ export const useFinanceData = () => {
     refetch: {
       transactions: fetchTransactions,
       budgetCategories: fetchBudgetCategories,
+      budgets: fetchBudgets,
       refunds: fetchRefunds,
       goalContributions: fetchGoalContributions,
       savingsGoals: fetchSavingsGoals
