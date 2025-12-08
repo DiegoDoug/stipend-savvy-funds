@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Sparkles, Loader2, TrendingUp, PiggyBank, Target, HelpCircle } from 'lucide-react';
+import { Send, Sparkles, Loader2, TrendingUp, PiggyBank, Target, HelpCircle, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type Message = {
@@ -11,14 +11,52 @@ type Message = {
   content: string;
 };
 
-type FinancialContext = {
-  transactions: any[];
-  budgets: any[];
-  goals: any[];
+export type FinancialContext = {
+  transactions: Array<{
+    id: string;
+    type: 'income' | 'expense';
+    amount: number;
+    description: string;
+    category: string;
+    date: string;
+    receipt_url?: string | null;
+  }>;
+  budgets: Array<{
+    category: string;
+    allocated: number;
+    spent: number;
+    last_reset?: string;
+  }>;
+  goals: Array<{
+    id: string;
+    name: string;
+    target_amount: number;
+    current_amount: number;
+    target_date: string | null;
+    description: string | null;
+    status: string;
+  }>;
+  refunds: Array<{
+    id: string;
+    source: string;
+    amount: number;
+    date: string;
+    status: 'pending' | 'received';
+  }>;
+  customCategories: Array<{
+    name: string;
+    label: string;
+    type: string;
+  }>;
   stats: {
     balance: number;
+    savings: number;
     monthlyIncome: number;
     monthlyExpenses: number;
+    totalBudget: number;
+    totalSpent: number;
+    incomeChange: { value: number; text: string; type: 'positive' | 'negative' | 'neutral' };
+    expenseChange: { value: number; text: string; type: 'positive' | 'negative' | 'neutral' };
   };
 };
 
@@ -27,10 +65,10 @@ interface FinancialAdvisorChatProps {
 }
 
 const quickPrompts = [
-  { icon: TrendingUp, label: "Analyze spending", prompt: "Analyze my spending patterns and tell me where I'm spending the most." },
-  { icon: PiggyBank, label: "Save more", prompt: "How can I save more money based on my current spending?" },
-  { icon: Target, label: "Suggest a goal", prompt: "Based on my finances, suggest a realistic savings goal I should create." },
-  { icon: HelpCircle, label: "Financial tips", prompt: "Give me 3 personalized tips to improve my financial health." },
+  { icon: TrendingUp, label: "Analyze spending", prompt: "Analyze my spending patterns and tell me where I'm spending the most. Include specific transaction details." },
+  { icon: PiggyBank, label: "Save more", prompt: "How can I save more money based on my current spending? Give me specific recommendations." },
+  { icon: Target, label: "Suggest a goal", prompt: "Based on my finances, suggest a realistic savings goal I should create with specific amounts and timeline." },
+  { icon: HelpCircle, label: "Financial tips", prompt: "Give me 3 personalized tips to improve my financial health based on my transaction history." },
 ];
 
 const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({ financialContext }) => {
@@ -169,17 +207,36 @@ const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({ financialCo
     streamChat(prompt);
   };
 
+  const handleNewChat = () => {
+    setMessages([]);
+    setInput('');
+  };
+
   return (
     <Card className="flex flex-col h-full border-border/50">
       {/* Header */}
-      <CardHeader className="flex-shrink-0 flex flex-row items-center gap-3 p-4 border-b border-border/50">
-        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-          <Sparkles className="h-5 w-5 text-primary" />
+      <CardHeader className="flex-shrink-0 flex flex-row items-center justify-between p-4 border-b border-border/50">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+            <Sparkles className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-foreground">Financial Advisor</h3>
+            <p className="text-xs text-muted-foreground">AI-powered savings assistant</p>
+          </div>
         </div>
-        <div>
-          <h3 className="font-semibold text-foreground">Financial Advisor</h3>
-          <p className="text-xs text-muted-foreground">AI-powered savings assistant</p>
-        </div>
+        {messages.length > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleNewChat}
+            disabled={isLoading}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <RotateCcw className="h-4 w-4 mr-1" />
+            New Chat
+          </Button>
+        )}
       </CardHeader>
 
       {/* Messages */}

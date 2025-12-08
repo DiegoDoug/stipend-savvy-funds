@@ -9,8 +9,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useFinanceData } from '@/hooks/useFinanceData';
+import { useCategories } from '@/hooks/useCategories';
 import { Target, Plus, Trash2 } from 'lucide-react';
-import FinancialAdvisorChat from '@/components/UI/FinancialAdvisorChat';
+import FinancialAdvisorChat, { FinancialContext } from '@/components/UI/FinancialAdvisorChat';
 import AIInsightsCard from '@/components/UI/AIInsightsCard';
 
 type SavingsGoal = {
@@ -29,7 +30,8 @@ type SavingsGoal = {
 const Goals: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { transactions, budgetCategories, stats } = useFinanceData();
+  const { transactions, budgetCategories, stats, refunds } = useFinanceData();
+  const { customCategories } = useCategories();
   const [goals, setGoals] = useState<SavingsGoal[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddGoal, setShowAddGoal] = useState(false);
@@ -137,14 +139,52 @@ const Goals: React.FC = () => {
     return target > 0 ? (current / target) * 100 : 0;
   };
 
-  const financialContext = {
-    transactions: transactions.slice(0, 50),
-    budgets: budgetCategories,
-    goals,
+  const financialContext: FinancialContext = {
+    transactions: transactions.map(t => ({
+      id: t.id,
+      type: t.type,
+      amount: t.amount,
+      description: t.description,
+      category: t.category,
+      date: t.date,
+      receipt_url: t.receipt_url,
+    })),
+    budgets: budgetCategories.map(b => ({
+      category: b.category,
+      allocated: b.allocated,
+      spent: b.spent,
+      last_reset: b.last_reset,
+    })),
+    goals: goals.map(g => ({
+      id: g.id,
+      name: g.name,
+      target_amount: g.target_amount,
+      current_amount: g.current_amount,
+      target_date: g.target_date,
+      description: g.description,
+      status: g.status,
+    })),
+    refunds: refunds.map(r => ({
+      id: r.id,
+      source: r.source,
+      amount: r.amount,
+      date: r.date,
+      status: r.status,
+    })),
+    customCategories: customCategories.map(c => ({
+      name: c.name,
+      label: c.label,
+      type: c.type,
+    })),
     stats: {
       balance: stats.balance,
+      savings: stats.savings,
       monthlyIncome: stats.totalIncome,
       monthlyExpenses: stats.totalExpenses,
+      totalBudget: stats.totalBudget,
+      totalSpent: stats.totalSpent,
+      incomeChange: stats.incomeChange,
+      expenseChange: stats.expenseChange,
     },
   };
 
@@ -245,7 +285,11 @@ const Goals: React.FC = () => {
         <div className="space-y-6">
           {/* AI Insights Card */}
           <AIInsightsCard
-            stats={financialContext.stats}
+            stats={{
+              balance: stats.balance,
+              monthlyIncome: stats.totalIncome,
+              monthlyExpenses: stats.totalExpenses,
+            }}
             transactions={transactions}
             budgets={budgetCategories}
             goals={goals}
