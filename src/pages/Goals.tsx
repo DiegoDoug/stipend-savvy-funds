@@ -11,8 +11,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useFinanceData } from '@/hooks/useFinanceData';
 import { useCategories } from '@/hooks/useCategories';
 import { useBudgets } from '@/hooks/useBudgets';
-import { Target, Plus, Trash2, Pencil, DollarSign, Wallet } from 'lucide-react';
+import { Target, Plus, Trash2, Pencil, DollarSign, Wallet, Link2, PiggyBank } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FinancialAdvisorChat, { FinancialContext, SuggestedGoal } from '@/components/UI/FinancialAdvisorChat';
 import AIInsightsCard from '@/components/UI/AIInsightsCard';
 import EditGoalDialog from '@/components/UI/EditGoalDialog';
@@ -48,8 +49,11 @@ const Goals: React.FC = () => {
   const [showAddGoal, setShowAddGoal] = useState(false);
   const [showEditGoal, setShowEditGoal] = useState(false);
   const [showAddFunds, setShowAddFunds] = useState(false);
+  const [showLinkBudget, setShowLinkBudget] = useState(false);
   const [editingGoal, setEditingGoal] = useState<SavingsGoal | null>(null);
   const [selectedGoalForFunds, setSelectedGoalForFunds] = useState<SavingsGoal | null>(null);
+  const [selectedGoalForLink, setSelectedGoalForLink] = useState<SavingsGoal | null>(null);
+  const [selectedBudgetId, setSelectedBudgetId] = useState<string>('');
   const [newGoal, setNewGoal] = useState({
     name: '',
     target_amount: '',
@@ -513,6 +517,58 @@ const Goals: React.FC = () => {
     return map;
   }, [budgets]);
 
+  // Calculate total monthly auto-savings from all linked budgets
+  const totalMonthlyAutoSavings = React.useMemo(() => {
+    return budgets
+      .filter(b => b.linked_savings_goal_id && b.savings_allocation > 0)
+      .reduce((sum, b) => sum + b.savings_allocation, 0);
+  }, [budgets]);
+
+  // Get budgets that have savings allocation for linking
+  const linkableBudgets = React.useMemo(() => {
+    return budgets.filter(b => b.savings_allocation > 0);
+  }, [budgets]);
+
+  const handleOpenLinkBudget = (goal: SavingsGoal) => {
+    setSelectedGoalForLink(goal);
+    // Pre-select if already linked
+    const linkedBudget = budgets.find(b => b.linked_savings_goal_id === goal.id);
+    setSelectedBudgetId(linkedBudget?.id || '');
+    setShowLinkBudget(true);
+  };
+
+  const handleLinkBudget = async () => {
+    if (!selectedGoalForLink || !user) return;
+
+    // Find current budget linked to this goal and unlink it
+    const currentLinkedBudget = budgets.find(b => b.linked_savings_goal_id === selectedGoalForLink.id);
+    if (currentLinkedBudget && currentLinkedBudget.id !== selectedBudgetId) {
+      await updateBudget(currentLinkedBudget.id, { linked_savings_goal_id: null });
+    }
+
+    // Link new budget if selected
+    if (selectedBudgetId) {
+      const success = await updateBudget(selectedBudgetId, { linked_savings_goal_id: selectedGoalForLink.id });
+      if (success) {
+        const budgetName = budgets.find(b => b.id === selectedBudgetId)?.name;
+        toast({
+          title: 'Goal linked',
+          description: `"${selectedGoalForLink.name}" is now linked to "${budgetName}"`,
+        });
+      }
+    } else if (currentLinkedBudget) {
+      toast({
+        title: 'Goal unlinked',
+        description: `"${selectedGoalForLink.name}" is no longer linked to any budget`,
+      });
+    }
+
+    budgetRefetch.budgets();
+    setShowLinkBudget(false);
+    setSelectedGoalForLink(null);
+    setSelectedBudgetId('');
+  };
+
   const financialContext: FinancialContext = {
     transactions: transactions.map(t => ({
       id: t.id,
@@ -595,11 +651,22 @@ const Goals: React.FC = () => {
   return (
     <div className="container mx-auto p-4 lg:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold">Savings Goals</h1>
           <p className="text-muted-foreground text-sm lg:text-base">Track your financial goals with AI insights</p>
         </div>
+        
+        {/* Auto-Savings Summary */}
+        {totalMonthlyAutoSavings > 0 && (
+          <div className="flex items-center gap-3 px-4 py-2 rounded-lg bg-success/10 border border-success/30">
+            <PiggyBank className="w-5 h-5 text-success" />
+            <div>
+              <p className="text-xs text-muted-foreground">Monthly Auto-Savings</p>
+              <p className="font-bold text-success">${totalMonthlyAutoSavings.toLocaleString()}/mo</p>
+            </div>
+          </div>
+        )}
         <Dialog open={showAddGoal} onOpenChange={setShowAddGoal}>
           <DialogTrigger asChild>
             <Button size="sm" className="lg:size-default">
@@ -732,6 +799,15 @@ const Goals: React.FC = () => {
                             <Button
                               variant="ghost"
                               size="icon"
+                              onClick={() => handleOpenLinkBudget(goal)}
+                              className={`h-8 w-8 ${goalToBudgetMap[goal.id] ? 'text-success hover:bg-success/10' : 'hover:bg-secondary/10 hover:text-secondary'}`}
+                              title={goalToBudgetMap[goal.id] ? 'Change linked budget' : 'Link to budget'}
+                            >
+                              <Link2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               onClick={() => handleEditGoal(goal)}
                               className="h-8 w-8"
                               title="Edit Goal"
@@ -848,6 +924,67 @@ const Goals: React.FC = () => {
         goal={selectedGoalForFunds}
         onAddFunds={handleAddFunds}
       />
+
+      {/* Link Budget Dialog */}
+      <Dialog open={showLinkBudget} onOpenChange={setShowLinkBudget}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Link2 className="w-5 h-5 text-primary" />
+              Link to Budget
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <p className="text-sm text-muted-foreground">
+              Link <span className="font-medium text-foreground">"{selectedGoalForLink?.name}"</span> to a budget for automatic monthly transfers.
+            </p>
+            
+            {linkableBudgets.length === 0 ? (
+              <div className="p-4 rounded-lg bg-muted/50 text-center">
+                <p className="text-sm text-muted-foreground">No budgets with savings allocation found.</p>
+                <p className="text-xs text-muted-foreground mt-1">Create a budget with savings allocation first.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label>Select Budget</Label>
+                <Select value={selectedBudgetId || "none"} onValueChange={(val) => setSelectedBudgetId(val === "none" ? "" : val)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a budget" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border border-border z-50">
+                    <SelectItem value="none">No linked budget</SelectItem>
+                    {linkableBudgets.map((budget) => (
+                      <SelectItem key={budget.id} value={budget.id}>
+                        <div className="flex items-center justify-between gap-4">
+                          <span>{budget.name}</span>
+                          <span className="text-xs text-muted-foreground">+${budget.savings_allocation}/mo</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowLinkBudget(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleLinkBudget}
+                className="flex-1 bg-gradient-to-r from-primary to-primary-glow"
+                disabled={linkableBudgets.length === 0}
+              >
+                {selectedBudgetId ? 'Link Budget' : 'Unlink'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
