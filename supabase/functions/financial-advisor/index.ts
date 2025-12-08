@@ -15,6 +15,8 @@ const systemPrompt = `You are a friendly and knowledgeable personal financial ad
 
 4. **Give Actionable Tips**: Provide practical, personalized advice to help users reach their financial goals faster.
 
+5. **Create & Edit Financial Records**: You can help users create expenses, incomes, and goals, or edit existing ones. When doing so, use the exact formats below so users can confirm with one click.
+
 Important guidelines:
 - Be encouraging and supportive, not judgmental about spending habits
 - Keep responses concise and focused (2-3 short paragraphs max)
@@ -22,15 +24,28 @@ Important guidelines:
 - Format currency as USD
 - If you don't have enough data to make a recommendation, say so and ask for more context
 
-**CRITICAL: When suggesting savings goals, you MUST use this exact format so users can create them with one click:**
-[GOAL: Goal Name | $TargetAmount | Description | Target Date (YYYY-MM-DD)]
+**CRITICAL: Action Formats - Use these EXACT formats so users can confirm actions with one click:**
+
+Creating Records:
+[CREATE_GOAL: Goal Name | $TargetAmount | Description | Target Date (YYYY-MM-DD)]
+[CREATE_EXPENSE: Description | $Amount | Category | Date (YYYY-MM-DD)]
+[CREATE_INCOME: Description | $Amount | Category | Date (YYYY-MM-DD)]
+
+Editing Records (use the exact ID from the user's data):
+[EDIT_GOAL: id | Goal Name | $CurrentAmount | $TargetAmount | Target Date (YYYY-MM-DD) | Description]
+[EDIT_EXPENSE: id | Description | $Amount | Category | Date (YYYY-MM-DD)]
+[EDIT_INCOME: id | Description | $Amount | Category | Date (YYYY-MM-DD)]
 
 Examples:
-- [GOAL: Emergency Fund | $5000 | 3-6 months of expenses for emergencies | 2025-12-31]
-- [GOAL: Vacation Savings | $2500 | Summer trip fund | 2025-06-15]
-- [GOAL: New Laptop | $1500 | For work and personal use | 2025-03-01]
+- [CREATE_GOAL: Emergency Fund | $5000 | 3-6 months of expenses for emergencies | 2025-12-31]
+- [CREATE_EXPENSE: Coffee Shop | $5.50 | Food & Dining | 2025-01-15]
+- [CREATE_INCOME: Freelance Payment | $500 | Freelance | 2025-01-10]
+- [EDIT_GOAL: abc123-uuid | Emergency Fund | $1500 | $6000 | 2025-12-31 | Updated emergency target]
+- [EDIT_EXPENSE: xyz789-uuid | Updated Coffee Shop | $6.00 | Food & Dining | 2025-01-15]
 
-You can suggest multiple goals in one response. Each goal MUST follow this format exactly for the "Create Goal" button to appear. Always include a realistic target date based on the user's savings capacity.
+When suggesting to edit an existing record, you MUST use the exact ID from the user's financial data provided below. Never make up IDs.
+
+You can suggest multiple actions in one response. Each action MUST follow these formats exactly for the confirmation buttons to appear.
 
 When the user provides financial data, analyze it carefully to give personalized advice.`;
 
@@ -68,7 +83,7 @@ serve(async (req) => {
 - Total Budget Spent: $${stats.totalSpent?.toFixed(2) || '0.00'} (${stats.totalBudget > 0 ? ((stats.totalSpent / stats.totalBudget) * 100).toFixed(0) : 0}% utilization)\n`;
       }
       
-      // Full transaction details
+      // Full transaction details with IDs for editing
       if (transactions && transactions.length > 0) {
         const expenses = transactions.filter((t: any) => t.type === 'expense');
         const incomes = transactions.filter((t: any) => t.type === 'income');
@@ -91,28 +106,24 @@ serve(async (req) => {
         sortedCategories.forEach(([cat, data]) => {
           contextMessage += `\n### ${cat}: $${data.total.toFixed(2)} (${data.count} transactions)\n`;
           data.transactions.slice(0, 5).forEach((t: any) => {
-            contextMessage += `  - ${t.date}: "${t.description}" - $${t.amount.toFixed(2)}${t.receipt_url ? ' [has receipt]' : ''}\n`;
+            contextMessage += `  - [ID: ${t.id}] ${t.date}: "${t.description}" - $${t.amount.toFixed(2)}${t.receipt_url ? ' [has receipt]' : ''}\n`;
           });
           if (data.transactions.length > 5) {
             contextMessage += `  ... and ${data.transactions.length - 5} more transactions\n`;
           }
         });
         
-        // Income breakdown
+        // Income breakdown with IDs
         contextMessage += `\n## INCOME SOURCES\n`;
-        const incomeByCategory: Record<string, number> = {};
         incomes.forEach((t: any) => {
-          incomeByCategory[t.category] = (incomeByCategory[t.category] || 0) + t.amount;
-        });
-        Object.entries(incomeByCategory).sort(([,a], [,b]) => b - a).forEach(([cat, amount]) => {
-          contextMessage += `- ${cat}: $${amount.toFixed(2)}\n`;
+          contextMessage += `- [ID: ${t.id}] ${t.date} | ${t.category}: "${t.description}" - $${t.amount.toFixed(2)}\n`;
         });
         
-        // Recent transaction list
+        // Recent transaction list with IDs
         contextMessage += `\n## RECENT TRANSACTIONS (Last 20)\n`;
         transactions.slice(0, 20).forEach((t: any) => {
           const sign = t.type === 'expense' ? '-' : '+';
-          contextMessage += `- ${t.date} | ${t.type.toUpperCase()} | ${t.category} | "${t.description}" | ${sign}$${t.amount.toFixed(2)}\n`;
+          contextMessage += `- [ID: ${t.id}] ${t.date} | ${t.type.toUpperCase()} | ${t.category} | "${t.description}" | ${sign}$${t.amount.toFixed(2)}\n`;
         });
         
         contextMessage += `\nTotal: ${transactions.length} transactions (${incomes.length} incomes, ${expenses.length} expenses)\n`;
@@ -132,13 +143,13 @@ serve(async (req) => {
         });
       }
       
-      // Full goals details
+      // Full goals details with IDs for editing
       if (goals && goals.length > 0) {
         contextMessage += `\n## SAVINGS GOALS\n`;
         goals.forEach((g: any) => {
           const progress = g.target_amount > 0 ? ((g.current_amount / g.target_amount) * 100).toFixed(1) : 0;
           const remaining = g.target_amount - g.current_amount;
-          contextMessage += `- ${g.name}: $${g.current_amount?.toFixed(2)}/$${g.target_amount?.toFixed(2)} (${progress}%)`;
+          contextMessage += `- [ID: ${g.id}] ${g.name}: $${g.current_amount?.toFixed(2)}/$${g.target_amount?.toFixed(2)} (${progress}%)`;
           contextMessage += ` | Remaining: $${remaining.toFixed(2)}`;
           if (g.target_date) {
             contextMessage += ` | Target Date: ${g.target_date}`;
@@ -154,7 +165,7 @@ serve(async (req) => {
       if (refunds && refunds.length > 0) {
         contextMessage += `\n## PENDING/RECEIVED REFUNDS\n`;
         refunds.forEach((r: any) => {
-          contextMessage += `- ${r.date} | ${r.source}: $${r.amount.toFixed(2)} (${r.status})\n`;
+          contextMessage += `- [ID: ${r.id}] ${r.date} | ${r.source}: $${r.amount.toFixed(2)} (${r.status})\n`;
         });
       }
       
