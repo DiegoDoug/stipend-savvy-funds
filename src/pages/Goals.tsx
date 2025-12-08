@@ -10,11 +10,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useFinanceData } from '@/hooks/useFinanceData';
 import { useCategories } from '@/hooks/useCategories';
-import { Target, Plus, Trash2, Pencil } from 'lucide-react';
+import { Target, Plus, Trash2, Pencil, DollarSign } from 'lucide-react';
 import FinancialAdvisorChat, { FinancialContext, SuggestedGoal } from '@/components/UI/FinancialAdvisorChat';
 import AIInsightsCard from '@/components/UI/AIInsightsCard';
 import EditGoalDialog from '@/components/UI/EditGoalDialog';
 import GoalProgressChart from '@/components/UI/GoalProgressChart';
+import AddFundsDialog from '@/components/UI/AddFundsDialog';
 
 type SavingsGoal = {
   id: string;
@@ -38,7 +39,9 @@ const Goals: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showAddGoal, setShowAddGoal] = useState(false);
   const [showEditGoal, setShowEditGoal] = useState(false);
+  const [showAddFunds, setShowAddFunds] = useState(false);
   const [editingGoal, setEditingGoal] = useState<SavingsGoal | null>(null);
+  const [selectedGoalForFunds, setSelectedGoalForFunds] = useState<SavingsGoal | null>(null);
   const [newGoal, setNewGoal] = useState({
     name: '',
     target_amount: '',
@@ -139,6 +142,38 @@ const Goals: React.FC = () => {
   const handleEditGoal = (goal: SavingsGoal) => {
     setEditingGoal(goal);
     setShowEditGoal(true);
+  };
+
+  // Handle adding funds to a goal
+  const handleOpenAddFunds = (goal: SavingsGoal) => {
+    setSelectedGoalForFunds(goal);
+    setShowAddFunds(true);
+  };
+
+  const handleAddFunds = async (goalId: string, amount: number) => {
+    const goal = goals.find(g => g.id === goalId);
+    if (!goal) return;
+
+    const newAmount = goal.current_amount + amount;
+    
+    const { error } = await supabase
+      .from('savings_goals')
+      .update({ current_amount: newAmount })
+      .eq('id', goalId);
+
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to add funds',
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Success',
+        description: `Added $${amount.toFixed(2)} to "${goal.name}"`,
+      });
+      fetchGoals();
+    }
   };
 
   // Handle AI suggested goal creation
@@ -358,8 +393,18 @@ const Goals: React.FC = () => {
                             <Button
                               variant="ghost"
                               size="icon"
+                              onClick={() => handleOpenAddFunds(goal)}
+                              className="h-8 w-8 hover:bg-primary/10 hover:text-primary"
+                              title="Add Funds"
+                            >
+                              <DollarSign className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               onClick={() => handleEditGoal(goal)}
                               className="h-8 w-8"
+                              title="Edit Goal"
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -368,6 +413,7 @@ const Goals: React.FC = () => {
                               size="icon"
                               onClick={() => handleDeleteGoal(goal.id)}
                               className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+                              title="Delete Goal"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -428,6 +474,14 @@ const Goals: React.FC = () => {
         onOpenChange={setShowEditGoal}
         goal={editingGoal}
         onGoalUpdated={fetchGoals}
+      />
+
+      {/* Add Funds Dialog */}
+      <AddFundsDialog
+        open={showAddFunds}
+        onOpenChange={setShowAddFunds}
+        goal={selectedGoalForFunds}
+        onAddFunds={handleAddFunds}
       />
     </div>
   );
