@@ -120,6 +120,7 @@ export default function Expenses() {
     amount: number;
     date: string;
     category: string;
+    budget_id: string;
   }) => {
     if (!editingExpense || !checkAndNotify()) return;
 
@@ -131,6 +132,7 @@ export default function Expenses() {
           amount: updates.amount,
           date: updates.date,
           category: updates.category,
+          budget_id: updates.budget_id,
         })
         .eq("id", editingExpense.id)
         .eq("user_id", user?.id);
