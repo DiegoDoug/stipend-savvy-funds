@@ -78,7 +78,7 @@ export default function Dashboard() {
     fetchProfile();
   }, [user]);
 
-  // Recent Activity: filter by selected period or show last 5 transactions up to today
+  // Recent Activity: filter by selected period - show ALL transactions in range
   const recentTransactions = useMemo(() => {
     const filtered = transactions.filter((t) => {
       const transactionDate = new Date(t.date);
@@ -94,9 +94,7 @@ export default function Dashboard() {
       return true;
     });
     
-    return filtered
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 5);
+    return filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [transactions, todayLocal, periodStats.dateRange]);
 
   // Upcoming: future scheduled transactions (always shows future regardless of period)
@@ -251,8 +249,11 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Recent Transactions */}
         <div className="budget-card">
-          <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Recent Activity</h3>
-          <div className="space-y-3">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 className="text-base sm:text-lg font-semibold">Recent Activity</h3>
+            <span className="text-xs text-muted-foreground">{recentTransactions.length} transactions</span>
+          </div>
+          <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
             {recentTransactions.length > 0 ? (
               recentTransactions.map((transaction) => (
                 <div key={transaction.id} className="expense-item">
