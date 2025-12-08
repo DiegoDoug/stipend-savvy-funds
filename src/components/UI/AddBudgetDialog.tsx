@@ -167,12 +167,12 @@ export default function AddBudgetDialog({ open, onOpenChange, onSuccess }: AddBu
                 <Target className="w-3.5 h-3.5 text-primary" />
                 Link to Savings Goal (optional)
               </Label>
-              <Select value={linkedGoalId} onValueChange={setLinkedGoalId}>
+              <Select value={linkedGoalId || "none"} onValueChange={(val) => setLinkedGoalId(val === "none" ? "" : val)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a goal for auto-transfer" />
                 </SelectTrigger>
                 <SelectContent className="bg-background border border-border z-50">
-                  <SelectItem value="">No linked goal</SelectItem>
+                  <SelectItem value="none">No linked goal</SelectItem>
                   {savingsGoals.map((goal) => (
                     <SelectItem key={goal.id} value={goal.id}>
                       {goal.name} (${goal.current_amount.toLocaleString()} / ${goal.target_amount.toLocaleString()})
