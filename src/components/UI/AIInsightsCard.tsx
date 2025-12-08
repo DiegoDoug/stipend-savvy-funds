@@ -12,9 +12,10 @@ interface AIInsightsCardProps {
   transactions: any[];
   budgets: any[];
   goals: any[];
+  totalMonthlyAutoSavings?: number;
 }
 
-const AIInsightsCard: React.FC<AIInsightsCardProps> = ({ stats, transactions, budgets, goals }) => {
+const AIInsightsCard: React.FC<AIInsightsCardProps> = ({ stats, transactions, budgets, goals, totalMonthlyAutoSavings = 0 }) => {
   // Calculate savings rate
   const savingsRate = stats.monthlyIncome > 0 
     ? ((stats.monthlyIncome - stats.monthlyExpenses) / stats.monthlyIncome) * 100 
@@ -118,6 +119,19 @@ const AIInsightsCard: React.FC<AIInsightsCardProps> = ({ stats, transactions, bu
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Auto-Savings Summary */}
+        {totalMonthlyAutoSavings > 0 && (
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-success/10 border border-success/30">
+            <div className="h-10 w-10 rounded-full bg-success/20 flex items-center justify-center">
+              <PiggyBank className="w-5 h-5 text-success" />
+            </div>
+            <div className="flex-1">
+              <p className="text-xs text-muted-foreground">Monthly Auto-Savings</p>
+              <p className="text-xl font-bold text-success">${totalMonthlyAutoSavings.toLocaleString()}/mo</p>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-3">
           {insights.map((insight, i) => (
             <div key={i} className="p-3 rounded-lg bg-muted/50 space-y-1">
