@@ -267,8 +267,8 @@ export default function Dashboard() {
         <StatCard
           title="Total Savings"
           value={`$${Math.max(0, periodStats.savings).toLocaleString()}`}
-          change={periodStats.balanceChange.text}
-          changeType={periodStats.balanceChange.type}
+          change={periodStats.savingsChange?.text || '+$0 this period'}
+          changeType={periodStats.savingsChange?.type || 'neutral'}
           icon={<PiggyBank size={24} />}
           glowColor="purple"
         />
