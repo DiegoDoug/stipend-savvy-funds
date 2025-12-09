@@ -1,14 +1,16 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useFinanceData } from '@/hooks/useFinanceData';
 import { useCategories } from '@/hooks/useCategories';
 import { useBudgets } from '@/hooks/useBudgets';
-import { Sparkles, ArrowLeft } from 'lucide-react';
+import { Sparkles, ArrowLeft, TrendingUp, MessageCircle } from 'lucide-react';
 import FinancialAdvisorChat, { FinancialContext, SuggestedGoal } from '@/components/UI/FinancialAdvisorChat';
+import ForecastAnalysis from '@/components/UI/ForecastAnalysis';
 import { SageWelcome, useSageOnboarding } from '@/components/UI/SageWelcome';
 
 type SavingsGoal = {
@@ -446,48 +448,65 @@ const Sage: React.FC = () => {
       
       <div className="container mx-auto p-4 lg:p-6 h-[calc(100vh-8rem)] flex flex-col">
         {/* Branded Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={() => navigate(-1)}
-          className="shrink-0"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-gradient-to-br from-primary to-primary-glow">
-            <Sparkles className="h-6 w-6 text-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="text-2xl lg:text-3xl font-bold flex items-center gap-2">
-              Sage
-              <span className="text-xs font-normal px-2 py-0.5 rounded-full bg-primary/10 text-primary">AI</span>
-            </h1>
-            <p className="text-muted-foreground text-sm">Your personal financial advisor</p>
+        <div className="flex items-center gap-4 mb-4">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => navigate(-1)}
+            className="shrink-0"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-gradient-to-br from-primary to-primary-glow">
+              <Sparkles className="h-6 w-6 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-bold flex items-center gap-2">
+                Sage
+                <span className="text-xs font-normal px-2 py-0.5 rounded-full bg-primary/10 text-primary">AI</span>
+              </h1>
+              <p className="text-muted-foreground text-sm">Your personal financial advisor</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Full-page Chat */}
-      <div className="flex-1 min-h-0">
-        <FinancialAdvisorChat 
-          financialContext={financialContext}
-          standalone={true}
-          onCreateGoal={handleCreateSuggestedGoal}
-          onCreateExpense={handleCreateExpenseFromAI}
-          onCreateIncome={handleCreateIncomeFromAI}
-          onEditGoal={handleEditGoalFromAI}
-          onEditExpense={handleEditExpenseFromAI}
-          onEditIncome={handleEditIncomeFromAI}
-          onAddFundsToGoal={handleAddFundsToGoal}
-          onCreateBudget={handleCreateBudgetFromAI}
-          onEditBudget={handleEditBudgetFromAI}
-          onDeleteBudget={handleDeleteBudgetFromAI}
-          onLinkGoalToBudget={handleLinkGoalToBudgetFromAI}
-        />
+        {/* Tabs for Chat vs Analysis */}
+        <Tabs defaultValue="chat" className="flex-1 flex flex-col min-h-0">
+          <TabsList className="w-fit mb-4">
+            <TabsTrigger value="chat" className="gap-2">
+              <MessageCircle className="h-4 w-4" />
+              Chat
+            </TabsTrigger>
+            <TabsTrigger value="forecast" className="gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Forecast & Analysis
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="chat" className="flex-1 min-h-0 mt-0">
+            <FinancialAdvisorChat 
+              financialContext={financialContext}
+              standalone={true}
+              onCreateGoal={handleCreateSuggestedGoal}
+              onCreateExpense={handleCreateExpenseFromAI}
+              onCreateIncome={handleCreateIncomeFromAI}
+              onEditGoal={handleEditGoalFromAI}
+              onEditExpense={handleEditExpenseFromAI}
+              onEditIncome={handleEditIncomeFromAI}
+              onAddFundsToGoal={handleAddFundsToGoal}
+              onCreateBudget={handleCreateBudgetFromAI}
+              onEditBudget={handleEditBudgetFromAI}
+              onDeleteBudget={handleDeleteBudgetFromAI}
+              onLinkGoalToBudget={handleLinkGoalToBudgetFromAI}
+            />
+          </TabsContent>
+
+          <TabsContent value="forecast" className="flex-1 min-h-0 mt-0 overflow-y-auto">
+            <ForecastAnalysis financialContext={financialContext} />
+          </TabsContent>
+        </Tabs>
       </div>
-    </div>
     </>
   );
 };
