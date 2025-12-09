@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccountStatus } from "@/hooks/useAccountStatus";
 
@@ -31,6 +32,7 @@ export default function AddGoalDialog({ open, onOpenChange, onGoalAdded }: AddGo
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+  const { t } = useLanguage();
   const { checkAndNotify } = useAccountStatus();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -42,7 +44,7 @@ export default function AddGoalDialog({ open, onOpenChange, onGoalAdded }: AddGo
 
     if (!user) {
       toast({
-        title: "Error",
+        title: t('common.error'),
         description: "You must be logged in to add a goal",
         variant: "destructive",
       });
@@ -51,7 +53,7 @@ export default function AddGoalDialog({ open, onOpenChange, onGoalAdded }: AddGo
 
     if (!name || !targetAmount) {
       toast({
-        title: "Error",
+        title: t('common.error'),
         description: "Please fill in all required fields",
         variant: "destructive",
       });
@@ -74,8 +76,8 @@ export default function AddGoalDialog({ open, onOpenChange, onGoalAdded }: AddGo
       if (error) throw error;
 
       toast({
-        title: "Success",
-        description: "Savings goal added successfully",
+        title: t('common.success'),
+        description: t('goals.goalCreated'),
       });
 
       // Reset form
@@ -104,15 +106,15 @@ export default function AddGoalDialog({ open, onOpenChange, onGoalAdded }: AddGo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Set Savings Goal</DialogTitle>
+          <DialogTitle>{t('dialog.addNewGoal')}</DialogTitle>
           <DialogDescription>
-            Create a new savings goal to track your progress
+            {t('dialog.addNewGoalDesc')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Goal Name *</Label>
+            <Label htmlFor="name">{t('goals.goalName')} *</Label>
             <Input
               id="name"
               placeholder="e.g., Emergency Fund"
@@ -124,7 +126,7 @@ export default function AddGoalDialog({ open, onOpenChange, onGoalAdded }: AddGo
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="targetAmount">Target Amount *</Label>
+              <Label htmlFor="targetAmount">{t('goals.targetAmount')} *</Label>
               <Input
                 id="targetAmount"
                 type="number"
@@ -138,7 +140,7 @@ export default function AddGoalDialog({ open, onOpenChange, onGoalAdded }: AddGo
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="currentAmount">Current Amount</Label>
+              <Label htmlFor="currentAmount">{t('goals.currentAmount')}</Label>
               <Input
                 id="currentAmount"
                 type="number"
@@ -152,7 +154,7 @@ export default function AddGoalDialog({ open, onOpenChange, onGoalAdded }: AddGo
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="targetDate">Target Date (Optional)</Label>
+            <Label htmlFor="targetDate">{t('goals.targetDate')} ({t('common.optional')})</Label>
             <Input
               id="targetDate"
               type="date"
@@ -162,7 +164,7 @@ export default function AddGoalDialog({ open, onOpenChange, onGoalAdded }: AddGo
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description (Optional)</Label>
+            <Label htmlFor="description">{t('goals.description')} ({t('common.optional')})</Label>
             <Textarea
               id="description"
               placeholder="Why are you saving for this goal?"
@@ -179,10 +181,10 @@ export default function AddGoalDialog({ open, onOpenChange, onGoalAdded }: AddGo
               onClick={() => onOpenChange(false)}
               disabled={loading}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Adding..." : "Add Goal"}
+              {loading ? t('common.adding') : t('goals.addGoal')}
             </Button>
           </DialogFooter>
         </form>

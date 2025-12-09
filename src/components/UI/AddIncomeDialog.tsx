@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus } from "lucide-react";
 import { useCategories } from "@/hooks/useCategories";
 import { useAccountStatus } from "@/hooks/useAccountStatus";
+import { useLanguage } from "@/hooks/useLanguage";
 import { incomeSchema } from "@/lib/validation";
 import { logError, getUserFriendlyErrorMessage } from "@/lib/errorLogger";
 
@@ -42,6 +43,7 @@ export default function AddIncomeDialog({
   const setOpen = controlledOnOpenChange !== undefined ? controlledOnOpenChange : setInternalOpen;
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { t } = useLanguage();
   const { getIncomeCategories, addCustomCategory } = useCategories();
   const { checkAndNotify } = useAccountStatus();
   const incomeCategories = getIncomeCategories();
@@ -104,7 +106,7 @@ export default function AddIncomeDialog({
       });
       if (error) throw error;
       toast({
-        title: "Income Added",
+        title: t('common.success'),
         description: "Your income has been successfully recorded."
       });
       form.reset();
@@ -138,14 +140,14 @@ export default function AddIncomeDialog({
         </DialogTrigger>}
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add New Income</DialogTitle>
+          <DialogTitle>{t('dialog.addNewIncome')}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField control={form.control} name="amount" render={({
             field
           }) => <FormItem>
-                  <FormLabel>Amount ($)</FormLabel>
+                  <FormLabel>{t('form.amount')} ($)</FormLabel>
                   <FormControl>
                     <Input placeholder="0.00" type="number" step="0.01" min="0" {...field} />
                   </FormControl>
@@ -155,7 +157,7 @@ export default function AddIncomeDialog({
             <FormField control={form.control} name="description" render={({
             field
           }) => <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>{t('form.description')}</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., Monthly stipend, Book refund..." {...field} />
                   </FormControl>
@@ -165,18 +167,18 @@ export default function AddIncomeDialog({
             <FormField control={form.control} name="category" render={({
             field
           }) => <FormItem>
-                  <FormLabel>Category</FormLabel>
+                  <FormLabel>{t('form.category')}</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select income category" />
+                        <SelectValue placeholder={t('form.selectCategory')} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="bg-background border border-border shadow-md z-50">
                       {incomeCategories.map(category => <SelectItem key={category.value} value={category.value}>
-                          {category.label} {category.isCustom && "(Custom)"}
+                          {category.label} {category.isCustom && `(${t('common.custom')})`}
                         </SelectItem>)}
-                      <SelectItem value="custom">Add Custom Category</SelectItem>
+                      <SelectItem value="custom">{t('form.addCustomCategory')}</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -185,9 +187,9 @@ export default function AddIncomeDialog({
             {form.watch("category") === "custom" && <FormField control={form.control} name="customCategory" render={({
             field
           }) => <FormItem>
-                    <FormLabel>Custom Category Name</FormLabel>
+                    <FormLabel>{t('form.customCategoryName')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter category name" {...field} />
+                      <Input placeholder={t('form.enterCategoryName')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>} />}
@@ -195,7 +197,7 @@ export default function AddIncomeDialog({
             <FormField control={form.control} name="date" render={({
             field
           }) => <FormItem>
-                  <FormLabel>Date</FormLabel>
+                  <FormLabel>{t('form.date')}</FormLabel>
                   <FormControl>
                     <Input type="date" {...field} />
                   </FormControl>
@@ -204,10 +206,10 @@ export default function AddIncomeDialog({
 
             <div className="flex justify-end gap-3">
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={loading} className="bg-gradient-to-r from-success to-success/80">
-                {loading ? "Adding..." : "Add Income"}
+                {loading ? t('common.adding') : t('income.addIncome')}
               </Button>
             </div>
           </form>
