@@ -9,6 +9,7 @@ import { useCategories } from '@/hooks/useCategories';
 import { useBudgets } from '@/hooks/useBudgets';
 import { Sparkles, ArrowLeft } from 'lucide-react';
 import FinancialAdvisorChat, { FinancialContext, SuggestedGoal } from '@/components/UI/FinancialAdvisorChat';
+import { SageWelcome, useSageOnboarding } from '@/components/UI/SageWelcome';
 
 type SavingsGoal = {
   id: string;
@@ -35,6 +36,7 @@ const Sage: React.FC = () => {
     deleteBudget, 
     refetch: budgetRefetch 
   } = useBudgets();
+  const { showOnboarding, completeOnboarding } = useSageOnboarding();
 
   const goals = savingsGoals as SavingsGoal[];
 
@@ -433,8 +435,17 @@ const Sage: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto p-4 lg:p-6 h-[calc(100vh-8rem)] flex flex-col">
-      {/* Branded Header */}
+    <>
+      {/* Welcome Onboarding */}
+      {showOnboarding && (
+        <SageWelcome 
+          onComplete={completeOnboarding} 
+          onSkip={completeOnboarding} 
+        />
+      )}
+      
+      <div className="container mx-auto p-4 lg:p-6 h-[calc(100vh-8rem)] flex flex-col">
+        {/* Branded Header */}
       <div className="flex items-center gap-4 mb-6">
         <Button 
           variant="ghost" 
@@ -477,6 +488,7 @@ const Sage: React.FC = () => {
         />
       </div>
     </div>
+    </>
   );
 };
 
