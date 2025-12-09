@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCategories } from "@/hooks/useCategories";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface Transaction {
   id: string;
@@ -29,6 +30,7 @@ export default function EditIncomeDialog({
   income,
   onUpdate
 }: EditIncomeDialogProps) {
+  const { t } = useLanguage();
   const { getIncomeCategories } = useCategories();
   const incomeCategories = getIncomeCategories();
   const [amount, setAmount] = useState(income.amount.toString());
@@ -58,25 +60,25 @@ export default function EditIncomeDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Edit Income Entry</DialogTitle>
+          <DialogTitle>{t('dialog.editIncome')}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">{t('form.description')}</Label>
             <Input 
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="e.g., Monthly Stipend"
+              placeholder={t('income.monthlyStipend')}
               required
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="category">Category</Label>
+            <Label htmlFor="category">{t('form.category')}</Label>
             <Select value={category} onValueChange={setCategory} required>
               <SelectTrigger id="category">
-                <SelectValue placeholder="Select a category" />
+                <SelectValue placeholder={t('form.selectCategory')} />
               </SelectTrigger>
               <SelectContent>
                 {incomeCategories.map((cat) => (
@@ -89,7 +91,7 @@ export default function EditIncomeDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="date">Date</Label>
+            <Label htmlFor="date">{t('form.date')}</Label>
             <Input 
               id="date"
               type="date"
@@ -100,7 +102,7 @@ export default function EditIncomeDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="amount">Amount ($)</Label>
+            <Label htmlFor="amount">{t('form.amount')} ($)</Label>
             <Input
               id="amount"
               type="number"
@@ -115,10 +117,10 @@ export default function EditIncomeDialog({
 
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={loading} className="bg-gradient-to-r from-success to-success/80">
-              {loading ? "Updating..." : "Update Income"}
+              {loading ? t('common.updating') : t('income.incomeUpdated')}
             </Button>
           </div>
         </form>

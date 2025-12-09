@@ -8,6 +8,7 @@ import { useCategories } from "@/hooks/useCategories";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Wallet, AlertCircle } from "lucide-react";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface Budget {
   id: string;
@@ -24,6 +25,7 @@ interface EditExpenseDialogProps {
 }
 
 export default function EditExpenseDialog({ open, onOpenChange, expense, onUpdate }: EditExpenseDialogProps) {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const { getExpenseCategories } = useCategories();
   const expenseCategories = getExpenseCategories();
@@ -78,7 +80,7 @@ export default function EditExpenseDialog({ open, onOpenChange, expense, onUpdat
         const expenseAmount = parseFloat(amount) || 0;
         
         if (expenseAmount > remaining) {
-          setBudgetWarning(`This expense exceeds the budget's remaining amount ($${remaining.toLocaleString()})`);
+          setBudgetWarning(`${t('dialog.exceedsIncomeBy')} ($${remaining.toLocaleString()})`);
         } else {
           setBudgetWarning(null);
         }
@@ -110,16 +112,16 @@ export default function EditExpenseDialog({ open, onOpenChange, expense, onUpdat
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Edit Expense</DialogTitle>
+          <DialogTitle>{t('dialog.editExpense')}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t('form.description')}</Label>
               <Input
                 id="description"
                 type="text"
-                placeholder="Enter expense description"
+                placeholder={t('form.whatDidYouSpendOn')}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 required
@@ -130,25 +132,24 @@ export default function EditExpenseDialog({ open, onOpenChange, expense, onUpdat
             <div className="grid gap-2">
               <Label htmlFor="edit-budget" className="flex items-center gap-1.5">
                 <Wallet className="w-3.5 h-3.5 text-warning" />
-                Budget
+                {t('nav.budget')}
               </Label>
               <Select value={budgetId} onValueChange={setBudgetId} required>
                 <SelectTrigger id="edit-budget">
-                  <SelectValue placeholder="Select a budget" />
+                  <SelectValue placeholder={t('form.selectBudget')} />
                 </SelectTrigger>
                 <SelectContent className="bg-background border border-border shadow-md z-50">
                   {budgets.length === 0 ? (
                     <SelectItem value="no-budgets" disabled>
-                      No budgets with expense allocation
+                      {t('form.noBudgetsWithExpense')}
                     </SelectItem>
                   ) : (
                     budgets.map((budget) => {
-                      // If this is the current expense's budget, add back its amount to show accurate remaining
                       const originalAmount = expense.budget_id === budget.id ? Number(expense.amount) : 0;
-                      const remaining = Number(budget.expense_allocation) - Number(budget.expense_spent) + originalAmount;
+                      const remainingAmount = Number(budget.expense_allocation) - Number(budget.expense_spent) + originalAmount;
                       return (
                         <SelectItem key={budget.id} value={budget.id}>
-                          {budget.name} (${remaining.toLocaleString()} remaining)
+                          {budget.name} (${remainingAmount.toLocaleString()} {t('common.remaining')})
                         </SelectItem>
                       );
                     })
@@ -157,7 +158,7 @@ export default function EditExpenseDialog({ open, onOpenChange, expense, onUpdat
               </Select>
               {selectedBudget && (
                 <p className="text-xs text-muted-foreground">
-                  Budget: ${Number(selectedBudget.expense_spent).toLocaleString()} / ${Number(selectedBudget.expense_allocation).toLocaleString()} spent
+                  {t('nav.budget')}: ${Number(selectedBudget.expense_spent).toLocaleString()} / ${Number(selectedBudget.expense_allocation).toLocaleString()} {t('common.spent')}
                 </p>
               )}
             </div>
@@ -171,10 +172,10 @@ export default function EditExpenseDialog({ open, onOpenChange, expense, onUpdat
             )}
 
             <div className="grid gap-2">
-              <Label htmlFor="category">Category</Label>
+              <Label htmlFor="category">{t('form.category')}</Label>
               <Select value={category} onValueChange={setCategory} required>
                 <SelectTrigger id="category">
-                  <SelectValue placeholder="Select a category" />
+                  <SelectValue placeholder={t('form.selectCategory')} />
                 </SelectTrigger>
                 <SelectContent className="bg-background border border-border shadow-md z-50">
                   {expenseCategories.map((cat) => (
@@ -187,12 +188,12 @@ export default function EditExpenseDialog({ open, onOpenChange, expense, onUpdat
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="date">Date</Label>
+              <Label htmlFor="date">{t('form.date')}</Label>
               <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="amount">Amount ($)</Label>
+              <Label htmlFor="amount">{t('form.amount')} ($)</Label>
               <Input
                 id="amount"
                 type="number"
@@ -207,10 +208,10 @@ export default function EditExpenseDialog({ open, onOpenChange, expense, onUpdat
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={budgets.length === 0 || !budgetId}>
-              Update Expense
+              {t('expenses.expenseUpdated')}
             </Button>
           </DialogFooter>
         </form>

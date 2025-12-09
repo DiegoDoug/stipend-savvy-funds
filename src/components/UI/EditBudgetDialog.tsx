@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Target, Wallet, PiggyBank, AlertCircle, Edit3 } from 'lucide-react';
 import { useBudgets, Budget } from '@/hooks/useBudgets';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface EditBudgetDialogProps {
   open: boolean;
@@ -16,6 +17,7 @@ interface EditBudgetDialogProps {
 }
 
 export default function EditBudgetDialog({ open, onOpenChange, budget, onSuccess }: EditBudgetDialogProps) {
+  const { t } = useLanguage();
   const { savingsGoals, totals, validateAllocation, updateBudget, budgets } = useBudgets();
   
   const [name, setName] = useState('');
@@ -48,7 +50,7 @@ export default function EditBudgetDialog({ open, onOpenChange, budget, onSuccess
     if (expense > 0 || savings > 0) {
       const validation = validateAllocation(expense, savings, budget.id);
       if (!validation.isValid) {
-        setValidationError(`Exceeds income by $${validation.exceededBy.toLocaleString()}`);
+        setValidationError(`${t('dialog.exceedsIncomeBy')} $${validation.exceededBy.toLocaleString()}`);
       } else {
         setValidationError(null);
       }
@@ -64,7 +66,7 @@ export default function EditBudgetDialog({ open, onOpenChange, budget, onSuccess
     const savings = Number(savingsAllocation) || 0;
     
     if (expense === 0 && savings === 0) {
-      setValidationError('At least one allocation is required');
+      setValidationError(t('dialog.atLeastOneAllocation'));
       return;
     }
 
@@ -100,17 +102,17 @@ export default function EditBudgetDialog({ open, onOpenChange, budget, onSuccess
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Edit3 className="w-5 h-5 text-primary" />
-            Edit Budget
+            {t('dialog.editBudget')}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           {/* Budget Name */}
           <div className="space-y-2">
-            <Label htmlFor="edit-name">Budget Name</Label>
+            <Label htmlFor="edit-name">{t('form.name')}</Label>
             <Input
               id="edit-name"
-              placeholder="e.g., Monthly Living, Emergency Fund"
+              placeholder={t('budget.title')}
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
@@ -118,10 +120,10 @@ export default function EditBudgetDialog({ open, onOpenChange, budget, onSuccess
 
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="edit-description">Description (optional)</Label>
+            <Label htmlFor="edit-description">{t('goals.description')} ({t('common.optional')})</Label>
             <Textarea
               id="edit-description"
-              placeholder="What is this budget for?"
+              placeholder={t('goals.description')}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
@@ -133,7 +135,7 @@ export default function EditBudgetDialog({ open, onOpenChange, budget, onSuccess
             <div className="space-y-2">
               <Label htmlFor="edit-expense" className="flex items-center gap-1.5">
                 <Wallet className="w-3.5 h-3.5 text-warning" />
-                Expense Allocation
+                {t('dialog.expenseAllocation')}
               </Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
@@ -149,14 +151,14 @@ export default function EditBudgetDialog({ open, onOpenChange, budget, onSuccess
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                Spent: ${Number(budget.expense_spent).toLocaleString()}
+                {t('common.spent')}: ${Number(budget.expense_spent).toLocaleString()}
               </p>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="edit-savings" className="flex items-center gap-1.5">
                 <PiggyBank className="w-3.5 h-3.5 text-success" />
-                Savings Allocation
+                {t('dialog.savingsAllocation')}
               </Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
@@ -172,7 +174,7 @@ export default function EditBudgetDialog({ open, onOpenChange, budget, onSuccess
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                Auto-transfers at month reset
+                {t('dialog.savingsAutoTransfer')}
               </p>
             </div>
           </div>
@@ -182,14 +184,14 @@ export default function EditBudgetDialog({ open, onOpenChange, budget, onSuccess
             <div className="space-y-2">
               <Label htmlFor="edit-goal" className="flex items-center gap-1.5">
                 <Target className="w-3.5 h-3.5 text-primary" />
-                Link to Savings Goal (optional)
+                {t('dialog.linkToGoal')} ({t('common.optional')})
               </Label>
               <Select value={linkedGoalId || "none"} onValueChange={(val) => setLinkedGoalId(val === "none" ? "" : val)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a goal for auto-transfer" />
+                  <SelectValue placeholder={t('dialog.linkToGoal')} />
                 </SelectTrigger>
                 <SelectContent className="bg-background border border-border z-50">
-                  <SelectItem value="none">No linked goal</SelectItem>
+                  <SelectItem value="none">{t('dialog.noLinkedGoal')}</SelectItem>
                   {savingsGoals.map((goal) => (
                     <SelectItem key={goal.id} value={goal.id}>
                       {goal.name} (${goal.current_amount.toLocaleString()} / ${goal.target_amount.toLocaleString()})
@@ -203,19 +205,19 @@ export default function EditBudgetDialog({ open, onOpenChange, budget, onSuccess
           {/* Summary & Validation */}
           <div className="p-3 rounded-lg bg-accent/30 border border-border/50 space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Monthly Income</span>
+              <span className="text-muted-foreground">{t('budget.monthlyIncome')}</span>
               <span className="font-medium">${totals.monthlyIncome.toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Other Budgets</span>
+              <span className="text-muted-foreground">{t('dialog.alreadyAllocated')}</span>
               <span className="font-medium">${otherBudgetsTotal.toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">This Budget</span>
+              <span className="text-muted-foreground">{t('dialog.thisBudget')}</span>
               <span className="font-medium text-primary">${totalAllocation.toLocaleString()}</span>
             </div>
             <div className="border-t border-border/50 pt-2 flex justify-between text-sm">
-              <span className="text-muted-foreground">Remaining After</span>
+              <span className="text-muted-foreground">{t('dialog.remainingAfter')}</span>
               <span className={`font-bold ${remainingAfter >= 0 ? 'text-success' : 'text-destructive'}`}>
                 ${remainingAfter.toLocaleString()}
               </span>
@@ -238,14 +240,14 @@ export default function EditBudgetDialog({ open, onOpenChange, budget, onSuccess
               className="flex-1"
               disabled={loading}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               onClick={handleSubmit}
               className="flex-1 bg-gradient-to-r from-primary to-primary-glow"
               disabled={loading || !name.trim() || !!validationError || totalAllocation === 0}
             >
-              {loading ? 'Saving...' : 'Save Changes'}
+              {loading ? t('common.updating') : t('common.save')}
             </Button>
           </div>
         </div>
