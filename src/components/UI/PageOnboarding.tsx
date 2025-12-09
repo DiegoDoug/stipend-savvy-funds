@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ArrowRight, X, LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const ONBOARDING_PREFIX = 'fintrack-onboarding-';
+const SAGE_ONBOARDING_KEY = 'sage-onboarding-completed';
 
 export interface OnboardingStep {
   icon: LucideIcon;
@@ -12,6 +13,7 @@ export interface OnboardingStep {
   description: string;
   color?: string;
   bgColor?: string;
+  highlightSelector?: string; // CSS selector for element to highlight
 }
 
 export interface PageOnboardingConfig {
@@ -24,6 +26,13 @@ export interface PageOnboardingConfig {
   tips?: string[];
 }
 
+interface HighlightRect {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+}
+
 interface PageOnboardingProps {
   config: PageOnboardingConfig;
   onComplete: () => void;
@@ -32,7 +41,30 @@ interface PageOnboardingProps {
 export function PageOnboarding({ config, onComplete }: PageOnboardingProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
+  const [highlightRect, setHighlightRect] = useState<HighlightRect | null>(null);
   const totalSteps = config.steps.length;
+
+  // Update highlight position when step changes
+  useEffect(() => {
+    const step = config.steps[currentStep];
+    if (step?.highlightSelector) {
+      const element = document.querySelector(step.highlightSelector);
+      if (element) {
+        const rect = element.getBoundingClientRect();
+        const padding = 8;
+        setHighlightRect({
+          top: rect.top - padding,
+          left: rect.left - padding,
+          width: rect.width + padding * 2,
+          height: rect.height + padding * 2,
+        });
+      } else {
+        setHighlightRect(null);
+      }
+    } else {
+      setHighlightRect(null);
+    }
+  }, [currentStep, config.steps]);
 
   const handleNext = () => {
     if (currentStep < totalSteps - 1) {
@@ -59,10 +91,55 @@ export function PageOnboarding({ config, onComplete }: PageOnboardingProps) {
   return (
     <div 
       className={cn(
-        "fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm transition-opacity duration-300",
+        "fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300",
         isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
       )}
     >
+      {/* Spotlight overlay with cutout for highlighted element */}
+      {highlightRect ? (
+        <div className="absolute inset-0 pointer-events-none">
+          {/* Top overlay */}
+          <div 
+            className="absolute left-0 right-0 top-0 bg-background/90 backdrop-blur-sm"
+            style={{ height: highlightRect.top }}
+          />
+          {/* Bottom overlay */}
+          <div 
+            className="absolute left-0 right-0 bottom-0 bg-background/90 backdrop-blur-sm"
+            style={{ top: highlightRect.top + highlightRect.height }}
+          />
+          {/* Left overlay */}
+          <div 
+            className="absolute left-0 bg-background/90 backdrop-blur-sm"
+            style={{ 
+              top: highlightRect.top, 
+              width: highlightRect.left, 
+              height: highlightRect.height 
+            }}
+          />
+          {/* Right overlay */}
+          <div 
+            className="absolute right-0 bg-background/90 backdrop-blur-sm"
+            style={{ 
+              top: highlightRect.top, 
+              left: highlightRect.left + highlightRect.width, 
+              height: highlightRect.height 
+            }}
+          />
+          {/* Highlight border */}
+          <div 
+            className="absolute rounded-lg border-2 border-primary shadow-[0_0_20px_hsl(var(--primary)/0.5)] animate-pulse"
+            style={{
+              top: highlightRect.top,
+              left: highlightRect.left,
+              width: highlightRect.width,
+              height: highlightRect.height,
+            }}
+          />
+        </div>
+      ) : (
+        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
+      )}
       <Card className={cn(
         "w-full max-w-md overflow-hidden border-border/50 shadow-2xl transition-all duration-500",
         isVisible ? "animate-scale-in" : "animate-scale-out"
@@ -202,6 +279,8 @@ export function usePageOnboarding(pageKey: string) {
 export function resetAllOnboarding() {
   const keys = Object.keys(localStorage).filter(key => key.startsWith(ONBOARDING_PREFIX));
   keys.forEach(key => localStorage.removeItem(key));
+  // Also reset Sage onboarding
+  localStorage.removeItem(SAGE_ONBOARDING_KEY);
 }
 
 export default PageOnboarding;

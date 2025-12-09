@@ -246,7 +246,7 @@ export default function Dashboard() {
       </div>
 
       {/* Period Selector */}
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2" data-tour="date-filter">
         <Button
           variant={selectedPeriod === 'week' ? 'default' : 'outline'}
           size="sm"
@@ -276,7 +276,7 @@ export default function Dashboard() {
       </div>
 
       {/* Net Worth Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4" data-tour="stat-cards">
         <StatCard
           title="Available Balance"
           value={`$${Math.max(0, periodStats.balance).toLocaleString()}`}
@@ -304,7 +304,7 @@ export default function Dashboard() {
       </div>
 
       {/* Budget Overview */}
-      <GlowCard glowColor="purple" customSize={true} className="budget-card rounded-md w-full h-auto">
+      <GlowCard glowColor="purple" customSize={true} className="budget-card rounded-md w-full h-auto" data-tour="budget-overview">
         <div className="flex items-center justify-between mb-3 sm:mb-4">
           <h2 className="text-base sm:text-lg font-semibold">Budget Status</h2>
           <span className="text-xs sm:text-sm text-muted-foreground">
@@ -380,7 +380,7 @@ export default function Dashboard() {
       {/* Recent Activity & Upcoming */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Recent Transactions */}
-        <div className="budget-card">
+        <div className="budget-card" data-tour="recent-activity">
           <div className="flex items-center justify-between mb-3 sm:mb-4">
             <h3 className="text-base sm:text-lg font-semibold">Recent Activity</h3>
             <span className="text-xs text-muted-foreground">{recentActivity.length} items</span>

@@ -257,7 +257,7 @@ export default function Income() {
           <h1 className="text-2xl md:text-3xl font-bold">Income Manager</h1>
           <p className="text-muted-foreground">Track all your income sources</p>
         </div>
-        <Button onClick={() => setShowAddDialog(true)} className="bg-gradient-to-r from-success to-success/80">
+        <Button onClick={() => setShowAddDialog(true)} className="bg-gradient-to-r from-success to-success/80" data-tour="add-income">
           <Plus size={18} className="mr-2" />
           Add Income
         </Button>
@@ -284,7 +284,7 @@ export default function Income() {
       </div>
 
       {/* Income Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4" data-tour="income-stats">
         <StatCard
           title={selectedPeriod === "custom" ? "Total Income (Custom Range)" : `Total Income (This ${selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)})`}
           value={`$${totalIncome.toLocaleString()}`}
@@ -430,7 +430,7 @@ export default function Income() {
       </div>
 
       {/* Income Sources */}
-      <div className="budget-card">
+      <div className="budget-card" data-tour="income-list">
         <h2 className="text-lg font-semibold mb-4">Income Sources Overview (This Month)</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {incomeCategories.map((category, index) => (
