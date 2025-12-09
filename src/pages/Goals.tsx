@@ -20,7 +20,7 @@ import GoalProgressChart from '@/components/UI/GoalProgressChart';
 import AddFundsDialog from '@/components/UI/AddFundsDialog';
 import { PageOnboarding, usePageOnboarding } from '@/components/UI/PageOnboarding';
 import { goalsOnboarding } from '@/components/UI/onboardingConfigs';
-
+import { useLanguage } from '@/hooks/useLanguage';
 type SavingsGoal = {
   id: string;
   user_id: string;
@@ -39,6 +39,7 @@ const Goals: React.FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { t } = useLanguage();
   const { transactions, budgetCategories, stats, budgets } = useFinanceData();
   const { updateBudget, refetch: budgetRefetch } = useBudgets();
   const { showOnboarding, completeOnboarding } = usePageOnboarding('goals');
@@ -343,8 +344,8 @@ const Goals: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold">Savings Goals</h1>
-          <p className="text-muted-foreground text-sm lg:text-base">Track and manage your financial goals</p>
+          <h1 className="text-2xl lg:text-3xl font-bold">{t('goals.title')}</h1>
+          <p className="text-muted-foreground text-sm lg:text-base">{t('goals.trackManage')}</p>
         </div>
         
         <div className="flex items-center gap-2">

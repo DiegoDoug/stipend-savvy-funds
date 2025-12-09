@@ -27,9 +27,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAccountStatus } from "@/hooks/useAccountStatus";
 import { PageOnboarding, usePageOnboarding } from "@/components/UI/PageOnboarding";
 import { incomeOnboarding } from "@/components/UI/onboardingConfigs";
-
+import { useLanguage } from "@/hooks/useLanguage";
 export default function Income() {
   const location = useLocation();
+  const { t } = useLanguage();
   const [selectedPeriod, setSelectedPeriod] = useState("month");
   const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>();
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -254,12 +255,12 @@ export default function Income() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Income Manager</h1>
-          <p className="text-muted-foreground">Track all your income sources</p>
+          <h1 className="text-2xl md:text-3xl font-bold">{t('income.title')}</h1>
+          <p className="text-muted-foreground">{t('income.trackSources')}</p>
         </div>
         <Button onClick={() => setShowAddDialog(true)} className="bg-gradient-to-r from-success to-success/80" data-tour="add-income">
           <Plus size={18} className="mr-2" />
-          Add Income
+          {t('income.addIncome')}
         </Button>
       </div>
 

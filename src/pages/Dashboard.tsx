@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { getCustomDateRange, formatDateRange, PeriodType, isDateInRange } from "@/lib/dateUtils";
 import { PageOnboarding, usePageOnboarding } from "@/components/UI/PageOnboarding";
 import { dashboardOnboarding } from "@/components/UI/onboardingConfigs";
-
+import { useLanguage } from "@/hooks/useLanguage";
 type DashboardPeriod = PeriodType | 'custom';
 
 type ActivityItem = {
@@ -33,6 +33,7 @@ type ActivityItem = {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [userTimezone] = useState<string>("America/Chicago");
   const [selectedPeriod, setSelectedPeriod] = useState<DashboardPeriod>('month');
   const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>(undefined);
@@ -183,15 +184,15 @@ export default function Dashboard() {
 
   const getPeriodLabel = (): string => {
     switch (selectedPeriod) {
-      case 'week': return 'This Week';
-      case 'month': return 'This Month';
-      case 'quarter': return 'Last 3 Months';
+      case 'week': return t('common.thisWeek');
+      case 'month': return t('common.thisMonth');
+      case 'quarter': return t('common.threeMonths');
       case 'custom': 
         if (customDateRange?.from && customDateRange?.to) {
           return formatDateRange(getCustomDateRange(customDateRange.from, customDateRange.to));
         }
-        return 'Custom Range';
-      default: return 'This Month';
+        return t('common.customRange');
+      default: return t('common.thisMonth');
     }
   };
 
@@ -213,8 +214,8 @@ export default function Dashboard() {
       {/* Welcome Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Welcome back{profileData ? `, ${profileData.name}` : ""}! 👋</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">Here's your financial overview for {getPeriodLabel().toLowerCase()}</p>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">{t('dashboard.welcomeBack')}{profileData ? `, ${profileData.name}` : ""}! 👋</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">{t('dashboard.financialOverview')} {getPeriodLabel().toLowerCase()}</p>
         </div>
         <ExportPDFButton
           userName={profileData?.name || "User"}
@@ -252,21 +253,21 @@ export default function Dashboard() {
           size="sm"
           onClick={() => handlePeriodChange('week')}
         >
-          This Week
+          {t('common.thisWeek')}
         </Button>
         <Button
           variant={selectedPeriod === 'month' ? 'default' : 'outline'}
           size="sm"
           onClick={() => handlePeriodChange('month')}
         >
-          This Month
+          {t('common.thisMonth')}
         </Button>
         <Button
           variant={selectedPeriod === 'quarter' ? 'default' : 'outline'}
           size="sm"
           onClick={() => handlePeriodChange('quarter')}
         >
-          3 Months
+          {t('common.threeMonths')}
         </Button>
         <DateRangePicker
           dateRange={customDateRange}
@@ -278,7 +279,7 @@ export default function Dashboard() {
       {/* Net Worth Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4" data-tour="stat-cards">
         <StatCard
-          title="Available Balance"
+          title={t('dashboard.availableBalance')}
           value={`$${Math.max(0, periodStats.balance).toLocaleString()}`}
           change={periodStats.balanceChange.text}
           changeType={periodStats.balanceChange.type}
@@ -286,15 +287,15 @@ export default function Dashboard() {
           glowColor="blue"
         />
         <StatCard
-          title="Total Savings"
+          title={t('dashboard.totalSavings')}
           value={`$${Math.max(0, periodStats.savings).toLocaleString()}`}
-          change={periodStats.savingsChange?.text || '+$0 this period'}
+          change={periodStats.savingsChange?.text || `+$0 ${t('dashboard.thisPeriod')}`}
           changeType={periodStats.savingsChange?.type || 'neutral'}
           icon={<PiggyBank size={24} />}
           glowColor="purple"
         />
         <StatCard
-          title={`${selectedPeriod === 'week' ? 'Weekly' : selectedPeriod === 'quarter' ? 'Quarterly' : selectedPeriod === 'custom' ? 'Period' : 'Monthly'} Income`}
+          title={`${selectedPeriod === 'week' ? t('dashboard.weeklyIncome') : selectedPeriod === 'quarter' ? t('dashboard.quarterlyIncome') : selectedPeriod === 'custom' ? t('dashboard.periodIncome') : t('dashboard.monthlyIncome')}`}
           value={`$${periodStats.totalIncome.toLocaleString()}`}
           change={periodStats.incomeChange.text}
           changeType={periodStats.incomeChange.type}
@@ -306,9 +307,9 @@ export default function Dashboard() {
       {/* Budget Overview */}
       <GlowCard glowColor="purple" customSize={true} className="budget-card rounded-md w-full h-auto" data-tour="budget-overview">
         <div className="flex items-center justify-between mb-3 sm:mb-4">
-          <h2 className="text-base sm:text-lg font-semibold">Budget Status</h2>
+          <h2 className="text-base sm:text-lg font-semibold">{t('dashboard.budgetStatus')}</h2>
           <span className="text-xs sm:text-sm text-muted-foreground">
-            {budgets.length} budget{budgets.length !== 1 ? 's' : ''}
+            {budgets.length} {t('dashboard.budgets')}
           </span>
         </div>
 
@@ -327,7 +328,7 @@ export default function Dashboard() {
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="font-medium text-sm">{budget.name}</h3>
                       {isOverBudget && (
-                        <span className="text-xs text-destructive font-medium">Over budget</span>
+                        <span className="text-xs text-destructive font-medium">{t('common.overBudget')}</span>
                       )}
                     </div>
                     
@@ -335,7 +336,7 @@ export default function Dashboard() {
                       {/* Expense allocation */}
                       <div>
                         <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                          <span>Expenses</span>
+                          <span>{t('dashboard.expenses')}</span>
                           <span>${budget.expense_spent.toFixed(0)} / ${budget.expense_allocation.toFixed(0)}</span>
                         </div>
                         <div className="w-full bg-muted rounded-full h-2">
@@ -351,14 +352,14 @@ export default function Dashboard() {
                       {/* Savings allocation */}
                       {budget.savings_allocation > 0 && (
                         <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground">Savings</span>
+                          <span className="text-muted-foreground">{t('dashboard.savings')}</span>
                           <span className="text-success">${budget.savings_allocation.toFixed(0)}/mo</span>
                         </div>
                       )}
                       
                       {/* Remaining */}
                       <div className="flex justify-between text-sm pt-1 border-t border-border/30">
-                        <span className="text-muted-foreground">Remaining</span>
+                        <span className="text-muted-foreground">{t('common.remaining')}</span>
                         <span className={remaining >= 0 ? 'text-success font-medium' : 'text-destructive font-medium'}>
                           ${remaining.toFixed(0)}
                         </span>
@@ -370,8 +371,8 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="text-center py-6 text-muted-foreground">
-              <p>No budgets created yet</p>
-              <p className="text-sm">Create budgets to track your spending</p>
+              <p>{t('dashboard.noBudgetsYet')}</p>
+              <p className="text-sm">{t('dashboard.createBudgetsToTrack')}</p>
             </div>
           )}
         </div>
@@ -382,8 +383,8 @@ export default function Dashboard() {
         {/* Recent Transactions */}
         <div className="budget-card" data-tour="recent-activity">
           <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <h3 className="text-base sm:text-lg font-semibold">Recent Activity</h3>
-            <span className="text-xs text-muted-foreground">{recentActivity.length} items</span>
+            <h3 className="text-base sm:text-lg font-semibold">{t('dashboard.recentActivity')}</h3>
+            <span className="text-xs text-muted-foreground">{recentActivity.length} {t('common.items')}</span>
           </div>
           <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
             {recentActivity.length > 0 ? (
@@ -407,7 +408,7 @@ export default function Dashboard() {
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {item.type === 'savings' ? 'Savings contribution' : new Date(item.date).toLocaleDateString()}
+                        {item.type === 'savings' ? t('dashboard.savingsContribution') : new Date(item.date).toLocaleDateString()}
                         {item.type === 'expense' && item.budgetName && (
                           <span className="ml-2 text-primary/70">• {item.budgetName}</span>
                         )}

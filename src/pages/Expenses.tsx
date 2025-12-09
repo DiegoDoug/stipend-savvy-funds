@@ -31,8 +31,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAccountStatus } from "@/hooks/useAccountStatus";
 import { PageOnboarding, usePageOnboarding } from "@/components/UI/PageOnboarding";
 import { expensesOnboarding } from "@/components/UI/onboardingConfigs";
+import { useLanguage } from "@/hooks/useLanguage";
 export default function Expenses() {
   const location = useLocation();
+  const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedBudget, setSelectedBudget] = useState<string | null>(null);
@@ -270,12 +272,12 @@ export default function Expenses() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Expense Tracker</h1>
-          <p className="text-muted-foreground">Monitor your spending patterns</p>
+          <h1 className="text-2xl md:text-3xl font-bold">{t('expenses.title')}</h1>
+          <p className="text-muted-foreground">{t('expenses.monitorSpending')}</p>
         </div>
         <Button onClick={() => setShowAddDialog(true)} className="bg-gradient-to-r from-primary to-primary-glow" data-tour="add-expense">
           <Plus size={18} className="mr-2" />
-          Add Expense
+          {t('expenses.addExpense')}
         </Button>
       </div>
 

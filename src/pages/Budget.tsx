@@ -35,10 +35,11 @@ import EditBudgetDialog from "@/components/UI/EditBudgetDialog";
 import BudgetSpendingTrendsChart from "@/components/UI/BudgetSpendingTrendsChart";
 import { PageOnboarding, usePageOnboarding } from "@/components/UI/PageOnboarding";
 import { budgetOnboarding } from "@/components/UI/onboardingConfigs";
-
+import { useLanguage } from "@/hooks/useLanguage";
 export default function BudgetPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const { isActive, checkAndNotify } = useAccountStatus();
   const { transactions } = useFinanceData();
   const { 
@@ -95,9 +96,9 @@ export default function BudgetPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
         <div>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Budget Planner</h1>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">{t('budget.title')}</h1>
           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-muted-foreground text-xs sm:text-sm">
-            <p>Allocate your monthly income to budgets</p>
+            <p>{t('budget.allocateIncome')}</p>
             {lastResetDate && (
               <span>
                 • Last reset: {new Date(lastResetDate).toLocaleDateString()}
