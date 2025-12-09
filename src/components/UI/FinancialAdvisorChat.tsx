@@ -1,10 +1,13 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Sparkles, Loader2, TrendingUp, PiggyBank, Target, HelpCircle, RotateCcw, History, Trash2, X, Plus, MinusCircle, PlusCircle, Pencil, DollarSign, Wallet } from 'lucide-react';
+import { Send, Sparkles, Loader2, TrendingUp, PiggyBank, Target, HelpCircle, RotateCcw, History, Trash2, X, Plus, MinusCircle, PlusCircle, Pencil, DollarSign, Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import ChatMessageBubble from './ChatMessageBubble';
+import ChatTypingIndicator from './ChatTypingIndicator';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -493,8 +496,10 @@ const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [currentPlaceholder, setCurrentPlaceholder] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const intervalRef = useRef<number | null>(null);
 
   // Load conversations on mount and check for inactivity
   useEffect(() => {
@@ -568,6 +573,19 @@ const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Rotating placeholder animation
+  useEffect(() => {
+    intervalRef.current = window.setInterval(() => {
+      setCurrentPlaceholder((prev) => (prev + 1) % quickPrompts.length);
+    }, 3000);
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, []);
 
   const createNewConversation = useCallback(() => {
     const newConvo: ChatConversation = {
@@ -910,19 +928,19 @@ const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({
 
   return (
     <Card className={cn(
-      "flex flex-col h-full",
-      standalone ? "border-0 shadow-none bg-transparent" : "border-border/50"
+      "flex flex-col h-full overflow-hidden backdrop-blur-[5px]",
+      standalone ? "border-0 shadow-none bg-transparent" : "bg-card/60 border-border/50 shadow-[0_8px_32px_rgba(0,0,0,0.12)]"
     )}>
       {/* Header - hidden in standalone mode since Sage page has its own header */}
       {!standalone && (
-        <CardHeader className="flex-shrink-0 flex flex-row items-center justify-between p-4 border-b border-border/50">
+        <CardHeader className="flex-shrink-0 flex flex-row items-center justify-between p-4 border-b border-border/50 bg-card/80 backdrop-blur-md">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <Sparkles className="h-5 w-5 text-primary" />
+            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-muted to-primary flex items-center justify-center shadow-[0_0_20px_hsl(var(--primary)/0.3)]">
+              <Sparkles className="h-5 w-5 text-primary-foreground" />
             </div>
             <div>
-              <h3 className="font-semibold text-foreground">Financial Advisor</h3>
-              <p className="text-xs text-muted-foreground">AI-powered savings assistant</p>
+              <h3 className="text-lg font-semibold text-foreground">Financial Advisor</h3>
+              <p className="text-xs text-muted-foreground">Your AI financial coach</p>
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -1002,25 +1020,40 @@ const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({
       )}
 
       {/* Messages */}
-      <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+      <ScrollArea className="flex-1 p-4 bg-background/50" ref={scrollRef}>
         {messages.length === 0 ? (
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground text-center mb-4">
-              Hi! I'm your financial advisor. Ask me about your spending, savings goals, or get personalized tips. I can also create or edit expenses, incomes, and goals for you!
-            </p>
+          <div className="space-y-6">
+            {/* Welcome Message */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex gap-3"
+            >
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-card/70 backdrop-blur-md border border-border/40 flex items-center justify-center">
+                <Bot className="w-4 h-4 text-primary" />
+              </div>
+              <div className="bg-card/70 backdrop-blur-md border border-border/40 rounded-xl rounded-bl-none px-4 py-3 shadow-[0_0_20px_hsl(var(--primary)/0.1)]">
+                <p className="text-sm text-foreground">
+                  Hi! I'm your financial advisor. Ask me about your spending, savings goals, or get personalized tips. I can also create or edit expenses, incomes, and goals for you!
+                </p>
+              </div>
+            </motion.div>
+            
+            {/* Quick Prompts */}
             <div className="grid grid-cols-2 gap-2">
               {quickPrompts.map((qp, i) => (
-                <Button
+                <motion.button
                   key={i}
-                  variant="outline"
-                  size="sm"
-                  className="h-auto py-3 px-3 text-left justify-start gap-2 text-xs hover:bg-primary/10 hover:border-primary/50"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: i * 0.1 }}
                   onClick={() => handleQuickPrompt(qp.prompt)}
                   disabled={isLoading}
+                  className="flex items-center gap-2 px-3 py-3 text-xs font-medium rounded-lg bg-card/70 backdrop-blur-md border border-border/40 text-foreground hover:bg-card hover:shadow-[0_0_20px_hsl(var(--primary)/0.15)] transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <qp.icon className="h-4 w-4 shrink-0 text-primary" />
-                  <span className="truncate">{qp.label}</span>
-                </Button>
+                  <span className="truncate text-left">{qp.label}</span>
+                </motion.button>
               ))}
             </div>
           </div>
@@ -1029,6 +1062,7 @@ const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({
             {messages.map((msg, i) => {
               const suggestedActions = msg.role === 'assistant' ? parseAllActions(msg.content) : [];
               const displayContent = msg.role === 'assistant' ? cleanAllActionMarkers(msg.content) : msg.content;
+              const isStreaming = isLoading && i === messages.length - 1 && msg.role === 'assistant';
               
               return (
                 <div
@@ -1038,69 +1072,117 @@ const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({
                     msg.role === 'user' ? 'items-end' : 'items-start'
                   )}
                 >
-                  <div
-                    className={cn(
-                      "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm",
-                      msg.role === 'user'
-                        ? 'bg-primary text-primary-foreground rounded-br-md'
-                        : 'bg-muted text-foreground rounded-bl-md'
-                    )}
-                  >
-                    {displayContent || (
-                      <span className="flex items-center gap-2">
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                        Thinking...
-                      </span>
-                    )}
-                  </div>
+                  <ChatMessageBubble 
+                    message={msg} 
+                    displayContent={displayContent}
+                    isStreaming={isStreaming}
+                  />
                   
                   {/* Action Buttons */}
                   {suggestedActions.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2 max-w-[85%]">
+                    <motion.div 
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="flex flex-wrap gap-2 mt-2 ml-11 max-w-[75%]"
+                    >
                       {suggestedActions.map((action, actionIndex) => {
                         const Icon = getActionIcon(action.type);
                         const buttonStyle = getActionButtonStyle(action.type);
                         
                         return (
-                          <Button
+                          <motion.div
                             key={actionIndex}
-                            size="sm"
-                            variant="outline"
-                            className={cn("gap-1.5 text-xs h-8", buttonStyle)}
-                            onClick={() => handleAction(action)}
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: actionIndex * 0.05 }}
                           >
-                            <Icon className="h-3 w-3" />
-                            {action.displayLabel}
-                          </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className={cn(
+                                "gap-1.5 text-xs h-8 backdrop-blur-md transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]",
+                                buttonStyle
+                              )}
+                              onClick={() => handleAction(action)}
+                            >
+                              <Icon className="h-3 w-3" />
+                              {action.displayLabel}
+                            </Button>
+                          </motion.div>
                         );
                       })}
-                    </div>
+                    </motion.div>
                   )}
                 </div>
               );
             })}
+            
+            {/* Typing Indicator while loading */}
+            {isLoading && messages[messages.length - 1]?.role === 'user' && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex gap-3"
+              >
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-card/70 backdrop-blur-md border border-border/40 flex items-center justify-center">
+                  <Bot className="w-4 h-4 text-primary" />
+                </div>
+                <div className="bg-card/70 backdrop-blur-md border border-border/40 rounded-xl rounded-bl-none px-4 py-3">
+                  <ChatTypingIndicator />
+                </div>
+              </motion.div>
+            )}
           </div>
         )}
       </ScrollArea>
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className="flex-shrink-0 p-4 border-t border-border/50">
-        <div className="flex gap-2">
-          <Input
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about your finances or request changes..."
-            disabled={isLoading}
-            className="flex-1"
-          />
-          <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-          </Button>
+      <form onSubmit={handleSubmit} className="flex-shrink-0 p-4 border-t border-border/50 bg-card/80 backdrop-blur-md">
+        <div className="relative flex items-center gap-2">
+          <div className="relative flex-1">
+            <Input
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              className="w-full pr-4 bg-background/50 border-border/50 focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all duration-300"
+              disabled={isLoading}
+            />
+            <AnimatePresence mode="wait">
+              {!input && (
+                <motion.p
+                  key={currentPlaceholder}
+                  initial={{ y: 5, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: -5, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none"
+                >
+                  {quickPrompts[currentPlaceholder].label}...
+                </motion.p>
+              )}
+            </AnimatePresence>
+          </div>
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Button 
+              type="submit" 
+              size="icon" 
+              disabled={isLoading || !input.trim()}
+              className={cn(
+                "bg-gradient-to-r from-muted to-primary text-primary-foreground transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_hsl(var(--primary)/0.3)]",
+                input.trim() && !isLoading && "hover:shadow-[0_0_30px_hsl(var(--primary)/0.5)]"
+              )}
+            >
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
+          </motion.div>
         </div>
       </form>
     </Card>
