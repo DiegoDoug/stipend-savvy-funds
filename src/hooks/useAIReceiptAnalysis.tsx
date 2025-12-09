@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { logError } from '@/lib/errorLogger';
 
 export interface ReceiptItem {
   name: string;
@@ -42,7 +43,7 @@ export function useAIReceiptAnalysis() {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to analyze receipt';
       setError(errorMessage);
-      console.error('Receipt analysis error:', err);
+      logError(err, 'useAIReceiptAnalysis:analyzeReceipt');
       return null;
     } finally {
       setIsAnalyzing(false);

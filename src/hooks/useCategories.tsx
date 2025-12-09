@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { logError } from '@/lib/errorLogger';
 
 export interface Category {
   value: string;
@@ -77,7 +78,7 @@ export const useCategories = () => {
       if (error) throw error;
       setCustomCategories((data || []) as CustomCategory[]);
     } catch (error) {
-      console.error('Error fetching custom categories:', error);
+      logError(error, 'useCategories:fetchCustomCategories');
       toast({
         title: "Error",
         description: "Failed to load custom categories",
@@ -142,7 +143,7 @@ export const useCategories = () => {
         return true; // Category exists, so return success
       }
       
-      console.error('Error adding custom category:', error);
+      logError(error, 'useCategories:addCustomCategory');
       toast({
         title: "Error",
         description: "Failed to add custom category",

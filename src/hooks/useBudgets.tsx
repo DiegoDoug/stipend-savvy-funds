@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { getDateRangeForPeriod, isDateInRange } from '@/lib/dateUtils';
+import { logError } from '@/lib/errorLogger';
 
 export interface Budget {
   id: string;
@@ -50,7 +51,7 @@ export const useBudgets = () => {
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Error fetching budgets:', error);
+      logError(error, 'useBudgets:fetchBudgets');
       toast({
         title: 'Error loading budgets',
         description: error.message,
@@ -70,7 +71,7 @@ export const useBudgets = () => {
       .eq('status', 'active');
 
     if (error) {
-      console.error('Error fetching savings goals:', error);
+      logError(error, 'useBudgets:fetchSavingsGoals');
     } else if (data) {
       setSavingsGoals(data as SavingsGoalOption[]);
     }
@@ -85,7 +86,7 @@ export const useBudgets = () => {
       .order('date', { ascending: false });
 
     if (error) {
-      console.error('Error fetching transactions:', error);
+      logError(error, 'useBudgets:fetchTransactions');
     } else if (data) {
       setTransactions(data as Transaction[]);
     }
@@ -292,7 +293,7 @@ export const useBudgets = () => {
         return true;
       }
     } catch (error: any) {
-      console.error('Error processing monthly transfers:', error);
+      logError(error, 'useBudgets:processMonthlyTransfers');
       toast({
         title: 'Error processing transfers',
         description: error.message,

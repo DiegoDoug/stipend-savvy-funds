@@ -14,6 +14,7 @@ import VerificationCodeDialog from '@/components/UI/VerificationCodeDialog';
 import { PageOnboarding, usePageOnboarding, resetAllOnboarding } from '@/components/UI/PageOnboarding';
 import { accountOnboarding } from '@/components/UI/onboardingConfigs';
 import { useLanguage } from '@/hooks/useLanguage';
+import { logError } from '@/lib/errorLogger';
 
 interface ProfileData {
   name: string;
@@ -85,7 +86,7 @@ export default function Account() {
       setNewName(data.name || '');
       setSelectedTimezone(data.timezone || 'America/Chicago');
     } catch (error: any) {
-      console.error('Error fetching profile:', error);
+      logError(error, 'Account:fetchProfile');
     }
   };
 

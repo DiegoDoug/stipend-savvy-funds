@@ -21,6 +21,7 @@ import AddFundsDialog from '@/components/UI/AddFundsDialog';
 import { PageOnboarding, usePageOnboarding } from '@/components/UI/PageOnboarding';
 import { goalsOnboarding } from '@/components/UI/onboardingConfigs';
 import { useLanguage } from '@/hooks/useLanguage';
+import { logError } from '@/lib/errorLogger';
 type SavingsGoal = {
   id: string;
   user_id: string;
@@ -86,7 +87,7 @@ const Goals: React.FC = () => {
           setShowAddGoal(true);
           sessionStorage.removeItem('pendingGoal');
         } catch (e) {
-          console.error('Failed to parse pending goal:', e);
+          logError(e, 'Goals:parsePendingGoal');
         }
       }
     }

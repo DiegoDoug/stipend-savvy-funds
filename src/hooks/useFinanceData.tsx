@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { getDateRangeForPeriod, getPreviousPeriodRange, isDateInRange, calculatePercentageChange, DateRange, PeriodType } from '@/lib/dateUtils';
-
+import { logError } from '@/lib/errorLogger';
 export interface Transaction {
   id: string;
   type: 'income' | 'expense';
@@ -236,17 +236,16 @@ export const useFinanceData = () => {
       });
 
       if (error) {
-        console.error('Error checking budget reset:', error);
+        logError(error, 'useFinanceData:checkAndResetBudgets');
         return;
       }
 
       // If reset occurred, refetch budget categories
       if (data && data.length > 0 && data[0].reset_occurred) {
-        console.log(`Monthly budget reset: ${data[0].affected_count} categories reset`);
         await fetchBudgetCategories();
       }
     } catch (error) {
-      console.error('Error in budget reset check:', error);
+      logError(error, 'useFinanceData:checkAndResetBudgets');
     }
   };
 

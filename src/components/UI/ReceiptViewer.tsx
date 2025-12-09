@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
+import { logError } from "@/lib/errorLogger";
 
 interface ReceiptViewerProps {
   receiptPath: string | null;
@@ -56,7 +57,7 @@ export default function ReceiptViewer({
         
         setImageUrl(data.signedUrl);
       } catch (err) {
-        console.error('Error loading receipt:', err);
+        logError(err, 'ReceiptViewer:loadImage');
         setError('Failed to load receipt image');
       } finally {
         setLoading(false);
@@ -91,7 +92,7 @@ export default function ReceiptViewer({
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error('Download failed:', err);
+      logError(err, 'ReceiptViewer:handleDownload');
     }
   };
 

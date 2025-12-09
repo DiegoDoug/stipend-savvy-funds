@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
 import { TrendingUp, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
+import { logError } from '@/lib/errorLogger';
 
 interface ProgressData {
   date: string;
@@ -75,7 +76,7 @@ export default function GoalProgressChart({ goals }: GoalProgressChartProps) {
 
         setProgressData(formattedData);
       } catch (error) {
-        console.error('Failed to fetch progress history:', error);
+        logError(error, 'GoalProgressChart:fetchProgress');
       } finally {
         setLoading(false);
       }
