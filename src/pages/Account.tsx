@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import VerificationCodeDialog from '@/components/UI/VerificationCodeDialog';
 import { PageOnboarding, usePageOnboarding, resetAllOnboarding } from '@/components/UI/PageOnboarding';
 import { accountOnboarding } from '@/components/UI/onboardingConfigs';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface ProfileData {
   name: string;
@@ -26,6 +27,7 @@ interface ProfileData {
 export default function Account() {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
@@ -90,8 +92,8 @@ export default function Account() {
   const handleUpdateName = async () => {
     if (!user || !newName.trim()) {
       toast({
-        title: "Error",
-        description: "Name cannot be empty",
+        title: t('common.error'),
+        description: t('account.nameEmpty'),
         variant: "destructive"
       });
       return;
@@ -99,8 +101,8 @@ export default function Account() {
 
     if (newName.length > 50) {
       toast({
-        title: "Error",
-        description: "Name must be less than 50 characters",
+        title: t('common.error'),
+        description: t('account.nameTooLong'),
         variant: "destructive"
       });
       return;
@@ -116,15 +118,15 @@ export default function Account() {
       if (error) throw error;
 
       toast({
-        title: "Success",
-        description: "Name updated successfully"
+        title: t('common.success'),
+        description: t('account.nameUpdated')
       });
       
       setEditingName(false);
       fetchProfileData();
     } catch (error: any) {
       toast({
-        title: "Error",
+        title: t('common.error'),
         description: error.message,
         variant: "destructive"
       });
@@ -146,15 +148,15 @@ export default function Account() {
       if (error) throw error;
 
       toast({
-        title: "Timezone Updated",
-        description: "Your timezone has been updated successfully. Activity dates will now be calculated using your local timezone.",
+        title: t('account.timezoneUpdated'),
+        description: t('account.timezoneUpdatedDesc'),
       });
       
       setSelectedTimezone(newTimezone);
       fetchProfileData();
     } catch (error: any) {
       toast({
-        title: "Error",
+        title: t('common.error'),
         description: error.message,
         variant: "destructive"
       });
@@ -166,8 +168,8 @@ export default function Account() {
   const handleChangeEmail = async () => {
     if (!newEmail || !emailPassword) {
       toast({
-        title: "Error",
-        description: "Please provide both new email and current password",
+        title: t('common.error'),
+        description: t('account.provideEmailPassword'),
         variant: "destructive"
       });
       return;
@@ -177,8 +179,8 @@ export default function Account() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(newEmail)) {
       toast({
-        title: "Error",
-        description: "Please enter a valid email address",
+        title: t('common.error'),
+        description: t('account.validEmail'),
         variant: "destructive"
       });
       return;
@@ -201,8 +203,8 @@ export default function Account() {
       if (error) throw error;
 
       toast({
-        title: "Email updated successfully",
-        description: "Your email has been updated"
+        title: t('account.emailUpdated'),
+        description: t('account.emailUpdatedDesc')
       });
       
       setEditingEmail(false);
@@ -211,7 +213,7 @@ export default function Account() {
       fetchProfileData();
     } catch (error: any) {
       toast({
-        title: "Error",
+        title: t('common.error'),
         description: error.message,
         variant: "destructive"
       });
@@ -223,8 +225,8 @@ export default function Account() {
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
       toast({
-        title: "Error",
-        description: "Please fill in all password fields",
+        title: t('common.error'),
+        description: t('account.fillPasswordFields'),
         variant: "destructive"
       });
       return;
@@ -232,8 +234,8 @@ export default function Account() {
 
     if (newPassword !== confirmPassword) {
       toast({
-        title: "Error",
-        description: "New passwords do not match",
+        title: t('common.error'),
+        description: t('account.passwordsNoMatch'),
         variant: "destructive"
       });
       return;
@@ -243,8 +245,8 @@ export default function Account() {
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
     if (!passwordRegex.test(newPassword)) {
       toast({
-        title: "Error",
-        description: "Password must be at least 8 characters with letters, numbers, and symbols",
+        title: t('common.error'),
+        description: t('account.passwordStrength'),
         variant: "destructive"
       });
       return;
@@ -267,8 +269,8 @@ export default function Account() {
       if (error) throw error;
 
       toast({
-        title: "Success",
-        description: "Password changed successfully"
+        title: t('common.success'),
+        description: t('account.passwordChanged')
       });
       
       setChangingPassword(false);
@@ -277,7 +279,7 @@ export default function Account() {
       setConfirmPassword('');
     } catch (error: any) {
       toast({
-        title: "Error",
+        title: t('common.error'),
         description: error.message,
         variant: "destructive"
       });
@@ -299,15 +301,15 @@ export default function Account() {
       if (error) throw error;
 
       toast({
-        title: "Account deactivated",
-        description: "Logging you out. Sign in again to access your account in read-only mode."
+        title: t('account.deactivated'),
+        description: t('account.deactivateSuccess')
       });
       
       // Log the user out immediately
       await signOut();
     } catch (error: any) {
       toast({
-        title: "Error",
+        title: t('common.error'),
         description: error.message,
         variant: "destructive"
       });
@@ -327,14 +329,14 @@ export default function Account() {
       if (error) throw error;
 
       toast({
-        title: "Account Reactivated",
-        description: "Your account has been successfully reactivated. You now have full access.",
+        title: t('account.reactivate'),
+        description: t('account.reactivateSuccess'),
       });
       
       fetchProfileData();
     } catch (error: any) {
       toast({
-        title: "Error",
+        title: t('common.error'),
         description: error.message,
         variant: "destructive"
       });
@@ -366,16 +368,16 @@ export default function Account() {
       if (sendError) throw sendError;
 
       toast({
-        title: "Verification Code Sent",
-        description: "Please check your email for the verification code to confirm account deletion.",
+        title: t('account.verificationCodeSentTitle'),
+        description: t('account.verificationCodeSentDesc'),
       });
 
       setShowVerificationDialog(true);
       setVerificationAction('account_deletion');
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message || "Failed to send verification code",
+        title: t('common.error'),
+        description: error.message || t('common.error'),
         variant: "destructive",
       });
     } finally {
@@ -394,16 +396,16 @@ export default function Account() {
       if (error) throw error;
 
       toast({
-        title: "Account Deleted",
-        description: "Your account has been permanently deleted.",
+        title: t('account.accountDeleted'),
+        description: t('account.accountDeletedDesc'),
       });
 
       // Sign out after successful deletion
       await signOut();
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message || "Failed to delete account. Please try again.",
+        title: t('common.error'),
+        description: error.message || t('common.error'),
         variant: "destructive",
       });
     } finally {
@@ -419,12 +421,12 @@ export default function Account() {
       await supabase.auth.refreshSession();
       
       toast({
-        title: "Success",
-        description: "Logged out from all other devices"
+        title: t('common.success'),
+        description: t('account.logoutSuccess')
       });
     } catch (error: any) {
       toast({
-        title: "Error",
+        title: t('common.error'),
         description: error.message,
         variant: "destructive"
       });
@@ -449,37 +451,37 @@ export default function Account() {
       
       <div className="space-y-6 max-w-4xl mx-auto">
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold mb-2">Account Settings</h1>
-        <p className="text-muted-foreground">Manage your account information and preferences</p>
+        <h1 className="text-2xl md:text-3xl font-bold mb-2">{t('account.title')}</h1>
+        <p className="text-muted-foreground">{t('account.subtitle')}</p>
       </div>
 
       {/* A. Profile Information Display */}
       <Card className="p-6" data-tour="profile-info">
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <User size={20} />
-          Profile Information
+          {t('account.profileInfo')}
         </h2>
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label className="text-muted-foreground">Name</Label>
+              <Label className="text-muted-foreground">{t('account.name')}</Label>
               <p className="font-medium">{profileData.name}</p>
             </div>
             <div>
-              <Label className="text-muted-foreground">Email</Label>
+              <Label className="text-muted-foreground">{t('account.email')}</Label>
               <p className="font-medium">{profileData.email}</p>
             </div>
             <div>
               <Label className="text-muted-foreground flex items-center gap-2">
                 <Calendar size={14} />
-                Account Created
+                {t('account.accountCreated')}
               </Label>
               <p className="font-medium">{new Date(profileData.created_at).toLocaleDateString()}</p>
             </div>
             <div>
               <Label className="text-muted-foreground flex items-center gap-2">
                 <Clock size={14} />
-                Last Login
+                {t('account.lastLogin')}
               </Label>
               <p className="font-medium">
                 {profileData.last_login 
@@ -489,9 +491,9 @@ export default function Account() {
             </div>
           </div>
           <div>
-            <Label className="text-muted-foreground">Status</Label>
+            <Label className="text-muted-foreground">{t('account.status')}</Label>
             <p className={`font-medium ${profileData.status === 'active' ? 'text-success' : 'text-warning'}`}>
-              {profileData.status === 'active' ? 'Active' : 'Inactive'}
+              {profileData.status === 'active' ? t('account.active') : t('account.inactive')}
             </p>
           </div>
         </div>
@@ -500,10 +502,9 @@ export default function Account() {
       {/* Reactivate Account (shown when inactive) */}
       {profileData.status === 'inactive' && (
         <Card className="p-6 border-warning bg-warning/5">
-          <h2 className="text-xl font-semibold mb-4 text-warning">Account Deactivated</h2>
+          <h2 className="text-xl font-semibold mb-4 text-warning">{t('account.deactivated')}</h2>
           <p className="text-muted-foreground mb-4">
-            Your account is currently deactivated. You can view your data but cannot make any changes.
-            Click below to reactivate your account and restore full access.
+            {t('account.deactivatedDesc')}
           </p>
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -511,20 +512,20 @@ export default function Account() {
                 disabled={loading}
                 className="bg-success hover:bg-success/90"
               >
-                Reactivate Account
+                {t('account.reactivate')}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Reactivate Account?</AlertDialogTitle>
+                <AlertDialogTitle>{t('account.reactivateTitle')}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will restore full access to your account. You'll be able to make changes and use all features again.
+                  {t('account.reactivateDesc')}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                 <AlertDialogAction onClick={handleReactivateAccount} className="bg-success hover:bg-success/90">
-                  Reactivate
+                  {t('account.reactivate')}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -534,33 +535,33 @@ export default function Account() {
 
       {/* B. Edit Name */}
       <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">Update Name</h2>
+        <h2 className="text-xl font-semibold mb-4">{t('account.updateName')}</h2>
         {!editingName ? (
           <div className="flex items-center justify-between">
-            <p className="text-muted-foreground">Current name: <span className="font-medium text-foreground">{profileData.name}</span></p>
+            <p className="text-muted-foreground">{t('account.currentName')}: <span className="font-medium text-foreground">{profileData.name}</span></p>
             <Button onClick={() => setEditingName(true)} variant="outline">
-              Edit Name
+              {t('account.editName')}
             </Button>
           </div>
         ) : (
           <div className="space-y-4">
             <div>
-              <Label htmlFor="newName">New Name</Label>
+              <Label htmlFor="newName">{t('account.newName')}</Label>
               <Input
                 id="newName"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                placeholder="Enter your name"
+                placeholder={t('account.enterName')}
                 maxLength={50}
               />
-              <p className="text-xs text-muted-foreground mt-1">{newName.length}/50 characters</p>
+              <p className="text-xs text-muted-foreground mt-1">{newName.length}/50 {t('account.characters')}</p>
             </div>
             <div className="flex gap-2">
               <Button onClick={handleUpdateName} disabled={loading}>
-                {loading ? 'Saving...' : 'Save'}
+                {loading ? t('common.updating') : t('common.save')}
               </Button>
               <Button onClick={() => setEditingName(false)} variant="outline">
-                Cancel
+                {t('common.cancel')}
               </Button>
             </div>
           </div>
@@ -571,21 +572,21 @@ export default function Account() {
       <Card className="p-6" data-tour="timezone">
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Globe size={20} />
-          Timezone Settings
+          {t('account.timezoneSettings')}
         </h2>
         <p className="text-sm text-muted-foreground mb-4">
-          Your timezone is used to correctly classify activities as Recent (today and past) or Upcoming (future).
+          {t('account.timezoneDesc')}
         </p>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="timezone">Select Your Timezone</Label>
+            <Label htmlFor="timezone">{t('account.selectTimezone')}</Label>
             <Select 
               value={selectedTimezone} 
               onValueChange={handleUpdateTimezone}
               disabled={loading}
             >
               <SelectTrigger id="timezone" className="w-full">
-                <SelectValue placeholder="Select timezone" />
+                <SelectValue placeholder={t('account.selectTimezone')} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
@@ -608,7 +609,7 @@ export default function Account() {
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground mt-2">
-              Current timezone: {selectedTimezone}
+              {t('account.currentTimezone')}: {selectedTimezone}
             </p>
           </div>
         </div>
@@ -618,47 +619,47 @@ export default function Account() {
       <Card className="p-6">
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Mail size={20} />
-          Update Email
+          {t('account.updateEmail')}
         </h2>
         {!editingEmail ? (
           <div className="flex items-center justify-between">
-            <p className="text-muted-foreground">Current email: <span className="font-medium text-foreground">{profileData.email}</span></p>
+            <p className="text-muted-foreground">{t('account.currentEmail')}: <span className="font-medium text-foreground">{profileData.email}</span></p>
             <Button onClick={() => setEditingEmail(true)} variant="outline">
-              Change Email
+              {t('account.changeEmail')}
             </Button>
           </div>
         ) : (
           <div className="space-y-4">
             <div>
-              <Label htmlFor="newEmail">New Email</Label>
+              <Label htmlFor="newEmail">{t('account.newEmail')}</Label>
               <Input
                 id="newEmail"
                 type="email"
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
-                placeholder="Enter new email"
+                placeholder={t('account.enterNewEmail')}
               />
             </div>
             <div>
-              <Label htmlFor="emailPassword">Current Password</Label>
+              <Label htmlFor="emailPassword">{t('account.currentPassword')}</Label>
               <Input
                 id="emailPassword"
                 type="password"
                 value={emailPassword}
                 onChange={(e) => setEmailPassword(e.target.value)}
-                placeholder="Confirm with your password"
+                placeholder={t('account.confirmWithPassword')}
               />
             </div>
             <div className="flex gap-2">
               <Button onClick={handleChangeEmail} disabled={loading}>
-                {loading ? 'Updating...' : 'Update Email'}
+                {loading ? t('common.updating') : t('account.updateEmail')}
               </Button>
               <Button onClick={() => {
                 setEditingEmail(false);
                 setEmailPassword('');
                 setNewEmail('');
               }} variant="outline">
-                Cancel
+                {t('common.cancel')}
               </Button>
             </div>
           </div>
@@ -669,50 +670,50 @@ export default function Account() {
       <Card className="p-6" data-tour="security">
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Lock size={20} />
-          Change Password
+          {t('account.changePassword')}
         </h2>
         {!changingPassword ? (
           <Button onClick={() => setChangingPassword(true)} variant="outline">
-            Change Password
+            {t('account.changePassword')}
           </Button>
         ) : (
           <div className="space-y-4">
             <div>
-              <Label htmlFor="currentPassword">Current Password</Label>
+              <Label htmlFor="currentPassword">{t('account.currentPassword')}</Label>
               <Input
                 id="currentPassword"
                 type="password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                placeholder="Enter current password"
+                placeholder={t('account.enterCurrentPassword')}
               />
             </div>
             <div>
-              <Label htmlFor="newPassword">New Password</Label>
+              <Label htmlFor="newPassword">{t('account.newPassword')}</Label>
               <Input
                 id="newPassword"
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Enter new password"
+                placeholder={t('account.enterNewPassword')}
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Min 8 characters, must include letters, numbers, and symbols
+                {t('account.passwordRequirements')}
               </p>
             </div>
             <div>
-              <Label htmlFor="confirmPassword">Confirm New Password</Label>
+              <Label htmlFor="confirmPassword">{t('account.confirmNewPassword')}</Label>
               <Input
                 id="confirmPassword"
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm new password"
+                placeholder={t('account.confirmNewPasswordPlaceholder')}
               />
             </div>
             <div className="flex gap-2">
               <Button onClick={handleChangePassword} disabled={loading}>
-                {loading ? 'Changing...' : 'Change Password'}
+                {loading ? t('common.updating') : t('account.changePassword')}
               </Button>
               <Button onClick={() => {
                 setChangingPassword(false);
@@ -720,7 +721,7 @@ export default function Account() {
                 setNewPassword('');
                 setConfirmPassword('');
               }} variant="outline">
-                Cancel
+                {t('common.cancel')}
               </Button>
             </div>
           </div>
@@ -731,16 +732,16 @@ export default function Account() {
       <Card className="p-6">
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <LogOut size={20} />
-          Session Management
+          {t('account.sessionManagement')}
         </h2>
         <div className="space-y-4">
           <div>
-            <p className="text-muted-foreground mb-2">Active on this device</p>
-            <p className="text-sm">Last activity: {profileData.last_login ? new Date(profileData.last_login).toLocaleString() : 'Now'}</p>
+            <p className="text-muted-foreground mb-2">{t('account.activeDevice')}</p>
+            <p className="text-sm">{t('account.lastActivity')}: {profileData.last_login ? new Date(profileData.last_login).toLocaleString() : 'Now'}</p>
           </div>
           <Separator />
           <Button onClick={handleLogoutOtherSessions} variant="outline" disabled={loading}>
-            {loading ? 'Processing...' : 'Logout from all other devices'}
+            {loading ? t('common.loading') : t('account.logoutOtherDevices')}
           </Button>
         </div>
       </Card>
@@ -749,37 +750,37 @@ export default function Account() {
       <Card className="p-6">
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <RotateCcw size={20} />
-          Tutorials
+          {t('account.tutorials')}
         </h2>
         <p className="text-muted-foreground mb-4">
-          Reset all page tutorials to see the onboarding guides again on each page.
+          {t('account.tutorialsDesc')}
         </p>
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button variant="outline">
               <RotateCcw size={16} className="mr-2" />
-              Reset All Tutorials
+              {t('account.resetAllTutorials')}
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Reset All Tutorials?</AlertDialogTitle>
+              <AlertDialogTitle>{t('account.resetTutorialsTitle')}</AlertDialogTitle>
               <AlertDialogDescription>
-                This will reset all page tutorials. You'll see the onboarding guides again when you visit each page.
+                {t('account.resetTutorialsDesc')}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
               <AlertDialogAction 
                 onClick={() => {
                   resetAllOnboarding();
                   toast({
-                    title: "Tutorials Reset",
-                    description: "All tutorials have been reset. You'll see them again on each page.",
+                    title: t('account.tutorialsReset'),
+                    description: t('account.tutorialsResetDesc'),
                   });
                 }}
               >
-                Reset Tutorials
+                {t('account.resetAllTutorials')}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -788,33 +789,32 @@ export default function Account() {
 
       {/* E. Danger Zone */}
       <Card className="p-6 border-destructive">
-        <h2 className="text-xl font-semibold mb-4 text-destructive">Danger Zone</h2>
+        <h2 className="text-xl font-semibold mb-4 text-destructive">{t('account.dangerZone')}</h2>
         <div className="space-y-4">
           {/* Deactivate Account */}
           <div className="flex items-center justify-between p-4 border rounded-lg">
             <div>
               <h3 className="font-medium flex items-center gap-2">
                 <UserX size={18} />
-                Deactivate Account
+                {t('account.deactivateAccount')}
               </h3>
-              <p className="text-sm text-muted-foreground">Temporarily disable your account</p>
+              <p className="text-sm text-muted-foreground">{t('account.deactivateAccountDesc')}</p>
             </div>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="outline">Deactivate</Button>
+                <Button variant="outline">{t('account.deactivate')}</Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Deactivate Account?</AlertDialogTitle>
+                  <AlertDialogTitle>{t('account.deactivateTitle')}</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Your account will remain accessible but you won't be able to make any changes until you reactivate it.
-                    Your data will be preserved and you can view everything in read-only mode.
+                    {t('account.deactivateDesc')}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                   <AlertDialogAction onClick={handleDeactivateAccount} className="bg-warning hover:bg-warning/90">
-                    Deactivate
+                    {t('account.deactivate')}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -826,39 +826,38 @@ export default function Account() {
             <div>
               <h3 className="font-medium flex items-center gap-2 text-destructive mb-2">
                 <Trash2 size={18} />
-                Delete Account
+                {t('account.deleteAccount')}
               </h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Permanently delete your account and all data. This action cannot be undone.
+                {t('account.deleteAccountDesc')}
               </p>
               <p className="text-sm text-amber-600 dark:text-amber-500 mb-4">
-                A verification code will be sent to your email to confirm this action.
+                {t('account.verificationCodeSent')}
               </p>
             </div>
             
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" disabled={loading}>
-                  Delete Account
+                  {t('account.deleteAccount')}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogTitle>{t('account.areYouSure')}</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete your account
-                    and remove all your data including transactions, budgets, and goals.
+                    {t('account.deleteWarning')}
                     <br /><br />
-                    A verification code will be sent to <strong>{user?.email}</strong> to confirm this action.
+                    {t('account.verificationCodeTo')} <strong>{user?.email}</strong>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                   <AlertDialogAction 
                     onClick={handleDeleteAccount}
                     className="bg-destructive hover:bg-destructive/90"
                   >
-                    Send Verification Code
+                    {t('account.sendVerificationCode')}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
