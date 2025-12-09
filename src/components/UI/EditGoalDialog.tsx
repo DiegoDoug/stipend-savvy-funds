@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccountStatus } from "@/hooks/useAccountStatus";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface SavingsGoal {
   id: string;
@@ -33,6 +34,7 @@ interface EditGoalDialogProps {
 }
 
 export default function EditGoalDialog({ open, onOpenChange, goal, onGoalUpdated }: EditGoalDialogProps) {
+  const { t } = useLanguage();
   const [name, setName] = useState("");
   const [targetAmount, setTargetAmount] = useState("");
   const [currentAmount, setCurrentAmount] = useState("");
@@ -62,8 +64,8 @@ export default function EditGoalDialog({ open, onOpenChange, goal, onGoalUpdated
 
     if (!goal) {
       toast({
-        title: "Error",
-        description: "No goal selected for editing",
+        title: t('common.error'),
+        description: t('goals.noGoalsYet'),
         variant: "destructive",
       });
       return;
@@ -71,8 +73,8 @@ export default function EditGoalDialog({ open, onOpenChange, goal, onGoalUpdated
 
     if (!name || !targetAmount) {
       toast({
-        title: "Error",
-        description: "Please fill in all required fields",
+        title: t('common.error'),
+        description: t('form.selectCategory'),
         variant: "destructive",
       });
       return;
@@ -102,8 +104,8 @@ export default function EditGoalDialog({ open, onOpenChange, goal, onGoalUpdated
       if (error) throw error;
 
       toast({
-        title: "Success",
-        description: "Savings goal updated successfully",
+        title: t('common.success'),
+        description: t('goals.goalUpdated'),
       });
 
       onOpenChange(false);
@@ -113,8 +115,8 @@ export default function EditGoalDialog({ open, onOpenChange, goal, onGoalUpdated
       }
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message || "Failed to update goal",
+        title: t('common.error'),
+        description: error.message || t('common.error'),
         variant: "destructive",
       });
     } finally {
@@ -126,18 +128,18 @@ export default function EditGoalDialog({ open, onOpenChange, goal, onGoalUpdated
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Edit Savings Goal</DialogTitle>
+          <DialogTitle>{t('dialog.editGoal')}</DialogTitle>
           <DialogDescription>
-            Update your savings goal progress and details
+            {t('goals.trackManage')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="edit-name">Goal Name *</Label>
+            <Label htmlFor="edit-name">{t('goals.goalName')} *</Label>
             <Input
               id="edit-name"
-              placeholder="e.g., Emergency Fund"
+              placeholder={t('goals.goalName')}
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -146,7 +148,7 @@ export default function EditGoalDialog({ open, onOpenChange, goal, onGoalUpdated
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-currentAmount">Current Amount *</Label>
+              <Label htmlFor="edit-currentAmount">{t('goals.currentAmount')} *</Label>
               <Input
                 id="edit-currentAmount"
                 type="number"
@@ -160,7 +162,7 @@ export default function EditGoalDialog({ open, onOpenChange, goal, onGoalUpdated
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-targetAmount">Target Amount *</Label>
+              <Label htmlFor="edit-targetAmount">{t('goals.targetAmount')} *</Label>
               <Input
                 id="edit-targetAmount"
                 type="number"
@@ -175,7 +177,7 @@ export default function EditGoalDialog({ open, onOpenChange, goal, onGoalUpdated
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-targetDate">Target Date (Optional)</Label>
+            <Label htmlFor="edit-targetDate">{t('goals.targetDate')} ({t('common.optional')})</Label>
             <Input
               id="edit-targetDate"
               type="date"
@@ -185,10 +187,10 @@ export default function EditGoalDialog({ open, onOpenChange, goal, onGoalUpdated
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-description">Description (Optional)</Label>
+            <Label htmlFor="edit-description">{t('goals.description')} ({t('common.optional')})</Label>
             <Textarea
               id="edit-description"
-              placeholder="Why are you saving for this goal?"
+              placeholder={t('goals.description')}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
@@ -202,10 +204,10 @@ export default function EditGoalDialog({ open, onOpenChange, goal, onGoalUpdated
               onClick={() => onOpenChange(false)}
               disabled={loading}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Saving..." : "Save Changes"}
+              {loading ? t('common.updating') : t('common.save')}
             </Button>
           </DialogFooter>
         </form>
