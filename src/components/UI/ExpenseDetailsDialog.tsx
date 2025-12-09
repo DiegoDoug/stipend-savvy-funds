@@ -47,8 +47,9 @@ export default function ExpenseDetailsDialog({
       <ReceiptScannerModal
         open={showScanner}
         onOpenChange={setShowScanner}
-        incomeId={expense.id}
+        transactionId={expense.id}
         onReceiptUploaded={handleReceiptUploaded}
+        mode="attach"
       />
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">

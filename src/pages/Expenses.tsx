@@ -556,8 +556,9 @@ export default function Expenses() {
         <ReceiptScannerModal
           open={showScannerDialog}
           onOpenChange={setShowScannerDialog}
-          incomeId={scanningExpenseId}
+          transactionId={scanningExpenseId}
           onReceiptUploaded={handleReceiptUploaded}
+          mode="attach"
         />
       )}
 
