@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Target, Wallet, PiggyBank, AlertCircle } from 'lucide-react';
 import { useBudgets, SavingsGoalOption } from '@/hooks/useBudgets';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface AddBudgetDialogProps {
   open: boolean;
@@ -16,6 +17,7 @@ interface AddBudgetDialogProps {
 
 export default function AddBudgetDialog({ open, onOpenChange, onSuccess }: AddBudgetDialogProps) {
   const { savingsGoals, totals, validateAllocation, createBudget } = useBudgets();
+  const { t } = useLanguage();
   
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -45,7 +47,7 @@ export default function AddBudgetDialog({ open, onOpenChange, onSuccess }: AddBu
     if (expense > 0 || savings > 0) {
       const validation = validateAllocation(expense, savings);
       if (!validation.isValid) {
-        setValidationError(`Exceeds income by $${validation.exceededBy.toLocaleString()}`);
+        setValidationError(`${t('dialog.exceedsIncomeBy')} $${validation.exceededBy.toLocaleString()}`);
       } else {
         setValidationError(null);
       }
@@ -61,7 +63,7 @@ export default function AddBudgetDialog({ open, onOpenChange, onSuccess }: AddBu
     const savings = Number(savingsAllocation) || 0;
     
     if (expense === 0 && savings === 0) {
-      setValidationError('At least one allocation is required');
+      setValidationError(t('dialog.atLeastOneAllocation'));
       return;
     }
 
@@ -89,14 +91,14 @@ export default function AddBudgetDialog({ open, onOpenChange, onSuccess }: AddBu
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Wallet className="w-5 h-5 text-primary" />
-            Create New Budget
+            {t('dialog.createNewBudget')}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           {/* Budget Name */}
           <div className="space-y-2">
-            <Label htmlFor="name">Budget Name</Label>
+            <Label htmlFor="name">{t('form.name')}</Label>
             <Input
               id="name"
               placeholder="e.g., Monthly Living, Emergency Fund"
@@ -107,7 +109,7 @@ export default function AddBudgetDialog({ open, onOpenChange, onSuccess }: AddBu
 
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="description">Description (optional)</Label>
+            <Label htmlFor="description">{t('form.description')} ({t('common.optional')})</Label>
             <Textarea
               id="description"
               placeholder="What is this budget for?"
@@ -122,7 +124,7 @@ export default function AddBudgetDialog({ open, onOpenChange, onSuccess }: AddBu
             <div className="space-y-2">
               <Label htmlFor="expense" className="flex items-center gap-1.5">
                 <Wallet className="w-3.5 h-3.5 text-warning" />
-                Expense Allocation
+                {t('dialog.expenseAllocation')}
               </Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
@@ -142,7 +144,7 @@ export default function AddBudgetDialog({ open, onOpenChange, onSuccess }: AddBu
             <div className="space-y-2">
               <Label htmlFor="savings" className="flex items-center gap-1.5">
                 <PiggyBank className="w-3.5 h-3.5 text-success" />
-                Savings Allocation
+                {t('dialog.savingsAllocation')}
               </Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
@@ -165,14 +167,14 @@ export default function AddBudgetDialog({ open, onOpenChange, onSuccess }: AddBu
             <div className="space-y-2">
               <Label htmlFor="goal" className="flex items-center gap-1.5">
                 <Target className="w-3.5 h-3.5 text-primary" />
-                Link to Savings Goal (optional)
+                {t('dialog.linkToGoal')} ({t('common.optional')})
               </Label>
               <Select value={linkedGoalId || "none"} onValueChange={(val) => setLinkedGoalId(val === "none" ? "" : val)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a goal for auto-transfer" />
+                  <SelectValue placeholder={t('dialog.linkToGoal')} />
                 </SelectTrigger>
                 <SelectContent className="bg-background border border-border z-50">
-                  <SelectItem value="none">No linked goal</SelectItem>
+                  <SelectItem value="none">{t('dialog.noLinkedGoal')}</SelectItem>
                   {savingsGoals.map((goal) => (
                     <SelectItem key={goal.id} value={goal.id}>
                       {goal.name} (${goal.current_amount.toLocaleString()} / ${goal.target_amount.toLocaleString()})
@@ -181,7 +183,7 @@ export default function AddBudgetDialog({ open, onOpenChange, onSuccess }: AddBu
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Savings will auto-transfer to this goal at month reset
+                {t('dialog.savingsAutoTransfer')}
               </p>
             </div>
           )}
@@ -189,19 +191,19 @@ export default function AddBudgetDialog({ open, onOpenChange, onSuccess }: AddBu
           {/* Summary & Validation */}
           <div className="p-3 rounded-lg bg-accent/30 border border-border/50 space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Monthly Income</span>
+              <span className="text-muted-foreground">{t('budget.monthlyIncome')}</span>
               <span className="font-medium">${totals.monthlyIncome.toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Already Allocated</span>
+              <span className="text-muted-foreground">{t('dialog.alreadyAllocated')}</span>
               <span className="font-medium">${totals.totalAllocation.toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">This Budget</span>
+              <span className="text-muted-foreground">{t('dialog.thisBudget')}</span>
               <span className="font-medium text-primary">${totalAllocation.toLocaleString()}</span>
             </div>
             <div className="border-t border-border/50 pt-2 flex justify-between text-sm">
-              <span className="text-muted-foreground">Remaining After</span>
+              <span className="text-muted-foreground">{t('dialog.remainingAfter')}</span>
               <span className={`font-bold ${(totals.remainingToAllocate - totalAllocation) >= 0 ? 'text-success' : 'text-destructive'}`}>
                 ${(totals.remainingToAllocate - totalAllocation).toLocaleString()}
               </span>
@@ -224,14 +226,14 @@ export default function AddBudgetDialog({ open, onOpenChange, onSuccess }: AddBu
               className="flex-1"
               disabled={loading}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               onClick={handleSubmit}
               className="flex-1 bg-gradient-to-r from-primary to-primary-glow"
               disabled={loading || !name.trim() || !!validationError || totalAllocation === 0}
             >
-              {loading ? 'Creating...' : 'Create Budget'}
+              {loading ? t('common.creating') : t('budget.addBudget')}
             </Button>
           </div>
         </div>

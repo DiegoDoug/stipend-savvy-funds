@@ -23,6 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useCategories } from "@/hooks/useCategories";
 import { useAccountStatus } from "@/hooks/useAccountStatus";
+import { useLanguage } from "@/hooks/useLanguage";
 import { expenseSchema } from "@/lib/validation";
 import { logError, getUserFriendlyErrorMessage } from "@/lib/errorLogger";
 import { Wallet, AlertCircle, Repeat, Info } from "lucide-react";
@@ -59,6 +60,7 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
   
   const { toast } = useToast();
   const { user } = useAuth();
+  const { t } = useLanguage();
   const { getExpenseCategories, addCustomCategory } = useCategories();
   const { checkAndNotify } = useAccountStatus();
 
@@ -113,7 +115,7 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
     
     if (!user) {
       toast({
-        title: "Error",
+        title: t('common.error'),
         description: "You must be logged in to add an expense.",
         variant: "destructive",
       });
@@ -122,7 +124,7 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
 
     if (!amount || !description || (!category && !customCategory) || !budgetId) {
       toast({
-        title: "Error", 
+        title: t('common.error'), 
         description: "Please fill in all required fields including budget.",
         variant: "destructive",
       });
@@ -187,7 +189,7 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
         if (error) throw error;
 
         toast({
-          title: "Success",
+          title: t('common.success'),
           description: `Created ${recurringMonths} recurring expense entries!`,
         });
       } else {
@@ -207,7 +209,7 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
         if (error) throw error;
 
         toast({
-          title: "Success",
+          title: t('common.success'),
           description: "Expense added successfully!",
         });
       }
@@ -267,15 +269,15 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add New Expense</DialogTitle>
+          <DialogTitle>{t('dialog.addNewExpense')}</DialogTitle>
           <DialogDescription>
-            Record a new expense transaction. All fields are required.
+            {t('dialog.addNewExpenseDesc')}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="amount">Amount ($)</Label>
+              <Label htmlFor="amount">{t('form.amount')} ($)</Label>
               <Input
                 id="amount"
                 type="number"
@@ -289,10 +291,10 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
             </div>
             
             <div className="grid gap-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t('form.description')}</Label>
               <Input
                 id="description"
-                placeholder="What did you spend on?"
+                placeholder={t('form.whatDidYouSpendOn')}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 required
@@ -303,23 +305,23 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
             <div className="grid gap-2">
               <Label htmlFor="budget" className="flex items-center gap-1.5">
                 <Wallet className="w-3.5 h-3.5 text-warning" />
-                Budget
+                {t('nav.budget')}
               </Label>
               <Select value={budgetId} onValueChange={setBudgetId} required>
                 <SelectTrigger id="budget">
-                  <SelectValue placeholder="Select a budget" />
+                  <SelectValue placeholder={t('form.selectBudget')} />
                 </SelectTrigger>
                 <SelectContent className="bg-background border border-border shadow-md z-50">
                   {budgets.length === 0 ? (
                     <SelectItem value="no-budgets" disabled>
-                      No budgets with expense allocation
+                      {t('form.noBudgetsWithExpense')}
                     </SelectItem>
                   ) : (
                     budgets.map((budget) => {
                       const remaining = Number(budget.expense_allocation) - Number(budget.expense_spent);
                       return (
                         <SelectItem key={budget.id} value={budget.id}>
-                          {budget.name} (${remaining.toLocaleString()} remaining)
+                          {budget.name} (${remaining.toLocaleString()} {t('common.remaining').toLowerCase()})
                         </SelectItem>
                       );
                     })
@@ -342,28 +344,28 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
             )}
 
             <div className="grid gap-2">
-              <Label htmlFor="category">Category</Label>
+              <Label htmlFor="category">{t('form.category')}</Label>
               <Select value={category} onValueChange={setCategory} required>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
+                  <SelectValue placeholder={t('form.selectCategory')} />
                 </SelectTrigger>
                 <SelectContent className="bg-background border border-border shadow-md z-50">
                   {expenseCategories.map((cat) => (
                     <SelectItem key={cat.value} value={cat.value}>
-                      {cat.label} {cat.isCustom && "(Custom)"}
+                      {cat.label} {cat.isCustom && `(${t('common.custom')})`}
                     </SelectItem>
                   ))}
-                  <SelectItem value="custom">Add Custom Category</SelectItem>
+                  <SelectItem value="custom">{t('form.addCustomCategory')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {category === "custom" && (
               <div className="grid gap-2">
-                <Label htmlFor="customCategory">Custom Category Name</Label>
+                <Label htmlFor="customCategory">{t('form.customCategoryName')}</Label>
                 <Input
                   id="customCategory"
-                  placeholder="Enter category name"
+                  placeholder={t('form.enterCategoryName')}
                   value={customCategory}
                   onChange={(e) => setCustomCategory(e.target.value)}
                   required
@@ -372,7 +374,7 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
             )}
 
             <div className="grid gap-2">
-              <Label htmlFor="date">Date</Label>
+              <Label htmlFor="date">{t('form.date')}</Label>
               <Input
                 id="date"
                 type="date"
@@ -395,14 +397,14 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
                   className="flex items-center gap-2 text-sm font-medium cursor-pointer"
                 >
                   <Repeat className="h-4 w-4 text-primary" />
-                  Recurring Expense (Subscription)
+                  {t('dialog.recurringExpense')}
                 </Label>
               </div>
               
               {isRecurring && (
                 <div className="space-y-3 pl-6">
                   <div className="grid gap-2">
-                    <Label htmlFor="months" className="text-sm">Number of months</Label>
+                    <Label htmlFor="months" className="text-sm">{t('dialog.numberOfMonths')}</Label>
                     <div className="flex items-center gap-2">
                       <Input
                         id="months"
@@ -413,7 +415,7 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
                         onChange={(e) => setRecurringMonths(Math.max(2, Math.min(24, parseInt(e.target.value) || 3)))}
                         className="w-20 h-8"
                       />
-                      <span className="text-sm text-muted-foreground">months</span>
+                      <span className="text-sm text-muted-foreground">{t('common.months')}</span>
                     </div>
                   </div>
                   
@@ -439,10 +441,10 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
               onClick={() => onOpenChange?.(false)}
               disabled={isLoading}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={isLoading || budgets.length === 0}>
-              {isLoading ? "Adding..." : isRecurring ? `Add ${recurringMonths} Expenses` : "Add Expense"}
+              {isLoading ? t('common.adding') : isRecurring ? `${t('common.add')} ${recurringMonths} ${t('expenses.title')}` : t('expenses.addExpense')}
             </Button>
           </DialogFooter>
         </form>
