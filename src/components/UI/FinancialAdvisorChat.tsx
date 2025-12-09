@@ -34,6 +34,8 @@ type StoredChats = {
 
 const STORAGE_KEY = 'fintrack-advisor-chats';
 const MAX_CONVERSATIONS = 10;
+const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes in milliseconds
+const LAST_ACTIVITY_KEY = 'fintrack-advisor-last-activity';
 
 export type SuggestedGoal = {
   name: string;
@@ -494,9 +496,25 @@ const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Load conversations on mount
+  // Load conversations on mount and check for inactivity
   useEffect(() => {
     const stored = loadStoredChats();
+    const lastActivity = localStorage.getItem(LAST_ACTIVITY_KEY);
+    const now = Date.now();
+    
+    // Check if 30 minutes have passed since last activity
+    if (lastActivity) {
+      const timeSinceLastActivity = now - parseInt(lastActivity, 10);
+      if (timeSinceLastActivity >= INACTIVITY_TIMEOUT_MS) {
+        // Clear conversation and start fresh
+        setConversations(stored.conversations);
+        setActiveConversationId(null);
+        setMessages([]);
+        localStorage.setItem(LAST_ACTIVITY_KEY, now.toString());
+        return;
+      }
+    }
+    
     setConversations(stored.conversations);
     
     if (stored.activeConversationId) {
@@ -506,7 +524,36 @@ const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({
         setMessages(activeConvo.messages);
       }
     }
+    
+    // Update last activity timestamp
+    localStorage.setItem(LAST_ACTIVITY_KEY, now.toString());
   }, []);
+
+  // Update last activity on any user interaction with the chat
+  const updateLastActivity = useCallback(() => {
+    localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+  }, []);
+
+  // Check for inactivity periodically
+  useEffect(() => {
+    const checkInactivity = () => {
+      const lastActivity = localStorage.getItem(LAST_ACTIVITY_KEY);
+      if (lastActivity) {
+        const timeSinceLastActivity = Date.now() - parseInt(lastActivity, 10);
+        if (timeSinceLastActivity >= INACTIVITY_TIMEOUT_MS && messages.length > 0) {
+          // Auto-reset to new conversation
+          setActiveConversationId(null);
+          setMessages([]);
+          localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+        }
+      }
+    };
+
+    // Check every minute
+    const intervalId = setInterval(checkInactivity, 60 * 1000);
+    
+    return () => clearInterval(intervalId);
+  }, [messages.length]);
 
   // Save conversations when they change
   const saveConversations = useCallback((convos: ChatConversation[], activeId: string | null) => {
@@ -688,6 +735,9 @@ const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({
   };
 
   const streamChat = async (userMessage: string) => {
+    // Update activity timestamp on user interaction
+    updateLastActivity();
+    
     // Create new conversation if none exists
     let currentConvoId = activeConversationId;
     if (!currentConvoId) {
