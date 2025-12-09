@@ -12,6 +12,17 @@ import { logError, getUserFriendlyErrorMessage } from "@/lib/errorLogger";
 import ReceiptAnalysisPreview from "./ReceiptAnalysisPreview";
 import { AnimatePresence, motion } from "framer-motion";
 
+export interface ReceiptExpenseData {
+  amount: number;
+  description: string;
+  category: string;
+  date: string;
+  receiptPath?: string;
+  ocrVendor?: string;
+  ocrAmount?: number;
+  ocrDate?: string;
+}
+
 interface ReceiptScannerModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -19,7 +30,7 @@ interface ReceiptScannerModalProps {
   transactionId?: string;
   onReceiptUploaded?: () => void;
   // For creating new expense from receipt
-  onCreateExpense?: (data: { amount: number; description: string; category: string; date: string }) => void;
+  onCreateExpense?: (data: ReceiptExpenseData) => void;
   mode?: 'attach' | 'create';
 }
 
@@ -162,9 +173,57 @@ export default function ReceiptScannerModal({
     }
   };
 
-  const handleCreateExpenseFromReceipt = (data: { amount: number; description: string; category: string; date: string }) => {
-    onCreateExpense?.(data);
-    handleClose();
+  const handleCreateExpenseFromReceipt = async (data: { amount: number; description: string; category: string; date: string }) => {
+    if (!capturedImage || !user) {
+      onCreateExpense?.(data);
+      handleClose();
+      return;
+    }
+
+    setUploading(true);
+    try {
+      // Upload receipt image to storage
+      const blob = dataURLtoBlob(capturedImage);
+      const tempId = crypto.randomUUID();
+      const fileName = `${user.id}/${tempId}/${Date.now()}.jpg`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('receipts')
+        .upload(fileName, blob, {
+          contentType: 'image/jpeg',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Receipt upload error:', uploadError);
+        // Continue without receipt if upload fails
+        onCreateExpense?.(data);
+        handleClose();
+        return;
+      }
+
+      toast({
+        title: "Receipt uploaded",
+        description: "Receipt image saved to storage.",
+      });
+
+      // Pass data with receipt path
+      onCreateExpense?.({
+        ...data,
+        receiptPath: fileName,
+        ocrVendor: analysisResult?.vendor || undefined,
+        ocrAmount: analysisResult?.amount || undefined,
+        ocrDate: analysisResult?.date || undefined
+      });
+      handleClose();
+    } catch (error: any) {
+      logError(error, 'ReceiptScannerModal.handleCreateExpenseFromReceipt');
+      // Continue without receipt on error
+      onCreateExpense?.(data);
+      handleClose();
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleClose = () => {
@@ -196,6 +255,7 @@ export default function ReceiptScannerModal({
                 data={analysisResult}
                 onCreateExpense={mode === 'create' ? handleCreateExpenseFromReceipt : handleUploadToTransaction as any}
                 onCancel={handleRetake}
+                isUploading={uploading}
               />
             </motion.div>
           ) : (

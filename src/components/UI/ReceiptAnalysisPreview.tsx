@@ -38,12 +38,14 @@ interface ReceiptAnalysisPreviewProps {
     date: string;
   }) => void;
   onCancel: () => void;
+  isUploading?: boolean;
 }
 
 export default function ReceiptAnalysisPreview({
   data,
   onCreateExpense,
-  onCancel
+  onCancel,
+  isUploading = false
 }: ReceiptAnalysisPreviewProps) {
   const [editingField, setEditingField] = useState<string | null>(null);
   const [vendor, setVendor] = useState(data.vendor || '');
@@ -228,17 +230,26 @@ export default function ReceiptAnalysisPreview({
       </Card>
 
       <div className="flex gap-3">
-        <Button variant="outline" onClick={onCancel} className="flex-1">
+        <Button variant="outline" onClick={onCancel} className="flex-1" disabled={isUploading}>
           <X className="w-4 h-4 mr-2" />
           Cancel
         </Button>
         <Button 
           onClick={handleCreateExpense} 
           className="flex-1"
-          disabled={!amount || parseFloat(amount) <= 0}
+          disabled={!amount || parseFloat(amount) <= 0 || isUploading}
         >
-          <Receipt className="w-4 h-4 mr-2" />
-          Create Expense
+          {isUploading ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+              Uploading...
+            </>
+          ) : (
+            <>
+              <Receipt className="w-4 h-4 mr-2" />
+              Create Expense
+            </>
+          )}
         </Button>
       </div>
     </motion.div>

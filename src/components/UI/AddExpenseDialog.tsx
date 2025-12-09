@@ -26,9 +26,9 @@ import { useAccountStatus } from "@/hooks/useAccountStatus";
 import { useLanguage } from "@/hooks/useLanguage";
 import { expenseSchema } from "@/lib/validation";
 import { logError, getUserFriendlyErrorMessage } from "@/lib/errorLogger";
-import { Wallet, AlertCircle, Repeat, Info, ScanLine } from "lucide-react";
+import { Wallet, AlertCircle, Repeat, Info, ScanLine, ImageIcon, CheckCircle2 } from "lucide-react";
 import { addMonths, format } from "date-fns";
-import ReceiptScannerModal from "./ReceiptScannerModal";
+import ReceiptScannerModal, { ReceiptExpenseData } from "./ReceiptScannerModal";
 
 interface Budget {
   id: string;
@@ -42,6 +42,10 @@ interface PrefilledData {
   description?: string;
   category?: string;
   date?: string;
+  receiptPath?: string;
+  ocrVendor?: string;
+  ocrAmount?: number;
+  ocrDate?: string;
 }
 
 interface AddExpenseDialogProps {
@@ -63,6 +67,7 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded, p
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [budgetWarning, setBudgetWarning] = useState<string | null>(null);
   const [showReceiptScanner, setShowReceiptScanner] = useState(false);
+  const [pendingReceiptData, setPendingReceiptData] = useState<PrefilledData | null>(null);
   
   // Recurring expense state
   const [isRecurring, setIsRecurring] = useState(false);
@@ -213,18 +218,25 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded, p
           description: `Created ${recurringMonths} recurring expense entries!`,
         });
       } else {
-        // Single expense
+        // Single expense - include receipt data if available
+        const expenseInsert = {
+          user_id: user.id,
+          type: "expense" as const,
+          budget_id: budgetId,
+          is_recurring: false,
+          amount: validatedData.amount,
+          description: validatedData.description,
+          category: validatedData.category,
+          date: validatedData.date,
+          receipt_url: pendingReceiptData?.receiptPath || null,
+          ocr_vendor: pendingReceiptData?.ocrVendor || null,
+          ocr_amount: pendingReceiptData?.ocrAmount || null,
+          ocr_date: pendingReceiptData?.ocrDate || null,
+        };
+
         const { error } = await supabase
           .from("transactions")
-          .insert([
-            {
-              user_id: user.id,
-              type: "expense",
-              budget_id: budgetId,
-              is_recurring: false,
-              ...validatedData,
-            },
-          ]);
+          .insert([expenseInsert]);
 
         if (error) throw error;
 
@@ -244,6 +256,7 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded, p
       setBudgetWarning(null);
       setIsRecurring(false);
       setRecurringMonths(3);
+      setPendingReceiptData(null);
       onExpenseAdded?.();
       onOpenChange?.(false);
     } catch (error: any) {
@@ -285,11 +298,15 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded, p
     return dates.join(', ');
   };
 
-  const handleReceiptData = (data: { amount: number; description: string; category: string; date: string }) => {
-    setAmount(data.amount.toString());
-    setDescription(data.description);
-    setCategory(data.category);
-    setDate(data.date);
+  const handleReceiptData = (data: PrefilledData) => {
+    if (data.amount) setAmount(data.amount.toString());
+    if (data.description) setDescription(data.description);
+    if (data.category) setCategory(data.category);
+    if (data.date) setDate(data.date);
+    // Store receipt data for when the expense is created
+    if (data.receiptPath) {
+      setPendingReceiptData(data);
+    }
     setShowReceiptScanner(false);
   };
 
@@ -321,6 +338,16 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded, p
               {t('dialog.addNewExpenseDesc')}
             </DialogDescription>
           </DialogHeader>
+          
+          {/* Receipt attached indicator */}
+          {pendingReceiptData?.receiptPath && (
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-success/10 border border-success/30 text-success text-sm mb-2">
+              <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+              <ImageIcon className="w-4 h-4 flex-shrink-0" />
+              <span>Receipt image will be attached to this expense</span>
+            </div>
+          )}
+          
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
