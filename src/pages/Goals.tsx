@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -9,12 +10,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useFinanceData } from '@/hooks/useFinanceData';
-import { useCategories } from '@/hooks/useCategories';
 import { useBudgets } from '@/hooks/useBudgets';
-import { Target, Plus, Trash2, Pencil, DollarSign, Wallet, Link2, Calendar, Clock, AlertTriangle } from 'lucide-react';
+import { Target, Plus, Trash2, Pencil, DollarSign, Wallet, Link2, Calendar, Clock, AlertTriangle, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import FinancialAdvisorChat, { FinancialContext, SuggestedGoal } from '@/components/UI/FinancialAdvisorChat';
 import AIInsightsCard from '@/components/UI/AIInsightsCard';
 import EditGoalDialog from '@/components/UI/EditGoalDialog';
 import GoalProgressChart from '@/components/UI/GoalProgressChart';
@@ -36,14 +35,11 @@ type SavingsGoal = {
 const Goals: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { transactions, budgetCategories, stats, refunds, budgets } = useFinanceData();
-  const { customCategories } = useCategories();
-  const { 
-    createBudget, 
-    updateBudget, 
-    deleteBudget, 
-    refetch: budgetRefetch 
-  } = useBudgets();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { transactions, budgetCategories, stats, budgets } = useFinanceData();
+  const { updateBudget, refetch: budgetRefetch } = useBudgets();
+  
   const [goals, setGoals] = useState<SavingsGoal[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddGoal, setShowAddGoal] = useState(false);
@@ -67,6 +63,30 @@ const Goals: React.FC = () => {
       fetchGoals();
     }
   }, [user]);
+
+  // Handle pending goal from Sage AI
+  useEffect(() => {
+    const createGoal = searchParams.get('createGoal');
+    if (createGoal === 'true') {
+      const pendingGoal = sessionStorage.getItem('pendingGoal');
+      if (pendingGoal) {
+        try {
+          const goal = JSON.parse(pendingGoal);
+          setNewGoal({
+            name: goal.name || '',
+            target_amount: goal.targetAmount?.toString() || '',
+            current_amount: goal.currentAmount?.toString() || '0',
+            target_date: goal.targetDate || '',
+            description: goal.description || '',
+          });
+          setShowAddGoal(true);
+          sessionStorage.removeItem('pendingGoal');
+        } catch (e) {
+          console.error('Failed to parse pending goal:', e);
+        }
+      }
+    }
+  }, [searchParams]);
 
   const fetchGoals = async () => {
     if (!user) return;
@@ -150,13 +170,11 @@ const Goals: React.FC = () => {
     }
   };
 
-  // Handle editing a goal
   const handleEditGoal = (goal: SavingsGoal) => {
     setEditingGoal(goal);
     setShowEditGoal(true);
   };
 
-  // Handle adding funds to a goal
   const handleOpenAddFunds = (goal: SavingsGoal) => {
     setSelectedGoalForFunds(goal);
     setShowAddFunds(true);
@@ -182,7 +200,6 @@ const Goals: React.FC = () => {
       return;
     }
 
-    // Record the contribution in goal_progress_history
     await supabase
       .from('goal_progress_history')
       .insert({
@@ -200,296 +217,6 @@ const Goals: React.FC = () => {
     });
     fetchGoals();
   };
-
-  // Handle AI suggested goal creation
-  const handleCreateSuggestedGoal = useCallback((goal: SuggestedGoal) => {
-    setNewGoal({
-      name: goal.name,
-      target_amount: goal.targetAmount.toString(),
-      current_amount: goal.currentAmount?.toString() || '0',
-      target_date: goal.targetDate || '',
-      description: goal.description || '',
-    });
-    setShowAddGoal(true);
-  }, []);
-
-  // Handle AI-suggested expense creation
-  const handleCreateExpenseFromAI = useCallback(async (expense: { description: string; amount: number; category: string; date: string }) => {
-    if (!user) return;
-    
-    const { error } = await supabase
-      .from('transactions')
-      .insert([{
-        user_id: user.id,
-        type: 'expense',
-        description: expense.description,
-        amount: expense.amount,
-        category: expense.category,
-        date: expense.date,
-      }]);
-
-    if (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to create expense',
-        variant: 'destructive',
-      });
-    } else {
-      toast({
-        title: 'Expense Added',
-        description: `Created expense: ${expense.description} ($${expense.amount.toFixed(2)})`,
-      });
-    }
-  }, [user, toast]);
-
-  // Handle AI-suggested income creation
-  const handleCreateIncomeFromAI = useCallback(async (income: { description: string; amount: number; category: string; date: string }) => {
-    if (!user) return;
-    
-    const { error } = await supabase
-      .from('transactions')
-      .insert([{
-        user_id: user.id,
-        type: 'income',
-        description: income.description,
-        amount: income.amount,
-        category: income.category,
-        date: income.date,
-      }]);
-
-    if (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to create income',
-        variant: 'destructive',
-      });
-    } else {
-      toast({
-        title: 'Income Added',
-        description: `Created income: ${income.description} ($${income.amount.toFixed(2)})`,
-      });
-    }
-  }, [user, toast]);
-
-  // Handle AI-suggested goal edit
-  const handleEditGoalFromAI = useCallback(async (id: string, data: { name?: string; currentAmount?: number; targetAmount?: number; targetDate?: string; description?: string }) => {
-    if (!user) return;
-    
-    // Find the goal to check for amount changes
-    const existingGoal = goals.find(g => g.id === id);
-    if (!existingGoal) return;
-    
-    const updateData: Record<string, any> = {};
-    if (data.name !== undefined) updateData.name = data.name;
-    if (data.currentAmount !== undefined) updateData.current_amount = data.currentAmount;
-    if (data.targetAmount !== undefined) updateData.target_amount = data.targetAmount;
-    if (data.targetDate !== undefined) updateData.target_date = data.targetDate || null;
-    if (data.description !== undefined) updateData.description = data.description || null;
-    
-    const { error } = await supabase
-      .from('savings_goals')
-      .update(updateData)
-      .eq('id', id)
-      .eq('user_id', user.id);
-
-    if (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to update goal',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    // If currentAmount was updated and increased, record the contribution
-    if (data.currentAmount !== undefined && data.currentAmount > existingGoal.current_amount) {
-      const addedAmount = data.currentAmount - existingGoal.current_amount;
-      await supabase
-        .from('goal_progress_history')
-        .insert({
-          goal_id: id,
-          user_id: user.id,
-          amount: data.currentAmount,
-          added_amount: addedAmount,
-          added_by: 'ai',
-          goal_name: data.name || existingGoal.name,
-        });
-    }
-
-    toast({
-      title: 'Goal Updated',
-      description: `Updated goal: ${data.name || existingGoal.name}`,
-    });
-    fetchGoals();
-  }, [user, toast, fetchGoals, goals]);
-
-  // Handle AI-suggested expense edit
-  const handleEditExpenseFromAI = useCallback(async (id: string, data: { description?: string; amount?: number; category?: string; date?: string }) => {
-    if (!user) return;
-    
-    const updateData: Record<string, any> = {};
-    if (data.description !== undefined) updateData.description = data.description;
-    if (data.amount !== undefined) updateData.amount = data.amount;
-    if (data.category !== undefined) updateData.category = data.category;
-    if (data.date !== undefined) updateData.date = data.date;
-    
-    const { error } = await supabase
-      .from('transactions')
-      .update(updateData)
-      .eq('id', id)
-      .eq('user_id', user.id);
-
-    if (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to update expense',
-        variant: 'destructive',
-      });
-    } else {
-      toast({
-        title: 'Expense Updated',
-        description: `Updated expense: ${data.description || 'Expense'}`,
-      });
-    }
-  }, [user, toast]);
-
-  // Handle AI-suggested income edit
-  const handleEditIncomeFromAI = useCallback(async (id: string, data: { description?: string; amount?: number; category?: string; date?: string }) => {
-    if (!user) return;
-    
-    const updateData: Record<string, any> = {};
-    if (data.description !== undefined) updateData.description = data.description;
-    if (data.amount !== undefined) updateData.amount = data.amount;
-    if (data.category !== undefined) updateData.category = data.category;
-    if (data.date !== undefined) updateData.date = data.date;
-    
-    const { error } = await supabase
-      .from('transactions')
-      .update(updateData)
-      .eq('id', id)
-      .eq('user_id', user.id);
-
-    if (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to update income',
-        variant: 'destructive',
-      });
-    } else {
-      toast({
-        title: 'Income Updated',
-        description: `Updated income: ${data.description || 'Income'}`,
-      });
-    }
-  }, [user, toast]);
-
-  // Handle AI-suggested budget creation
-  const handleCreateBudgetFromAI = useCallback(async (budget: { 
-    name: string; 
-    expenseAllocation: number; 
-    savingsAllocation: number; 
-    description?: string; 
-    linkedGoalName?: string 
-  }) => {
-    if (!user) return;
-    
-    // Find goal ID by name if provided
-    let linkedGoalId: string | undefined;
-    if (budget.linkedGoalName) {
-      const goal = goals.find(g => g.name.toLowerCase() === budget.linkedGoalName!.toLowerCase());
-      linkedGoalId = goal?.id;
-    }
-    
-    const success = await createBudget(
-      budget.name,
-      budget.expenseAllocation,
-      budget.savingsAllocation,
-      budget.description,
-      linkedGoalId
-    );
-    
-    if (success) {
-      budgetRefetch.budgets();
-    }
-  }, [user, goals, createBudget, budgetRefetch]);
-
-  // Handle AI-suggested budget edit
-  const handleEditBudgetFromAI = useCallback(async (id: string, data: { 
-    name?: string; 
-    expenseAllocation?: number; 
-    savingsAllocation?: number; 
-    description?: string; 
-    linkedGoalName?: string 
-  }) => {
-    if (!user) return;
-    
-    const updates: Record<string, any> = {};
-    if (data.name !== undefined) updates.name = data.name;
-    if (data.expenseAllocation !== undefined) updates.expense_allocation = data.expenseAllocation;
-    if (data.savingsAllocation !== undefined) updates.savings_allocation = data.savingsAllocation;
-    if (data.description !== undefined) updates.description = data.description;
-    
-    // Find goal ID by name if provided
-    if (data.linkedGoalName !== undefined) {
-      if (data.linkedGoalName) {
-        const goal = goals.find(g => g.name.toLowerCase() === data.linkedGoalName!.toLowerCase());
-        updates.linked_savings_goal_id = goal?.id || null;
-      } else {
-        updates.linked_savings_goal_id = null;
-      }
-    }
-    
-    const success = await updateBudget(id, updates);
-    if (success) {
-      budgetRefetch.budgets();
-    }
-  }, [user, goals, updateBudget, budgetRefetch]);
-
-  // Handle AI-suggested budget deletion
-  const handleDeleteBudgetFromAI = useCallback(async (id: string) => {
-    if (!user) return;
-    
-    const success = await deleteBudget(id);
-    if (success) {
-      budgetRefetch.budgets();
-    }
-  }, [user, deleteBudget, budgetRefetch]);
-
-  // Handle AI-suggested goal-to-budget linking
-  const handleLinkGoalToBudgetFromAI = useCallback(async (budgetName: string, goalName: string) => {
-    if (!user) return;
-    
-    // Find goal by name
-    const goal = goals.find(g => g.name.toLowerCase() === goalName.toLowerCase());
-    if (!goal) {
-      toast({
-        title: 'Goal not found',
-        description: `Could not find a goal named "${goalName}"`,
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    // Find budget by name
-    const budget = budgets.find(b => b.name.toLowerCase() === budgetName.toLowerCase());
-    if (!budget) {
-      toast({
-        title: 'Budget not found',
-        description: `Could not find a budget named "${budgetName}"`,
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    const success = await updateBudget(budget.id, { linked_savings_goal_id: goal.id });
-    if (success) {
-      budgetRefetch.budgets();
-      toast({
-        title: 'Goal linked',
-        description: `Linked "${goal.name}" to "${budget.name}"`,
-      });
-    }
-  }, [user, goals, budgets, updateBudget, budgetRefetch, toast]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
@@ -554,7 +281,6 @@ const Goals: React.FC = () => {
 
   const handleOpenLinkBudget = (goal: SavingsGoal) => {
     setSelectedGoalForLink(goal);
-    // Pre-select if already linked
     const linkedBudget = budgets.find(b => b.linked_savings_goal_id === goal.id);
     setSelectedBudgetId(linkedBudget?.id || '');
     setShowLinkBudget(true);
@@ -563,13 +289,11 @@ const Goals: React.FC = () => {
   const handleLinkBudget = async () => {
     if (!selectedGoalForLink || !user) return;
 
-    // Find current budget linked to this goal and unlink it
     const currentLinkedBudget = budgets.find(b => b.linked_savings_goal_id === selectedGoalForLink.id);
     if (currentLinkedBudget && currentLinkedBudget.id !== selectedBudgetId) {
       await updateBudget(currentLinkedBudget.id, { linked_savings_goal_id: null });
     }
 
-    // Link new budget if selected
     if (selectedBudgetId) {
       const success = await updateBudget(selectedBudgetId, { linked_savings_goal_id: selectedGoalForLink.id });
       if (success) {
@@ -592,79 +316,14 @@ const Goals: React.FC = () => {
     setSelectedBudgetId('');
   };
 
-  const financialContext: FinancialContext = {
-    transactions: transactions.map(t => ({
-      id: t.id,
-      type: t.type,
-      amount: t.amount,
-      description: t.description,
-      category: t.category,
-      date: t.date,
-      receipt_url: t.receipt_url,
-    })),
-    budgets: budgetCategories.map(b => ({
-      category: b.category,
-      allocated: b.allocated,
-      spent: b.spent,
-      last_reset: b.last_reset,
-    })),
-    budgetsList: budgets?.map(b => {
-      const linkedGoal = goals.find(g => g.id === b.linked_savings_goal_id);
-      return {
-        id: b.id,
-        name: b.name,
-        description: null,
-        expense_allocation: b.expense_allocation,
-        savings_allocation: b.savings_allocation,
-        expense_spent: b.expense_spent,
-        linked_savings_goal_id: b.linked_savings_goal_id,
-        linked_goal_name: linkedGoal?.name || null,
-      };
-    }) || [],
-    goals: goals.map(g => ({
-      id: g.id,
-      name: g.name,
-      target_amount: g.target_amount,
-      current_amount: g.current_amount,
-      target_date: g.target_date,
-      description: g.description,
-      status: g.status,
-    })),
-    refunds: refunds.map(r => ({
-      id: r.id,
-      source: r.source,
-      amount: r.amount,
-      date: r.date,
-      status: r.status,
-    })),
-    customCategories: customCategories.map(c => ({
-      name: c.name,
-      label: c.label,
-      type: c.type,
-    })),
-    stats: {
-      balance: stats.balance,
-      savings: stats.savings,
-      monthlyIncome: stats.totalIncome,
-      monthlyExpenses: stats.totalExpenses,
-      totalBudget: stats.totalBudget,
-      totalSpent: stats.totalSpent,
-      incomeChange: stats.incomeChange,
-      expenseChange: stats.expenseChange,
-    },
-  };
-
   if (loading) {
     return (
       <div className="container mx-auto p-4 lg:p-6">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-muted rounded w-1/4"></div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div className="h-48 bg-muted rounded"></div>
-              <div className="h-48 bg-muted rounded"></div>
-            </div>
-            <div className="h-[500px] bg-muted rounded"></div>
+          <div className="space-y-4">
+            <div className="h-48 bg-muted rounded"></div>
+            <div className="h-48 bg-muted rounded"></div>
           </div>
         </div>
       </div>
@@ -677,284 +336,269 @@ const Goals: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold">Savings Goals</h1>
-          <p className="text-muted-foreground text-sm lg:text-base">Track your financial goals with AI insights</p>
+          <p className="text-muted-foreground text-sm lg:text-base">Track and manage your financial goals</p>
         </div>
         
-        <Dialog open={showAddGoal} onOpenChange={setShowAddGoal}>
-          <DialogTrigger asChild>
-            <Button size="sm" className="lg:size-default">
-              <Plus className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Add Goal</span>
-              <span className="sm:hidden">Add</span>
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Goal</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 pt-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Goal Name *</Label>
-                <Input
-                  id="name"
-                  value={newGoal.name}
-                  onChange={(e) => setNewGoal({ ...newGoal, name: e.target.value })}
-                  placeholder="Emergency Fund"
-                />
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => navigate('/sage')}
+            className="gap-2"
+          >
+            <Sparkles className="h-4 w-4" />
+            <span className="hidden sm:inline">Ask Sage</span>
+          </Button>
+          
+          <Dialog open={showAddGoal} onOpenChange={setShowAddGoal}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="lg:size-default">
+                <Plus className="mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Add Goal</span>
+                <span className="sm:hidden">Add</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create New Goal</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Goal Name *</Label>
+                  <Input
+                    id="name"
+                    value={newGoal.name}
+                    onChange={(e) => setNewGoal({ ...newGoal, name: e.target.value })}
+                    placeholder="Emergency Fund"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="target">Target Amount *</Label>
+                  <Input
+                    id="target"
+                    type="number"
+                    value={newGoal.target_amount}
+                    onChange={(e) => setNewGoal({ ...newGoal, target_amount: e.target.value })}
+                    placeholder="5000"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="current">Current Amount</Label>
+                  <Input
+                    id="current"
+                    type="number"
+                    value={newGoal.current_amount}
+                    onChange={(e) => setNewGoal({ ...newGoal, current_amount: e.target.value })}
+                    placeholder="1000"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="date">Target Date</Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    value={newGoal.target_date}
+                    onChange={(e) => setNewGoal({ ...newGoal, target_date: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Input
+                    id="description"
+                    value={newGoal.description}
+                    onChange={(e) => setNewGoal({ ...newGoal, description: e.target.value })}
+                    placeholder="For unexpected expenses"
+                  />
+                </div>
+                <Button onClick={handleAddGoal} className="w-full">Create Goal</Button>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="target">Target Amount *</Label>
-                <Input
-                  id="target"
-                  type="number"
-                  value={newGoal.target_amount}
-                  onChange={(e) => setNewGoal({ ...newGoal, target_amount: e.target.value })}
-                  placeholder="5000"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="current">Current Amount</Label>
-                <Input
-                  id="current"
-                  type="number"
-                  value={newGoal.current_amount}
-                  onChange={(e) => setNewGoal({ ...newGoal, current_amount: e.target.value })}
-                  placeholder="1000"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="date">Target Date</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={newGoal.target_date}
-                  onChange={(e) => setNewGoal({ ...newGoal, target_date: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Input
-                  id="description"
-                  value={newGoal.description}
-                  onChange={(e) => setNewGoal({ ...newGoal, description: e.target.value })}
-                  placeholder="For unexpected expenses"
-                />
-              </div>
-              <Button onClick={handleAddGoal} className="w-full">Create Goal</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
-      {/* Two-Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left Column - Insights & Goals */}
-        <div className="space-y-6">
-          {/* AI Insights Card */}
-          <AIInsightsCard
-            stats={{
-              balance: stats.balance,
-              monthlyIncome: stats.totalIncome,
-              monthlyExpenses: stats.totalExpenses,
-            }}
-            transactions={transactions}
-            budgets={budgetCategories}
-            goals={goals}
-            totalMonthlyAutoSavings={totalMonthlyAutoSavings}
-          />
+      {/* Content */}
+      <div className="space-y-6">
+        {/* AI Insights Card */}
+        <AIInsightsCard
+          stats={{
+            balance: stats.balance,
+            monthlyIncome: stats.totalIncome,
+            monthlyExpenses: stats.totalExpenses,
+          }}
+          transactions={transactions}
+          budgets={budgetCategories}
+          goals={goals}
+          totalMonthlyAutoSavings={totalMonthlyAutoSavings}
+        />
 
-          {/* Progress Chart */}
-          {goals.length > 0 && (
-            <GoalProgressChart goals={goals} />
-          )}
+        {/* Progress Chart */}
+        {goals.length > 0 && (
+          <GoalProgressChart goals={goals} />
+        )}
 
-          {/* Savings Goals */}
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold">Your Goals</h2>
-            
-            {goals.length === 0 ? (
-              <Card className="text-center py-8">
-                <CardContent>
-                  <Target className="mx-auto h-10 w-10 text-muted-foreground mb-3" />
-                  <h3 className="text-base font-semibold mb-2">No Goals Yet</h3>
-                  <p className="text-sm text-muted-foreground mb-4">Create your first savings goal to get started</p>
-                  <Button onClick={() => setShowAddGoal(true)} size="sm">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create Goal
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {goals.map(goal => {
-                  const progress = getProgress(goal.current_amount, goal.target_amount);
-                  const isCompleted = progress >= 100;
+        {/* Savings Goals */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">Your Goals</h2>
+          
+          {goals.length === 0 ? (
+            <Card className="text-center py-8">
+              <CardContent>
+                <Target className="mx-auto h-10 w-10 text-muted-foreground mb-3" />
+                <h3 className="text-base font-semibold mb-2">No Goals Yet</h3>
+                <p className="text-sm text-muted-foreground mb-4">Create your first savings goal to get started</p>
+                <Button onClick={() => setShowAddGoal(true)} size="sm">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Goal
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {goals.map(goal => {
+                const progress = getProgress(goal.current_amount, goal.target_amount);
+                const isCompleted = progress >= 100;
 
-                  return (
-                    <Card key={goal.id} className={isCompleted ? 'border-primary' : ''}>
-                      <CardHeader className="pb-2">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1 min-w-0">
-                            <CardTitle className="text-base truncate">{goal.name}</CardTitle>
-                            {goal.description && (
-                              <CardDescription className="mt-1 text-xs truncate">{goal.description}</CardDescription>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1 ml-2 shrink-0">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleOpenAddFunds(goal)}
-                              className="h-8 w-8 hover:bg-primary/10 hover:text-primary"
-                              title="Add Funds"
-                            >
-                              <DollarSign className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleOpenLinkBudget(goal)}
-                              className={`h-8 w-8 ${goalToBudgetMap[goal.id] ? 'text-success hover:bg-success/10' : 'hover:bg-secondary/10 hover:text-secondary'}`}
-                              title={goalToBudgetMap[goal.id] ? 'Change linked budget' : 'Link to budget'}
-                            >
-                              <Link2 className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleEditGoal(goal)}
-                              className="h-8 w-8"
-                              title="Edit Goal"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDeleteGoal(goal.id)}
-                              className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
-                              title="Delete Goal"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                return (
+                  <Card key={goal.id} className={isCompleted ? 'border-primary' : ''}>
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <CardTitle className="text-base truncate">{goal.name}</CardTitle>
+                          {goal.description && (
+                            <CardDescription className="mt-1 text-xs truncate">{goal.description}</CardDescription>
+                          )}
                         </div>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
+                        <div className="flex items-center gap-1 ml-2 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOpenAddFunds(goal)}
+                            className="h-8 w-8 hover:bg-primary/10 hover:text-primary"
+                            title="Add Funds"
+                          >
+                            <DollarSign className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOpenLinkBudget(goal)}
+                            className={`h-8 w-8 ${goalToBudgetMap[goal.id] ? 'text-success hover:bg-success/10' : 'hover:bg-secondary/10 hover:text-secondary'}`}
+                            title={goalToBudgetMap[goal.id] ? 'Change linked budget' : 'Link to budget'}
+                          >
+                            <Link2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEditGoal(goal)}
+                            className="h-8 w-8"
+                            title="Edit Goal"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteGoal(goal.id)}
+                            className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+                            title="Delete Goal"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div>
+                        <div className="flex justify-between text-xs mb-1.5">
+                          <span className="text-muted-foreground">Progress</span>
+                          <span className="font-medium">{progress.toFixed(1)}%</span>
+                        </div>
+                        <Progress value={progress} className="h-2" />
+                      </div>
+                      
+                      <div className="flex justify-between items-center text-sm">
                         <div>
-                          <div className="flex justify-between text-xs mb-1.5">
-                            <span className="text-muted-foreground">Progress</span>
-                            <span className="font-medium">{progress.toFixed(1)}%</span>
-                          </div>
-                          <Progress value={progress} className="h-2" />
+                          <p className="text-xs text-muted-foreground">Current</p>
+                          <p className="font-semibold">{formatCurrency(goal.current_amount)}</p>
                         </div>
+                        <div className="text-right">
+                          <p className="text-xs text-muted-foreground">Target</p>
+                          <p className="font-semibold">{formatCurrency(goal.target_amount)}</p>
+                        </div>
+                      </div>
+
+                      {goal.target_date && (
+                        <div className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          Target: {new Date(goal.target_date).toLocaleDateString()}
+                        </div>
+                      )}
+
+                      {/* Projected Completion */}
+                      {!isCompleted && (() => {
+                        const projection = getProjectedCompletion(goal.id, goal.current_amount, goal.target_amount);
+                        if (!projection || projection.completed) return null;
                         
-                        <div className="flex justify-between items-center text-sm">
-                          <div>
-                            <p className="text-xs text-muted-foreground">Current</p>
-                            <p className="font-semibold">{formatCurrency(goal.current_amount)}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-xs text-muted-foreground">Target</p>
-                            <p className="font-semibold">{formatCurrency(goal.target_amount)}</p>
-                          </div>
-                        </div>
-
-                        {goal.target_date && (
-                          <div className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            Target: {new Date(goal.target_date).toLocaleDateString()}
-                          </div>
-                        )}
-
-                        {/* Projected Completion */}
-                        {!isCompleted && (() => {
-                          const projection = getProjectedCompletion(goal.id, goal.current_amount, goal.target_amount);
-                          if (!projection || projection.completed) return null;
-                          
-                          // Check if projection is after target date
-                          const isLate = goal.target_date && projection.date > new Date(goal.target_date);
-                          
-                          return (
-                            <div className={`flex items-center gap-2 p-2 rounded-lg ${
-                              isLate 
-                                ? 'bg-destructive/10 border border-destructive/30' 
-                                : 'bg-primary/5 border border-primary/20'
-                            }`}>
-                              {isLate ? (
-                                <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
-                              ) : (
-                                <Clock className="w-4 h-4 text-primary shrink-0" />
-                              )}
-                              <div className="flex-1 min-w-0">
-                                <p className={`text-xs ${isLate ? 'text-destructive' : 'text-muted-foreground'}`}>
-                                  {isLate ? 'Behind schedule' : 'Projected completion'}
-                                </p>
-                                <p className={`text-sm font-medium ${isLate ? 'text-destructive' : 'text-primary'}`}>
-                                  {projection.date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                                  <span className={`text-xs ml-1 ${isLate ? 'text-destructive/80' : 'text-muted-foreground'}`}>
-                                    ({projection.months} month{projection.months !== 1 ? 's' : ''}{isLate ? ' late' : ''})
-                                  </span>
-                                </p>
-                              </div>
-                            </div>
-                          );
-                        })()}
-
-                        {/* Linked Budget Indicator */}
-                        {goalToBudgetMap[goal.id] && goalToBudgetMap[goal.id].length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 pt-1">
-                            {goalToBudgetMap[goal.id].map(linkedBudget => (
-                              <Badge 
-                                key={linkedBudget.id} 
-                                variant="outline" 
-                                className="text-xs gap-1 bg-secondary/10 border-secondary/30 text-secondary-foreground"
-                              >
-                                <Wallet className="w-3 h-3" />
-                                {linkedBudget.name}
-                                <span className="text-muted-foreground">
-                                  +${linkedBudget.savingsAllocation}/mo
+                        const isLate = goal.target_date && projection.date > new Date(goal.target_date);
+                        
+                        return (
+                          <div className={`flex items-center gap-2 p-2 rounded-lg ${
+                            isLate 
+                              ? 'bg-destructive/10 border border-destructive/30' 
+                              : 'bg-primary/5 border border-primary/20'
+                          }`}>
+                            {isLate ? (
+                              <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
+                            ) : (
+                              <Clock className="w-4 h-4 text-primary shrink-0" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-xs ${isLate ? 'text-destructive' : 'text-muted-foreground'}`}>
+                                {isLate ? 'Behind schedule' : 'Projected completion'}
+                              </p>
+                              <p className={`text-sm font-medium ${isLate ? 'text-destructive' : 'text-primary'}`}>
+                                {projection.date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                                <span className={`text-xs ml-1 ${isLate ? 'text-destructive/80' : 'text-muted-foreground'}`}>
+                                  ({projection.months} month{projection.months !== 1 ? 's' : ''}{isLate ? ' late' : ''})
                                 </span>
-                              </Badge>
-                            ))}
+                              </p>
+                            </div>
                           </div>
-                        )}
+                        );
+                      })()}
 
-                        {isCompleted && (
-                          <div className="text-xs font-medium text-primary text-center py-1.5 bg-primary/10 rounded">
-                            🎉 Goal Completed!
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
+                      {/* Linked Budget Indicator */}
+                      {goalToBudgetMap[goal.id] && goalToBudgetMap[goal.id].length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {goalToBudgetMap[goal.id].map(linkedBudget => (
+                            <Badge 
+                              key={linkedBudget.id} 
+                              variant="outline" 
+                              className="text-xs gap-1 bg-secondary/10 border-secondary/30 text-secondary-foreground"
+                            >
+                              <Wallet className="w-3 h-3" />
+                              {linkedBudget.name}
+                              <span className="text-muted-foreground">
+                                +${linkedBudget.savingsAllocation}/mo
+                              </span>
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
 
-        {/* Right Column - AI Chat */}
-        <div className="lg:sticky lg:top-6 h-fit">
-          <div className="h-[500px] lg:h-[calc(100vh-12rem)]">
-            <FinancialAdvisorChat 
-              financialContext={financialContext} 
-              onCreateGoal={handleCreateSuggestedGoal}
-              onCreateExpense={handleCreateExpenseFromAI}
-              onCreateIncome={handleCreateIncomeFromAI}
-              onEditGoal={handleEditGoalFromAI}
-              onEditExpense={handleEditExpenseFromAI}
-              onEditIncome={handleEditIncomeFromAI}
-              onAddFundsToGoal={(goalName, amount) => {
-                const goal = goals.find(g => g.name.toLowerCase() === goalName.toLowerCase());
-                if (goal) handleAddFunds(goal.id, amount, 'ai');
-              }}
-              onCreateBudget={handleCreateBudgetFromAI}
-              onEditBudget={handleEditBudgetFromAI}
-              onDeleteBudget={handleDeleteBudgetFromAI}
-              onLinkGoalToBudget={handleLinkGoalToBudgetFromAI}
-            />
-          </div>
+                      {isCompleted && (
+                        <div className="text-xs font-medium text-primary text-center py-1.5 bg-primary/10 rounded">
+                          🎉 Goal Completed!
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
