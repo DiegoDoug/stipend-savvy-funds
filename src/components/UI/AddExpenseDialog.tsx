@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -24,7 +25,8 @@ import { useCategories } from "@/hooks/useCategories";
 import { useAccountStatus } from "@/hooks/useAccountStatus";
 import { expenseSchema } from "@/lib/validation";
 import { logError, getUserFriendlyErrorMessage } from "@/lib/errorLogger";
-import { Wallet, AlertCircle } from "lucide-react";
+import { Wallet, AlertCircle, Repeat, Info } from "lucide-react";
+import { addMonths, format } from "date-fns";
 
 interface Budget {
   id: string;
@@ -50,6 +52,10 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
   const [isLoading, setIsLoading] = useState(false);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [budgetWarning, setBudgetWarning] = useState<string | null>(null);
+  
+  // Recurring expense state
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringMonths, setRecurringMonths] = useState(3);
   
   const { toast } = useToast();
   const { user } = useAuth();
@@ -151,23 +157,60 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
         date,
       });
       
-      const { error } = await supabase
-        .from("transactions")
-        .insert([
-          {
+      // Generate a subscription group ID for recurring expenses
+      const subscriptionGroupId = isRecurring ? crypto.randomUUID() : null;
+      
+      if (isRecurring) {
+        // Create multiple transactions for recurring expense
+        const transactions = [];
+        const baseDate = new Date(date);
+        
+        for (let i = 0; i < recurringMonths; i++) {
+          const expenseDate = addMonths(baseDate, i);
+          transactions.push({
             user_id: user.id,
             type: "expense",
             budget_id: budgetId,
-            ...validatedData,
-          },
-        ]);
+            amount: validatedData.amount,
+            description: validatedData.description,
+            category: validatedData.category,
+            date: format(expenseDate, 'yyyy-MM-dd'),
+            is_recurring: true,
+            subscription_group_id: subscriptionGroupId,
+          });
+        }
+        
+        const { error } = await supabase
+          .from("transactions")
+          .insert(transactions);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Expense added successfully!",
-      });
+        toast({
+          title: "Success",
+          description: `Created ${recurringMonths} recurring expense entries!`,
+        });
+      } else {
+        // Single expense
+        const { error } = await supabase
+          .from("transactions")
+          .insert([
+            {
+              user_id: user.id,
+              type: "expense",
+              budget_id: budgetId,
+              is_recurring: false,
+              ...validatedData,
+            },
+          ]);
+
+        if (error) throw error;
+
+        toast({
+          title: "Success",
+          description: "Expense added successfully!",
+        });
+      }
 
       // Reset form
       setAmount("");
@@ -177,6 +220,8 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
       setBudgetId("");
       setDate(new Date().toISOString().split('T')[0]);
       setBudgetWarning(null);
+      setIsRecurring(false);
+      setRecurringMonths(3);
       onExpenseAdded?.();
       onOpenChange?.(false);
     } catch (error: any) {
@@ -203,9 +248,20 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
   };
 
   const selectedBudget = budgets.find(b => b.id === budgetId);
-  const budgetRemaining = selectedBudget 
-    ? Number(selectedBudget.expense_allocation) - Number(selectedBudget.expense_spent)
-    : 0;
+
+  // Preview dates for recurring expense
+  const getRecurringPreview = () => {
+    if (!isRecurring) return null;
+    const baseDate = new Date(date);
+    const dates = [];
+    for (let i = 0; i < Math.min(recurringMonths, 6); i++) {
+      dates.push(format(addMonths(baseDate, i), 'MMM yyyy'));
+    }
+    if (recurringMonths > 6) {
+      dates.push(`... +${recurringMonths - 6} more`);
+    }
+    return dates.join(', ');
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -325,6 +381,56 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
                 required
               />
             </div>
+
+            {/* Recurring Expense Section */}
+            <div className="space-y-3 p-3 rounded-lg bg-muted/30 border border-border/50">
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="recurring" 
+                  checked={isRecurring}
+                  onCheckedChange={(checked) => setIsRecurring(checked === true)}
+                />
+                <Label 
+                  htmlFor="recurring" 
+                  className="flex items-center gap-2 text-sm font-medium cursor-pointer"
+                >
+                  <Repeat className="h-4 w-4 text-primary" />
+                  Recurring Expense (Subscription)
+                </Label>
+              </div>
+              
+              {isRecurring && (
+                <div className="space-y-3 pl-6">
+                  <div className="grid gap-2">
+                    <Label htmlFor="months" className="text-sm">Number of months</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="months"
+                        type="number"
+                        min="2"
+                        max="24"
+                        value={recurringMonths}
+                        onChange={(e) => setRecurringMonths(Math.max(2, Math.min(24, parseInt(e.target.value) || 3)))}
+                        className="w-20 h-8"
+                      />
+                      <span className="text-sm text-muted-foreground">months</span>
+                    </div>
+                  </div>
+                  
+                  {amount && (
+                    <div className="flex items-start gap-2 p-2 rounded bg-primary/5 border border-primary/20">
+                      <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                      <div className="text-xs text-muted-foreground">
+                        <p className="font-medium text-foreground mb-1">
+                          Total: ${(parseFloat(amount) * recurringMonths).toFixed(2)} over {recurringMonths} months
+                        </p>
+                        <p>{getRecurringPreview()}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
           <DialogFooter>
             <Button
@@ -336,7 +442,7 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
               Cancel
             </Button>
             <Button type="submit" disabled={isLoading || budgets.length === 0}>
-              {isLoading ? "Adding..." : "Add Expense"}
+              {isLoading ? "Adding..." : isRecurring ? `Add ${recurringMonths} Expenses` : "Add Expense"}
             </Button>
           </DialogFooter>
         </form>

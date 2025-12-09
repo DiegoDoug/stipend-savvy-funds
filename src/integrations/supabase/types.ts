@@ -273,6 +273,51 @@ export type Database = {
         }
         Relationships: []
       }
+      tracked_subscriptions: {
+        Row: {
+          amount: number
+          category: string | null
+          created_at: string
+          detected_transaction_ids: string[] | null
+          frequency: string
+          id: string
+          is_active: boolean
+          name: string
+          reminder_date: string | null
+          reminder_note: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category?: string | null
+          created_at?: string
+          detected_transaction_ids?: string[] | null
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          reminder_date?: string | null
+          reminder_note?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string | null
+          created_at?: string
+          detected_transaction_ids?: string[] | null
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          reminder_date?: string | null
+          reminder_note?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           amount: number
@@ -282,11 +327,13 @@ export type Database = {
           date: string
           description: string
           id: string
+          is_recurring: boolean | null
           ocr_amount: number | null
           ocr_date: string | null
           ocr_text: string | null
           ocr_vendor: string | null
           receipt_url: string | null
+          subscription_group_id: string | null
           type: string
           updated_at: string
           user_id: string
@@ -299,11 +346,13 @@ export type Database = {
           date?: string
           description: string
           id?: string
+          is_recurring?: boolean | null
           ocr_amount?: number | null
           ocr_date?: string | null
           ocr_text?: string | null
           ocr_vendor?: string | null
           receipt_url?: string | null
+          subscription_group_id?: string | null
           type: string
           updated_at?: string
           user_id: string
@@ -316,11 +365,13 @@ export type Database = {
           date?: string
           description?: string
           id?: string
+          is_recurring?: boolean | null
           ocr_amount?: number | null
           ocr_date?: string | null
           ocr_text?: string | null
           ocr_vendor?: string | null
           receipt_url?: string | null
+          subscription_group_id?: string | null
           type?: string
           updated_at?: string
           user_id?: string

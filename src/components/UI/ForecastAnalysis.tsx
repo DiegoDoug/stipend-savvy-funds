@@ -2,24 +2,24 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  ReferenceLine, Area, ComposedChart
+  ReferenceLine, ComposedChart
 } from 'recharts';
 import { 
-  TrendingUp, TrendingDown, Target, AlertTriangle, Lightbulb, 
-  RefreshCw, Calendar, DollarSign, CreditCard, Zap, ChevronRight,
+  TrendingUp, Target, AlertTriangle, Lightbulb, 
+  RefreshCw, Calendar, DollarSign, Zap, ChevronRight,
   Clock, ShieldAlert, Sparkles, ArrowUpRight, ArrowDownRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import type { FinancialContext } from '@/components/UI/FinancialAdvisorChat';
+import SubscriptionTracker from './SubscriptionTracker';
 
 interface ForecastAnalysisProps {
   financialContext: FinancialContext;
@@ -477,49 +477,13 @@ const ForecastAnalysis: React.FC<ForecastAnalysisProps> = ({ financialContext })
         )}
       </Card>
 
-      {/* Detected Subscriptions */}
-      {forecastData.subscriptions.length > 0 && (
-        <Card className="border-border/50">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <CreditCard className="h-4 w-4 text-secondary" />
-                Detected Subscriptions
-              </CardTitle>
-              <Badge variant="secondary">
-                ${forecastData.totalMonthlySubscriptions.toFixed(0)}/mo
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="max-h-[200px]">
-              <div className="space-y-2">
-                {forecastData.subscriptions.map((sub, i) => (
-                  <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
-                    <div className="flex items-center gap-3">
-                      <div className="p-1.5 rounded bg-secondary/20">
-                        <CreditCard className="h-3.5 w-3.5 text-secondary" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">{sub.name}</p>
-                        <p className="text-xs text-muted-foreground">{sub.category} • {sub.frequency}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold">${sub.amount.toFixed(2)}</p>
-                      <p className="text-xs text-muted-foreground">${sub.annualCost}/yr</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-            <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Annual subscription cost</span>
-              <span className="font-semibold">${forecastData.totalAnnualSubscriptions.toLocaleString()}</span>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Subscription Tracker */}
+      <SubscriptionTracker 
+        detectedSubscriptions={forecastData.subscriptions}
+        totalMonthly={forecastData.totalMonthlySubscriptions}
+        totalAnnual={forecastData.totalAnnualSubscriptions}
+        onRefresh={fetchForecast}
+      />
 
       {/* Goal Projections */}
       {forecastData.goalProjections.length > 0 && (
