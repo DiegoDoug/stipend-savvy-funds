@@ -164,3 +164,27 @@ export const receiptUploadSchema = z.object({
 });
 
 export type ReceiptUploadInput = z.infer<typeof receiptUploadSchema>;
+
+/**
+ * AI Receipt analysis item schema
+ */
+export const receiptItemSchema = z.object({
+  name: z.string().max(200),
+  price: z.number().nonnegative()
+});
+
+/**
+ * AI Receipt analysis response schema
+ */
+export const aiReceiptAnalysisSchema = z.object({
+  vendor: z.string().max(200).nullable(),
+  amount: z.number().positive().max(10000000).nullable(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
+  items: z.array(receiptItemSchema),
+  suggestedCategory: z.string().max(50),
+  suggestedDescription: z.string().max(200),
+  currency: z.string().max(10),
+  confidence: z.number().min(0).max(1)
+});
+
+export type AIReceiptAnalysisInput = z.infer<typeof aiReceiptAnalysisSchema>;

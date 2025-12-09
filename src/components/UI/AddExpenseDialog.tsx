@@ -26,8 +26,9 @@ import { useAccountStatus } from "@/hooks/useAccountStatus";
 import { useLanguage } from "@/hooks/useLanguage";
 import { expenseSchema } from "@/lib/validation";
 import { logError, getUserFriendlyErrorMessage } from "@/lib/errorLogger";
-import { Wallet, AlertCircle, Repeat, Info } from "lucide-react";
+import { Wallet, AlertCircle, Repeat, Info, ScanLine } from "lucide-react";
 import { addMonths, format } from "date-fns";
+import ReceiptScannerModal from "./ReceiptScannerModal";
 
 interface Budget {
   id: string;
@@ -36,14 +37,22 @@ interface Budget {
   expense_spent: number;
 }
 
+interface PrefilledData {
+  amount?: number;
+  description?: string;
+  category?: string;
+  date?: string;
+}
+
 interface AddExpenseDialogProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   onExpenseAdded?: () => void;
   showTrigger?: boolean;
+  prefilledData?: PrefilledData;
 }
 
-export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }: AddExpenseDialogProps) {
+export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded, prefilledData }: AddExpenseDialogProps) {
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
@@ -53,6 +62,7 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
   const [isLoading, setIsLoading] = useState(false);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [budgetWarning, setBudgetWarning] = useState<string | null>(null);
+  const [showReceiptScanner, setShowReceiptScanner] = useState(false);
   
   // Recurring expense state
   const [isRecurring, setIsRecurring] = useState(false);
@@ -65,6 +75,16 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
   const { checkAndNotify } = useAccountStatus();
 
   const expenseCategories = getExpenseCategories();
+
+  // Apply prefilled data when it changes
+  useEffect(() => {
+    if (prefilledData) {
+      if (prefilledData.amount) setAmount(prefilledData.amount.toString());
+      if (prefilledData.description) setDescription(prefilledData.description);
+      if (prefilledData.category) setCategory(prefilledData.category);
+      if (prefilledData.date) setDate(prefilledData.date);
+    }
+  }, [prefilledData]);
 
   // Fetch budgets with expense allocation
   useEffect(() => {
@@ -265,15 +285,42 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
     return dates.join(', ');
   };
 
+  const handleReceiptData = (data: { amount: number; description: string; category: string; date: string }) => {
+    setAmount(data.amount.toString());
+    setDescription(data.description);
+    setCategory(data.category);
+    setDate(data.date);
+    setShowReceiptScanner(false);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>{t('dialog.addNewExpense')}</DialogTitle>
-          <DialogDescription>
-            {t('dialog.addNewExpenseDesc')}
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <ReceiptScannerModal
+        open={showReceiptScanner}
+        onOpenChange={setShowReceiptScanner}
+        mode="create"
+        onCreateExpense={handleReceiptData}
+      />
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>{t('dialog.addNewExpense')}</span>
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowReceiptScanner(true)}
+                className="gap-2"
+              >
+                <ScanLine className="w-4 h-4" />
+                Scan Receipt
+              </Button>
+            </DialogTitle>
+            <DialogDescription>
+              {t('dialog.addNewExpenseDesc')}
+            </DialogDescription>
+          </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
@@ -448,7 +495,8 @@ export default function AddExpenseDialog({ open, onOpenChange, onExpenseAdded }:
             </Button>
           </DialogFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
