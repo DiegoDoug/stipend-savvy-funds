@@ -353,6 +353,7 @@ const Goals: React.FC = () => {
             size="sm" 
             onClick={() => navigate('/sage')}
             className="gap-2"
+            data-tour="ask-sage"
           >
             <Sparkles className="h-4 w-4" />
             <span className="hidden sm:inline">Ask Sage</span>
@@ -360,7 +361,7 @@ const Goals: React.FC = () => {
           
           <Dialog open={showAddGoal} onOpenChange={setShowAddGoal}>
             <DialogTrigger asChild>
-              <Button size="sm" className="lg:size-default">
+              <Button size="sm" className="lg:size-default" data-tour="add-goal">
                 <Plus className="mr-2 h-4 w-4" />
                 <span className="hidden sm:inline">Add Goal</span>
                 <span className="sm:hidden">Add</span>
@@ -442,7 +443,9 @@ const Goals: React.FC = () => {
 
         {/* Progress Chart */}
         {goals.length > 0 && (
-          <GoalProgressChart goals={goals} />
+          <div data-tour="goal-chart">
+            <GoalProgressChart goals={goals} />
+          </div>
         )}
 
         {/* Savings Goals */}

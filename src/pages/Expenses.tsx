@@ -273,7 +273,7 @@ export default function Expenses() {
           <h1 className="text-2xl md:text-3xl font-bold">Expense Tracker</h1>
           <p className="text-muted-foreground">Monitor your spending patterns</p>
         </div>
-        <Button onClick={() => setShowAddDialog(true)} className="bg-gradient-to-r from-primary to-primary-glow">
+        <Button onClick={() => setShowAddDialog(true)} className="bg-gradient-to-r from-primary to-primary-glow" data-tour="add-expense">
           <Plus size={18} className="mr-2" />
           Add Expense
         </Button>
@@ -327,7 +327,7 @@ export default function Expenses() {
       </div>
 
       {/* Filters and Search */}
-      <div className="budget-card">
+      <div className="budget-card" data-tour="expense-filters">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
             <div className="relative">

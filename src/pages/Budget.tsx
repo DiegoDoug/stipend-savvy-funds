@@ -119,6 +119,7 @@ export default function BudgetPage() {
             onClick={() => setIsAddDialogOpen(true)}
             className="bg-gradient-to-r from-primary to-primary-glow flex-1 sm:flex-none" 
             disabled={!isActive}
+            data-tour="add-budget"
           >
             <Plus size={18} className="mr-2" />
             Add Budget
@@ -214,15 +215,17 @@ export default function BudgetPage() {
       </GlowCard>
 
       {/* Spending Trends Chart */}
-      <BudgetSpendingTrendsChart 
-        transactions={transactions} 
-        budgets={budgets.map(b => ({
-          id: b.id,
-          name: b.name,
-          expense_allocation: b.expense_allocation,
-          expense_spent: b.expense_spent,
-        }))} 
-      />
+      <div data-tour="spending-chart">
+        <BudgetSpendingTrendsChart 
+          transactions={transactions} 
+          budgets={budgets.map(b => ({
+            id: b.id,
+            name: b.name,
+            expense_allocation: b.expense_allocation,
+            expense_spent: b.expense_spent,
+          }))} 
+        />
+      </div>
 
       {/* Budget Cards */}
       <div className="budget-card">

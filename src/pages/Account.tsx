@@ -8,10 +8,10 @@ import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { User, Mail, Lock, Trash2, UserX, LogOut, Calendar, Clock, Globe } from 'lucide-react';
+import { User, Mail, Lock, Trash2, UserX, LogOut, Calendar, Clock, Globe, RotateCcw } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import VerificationCodeDialog from '@/components/UI/VerificationCodeDialog';
-import { PageOnboarding, usePageOnboarding } from '@/components/UI/PageOnboarding';
+import { PageOnboarding, usePageOnboarding, resetAllOnboarding } from '@/components/UI/PageOnboarding';
 import { accountOnboarding } from '@/components/UI/onboardingConfigs';
 
 interface ProfileData {
@@ -454,7 +454,7 @@ export default function Account() {
       </div>
 
       {/* A. Profile Information Display */}
-      <Card className="p-6">
+      <Card className="p-6" data-tour="profile-info">
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <User size={20} />
           Profile Information
@@ -568,7 +568,7 @@ export default function Account() {
       </Card>
 
       {/* Timezone Settings */}
-      <Card className="p-6">
+      <Card className="p-6" data-tour="timezone">
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Globe size={20} />
           Timezone Settings
@@ -666,7 +666,7 @@ export default function Account() {
       </Card>
 
       {/* D. Change Password */}
-      <Card className="p-6">
+      <Card className="p-6" data-tour="security">
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Lock size={20} />
           Change Password
@@ -743,6 +743,47 @@ export default function Account() {
             {loading ? 'Processing...' : 'Logout from all other devices'}
           </Button>
         </div>
+      </Card>
+
+      {/* Reset Tutorials */}
+      <Card className="p-6">
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <RotateCcw size={20} />
+          Tutorials
+        </h2>
+        <p className="text-muted-foreground mb-4">
+          Reset all page tutorials to see the onboarding guides again on each page.
+        </p>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline">
+              <RotateCcw size={16} className="mr-2" />
+              Reset All Tutorials
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Reset All Tutorials?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will reset all page tutorials. You'll see the onboarding guides again when you visit each page.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={() => {
+                  resetAllOnboarding();
+                  toast({
+                    title: "Tutorials Reset",
+                    description: "All tutorials have been reset. You'll see them again on each page.",
+                  });
+                }}
+              >
+                Reset Tutorials
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </Card>
 
       {/* E. Danger Zone */}

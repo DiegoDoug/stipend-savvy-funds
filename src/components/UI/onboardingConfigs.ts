@@ -38,6 +38,7 @@ export const dashboardOnboarding: PageOnboardingConfig = {
       description: 'View your available balance, total savings, and monthly income/expenses with real-time percentage changes.',
       color: 'text-primary',
       bgColor: 'bg-primary/10',
+      highlightSelector: '[data-tour="stat-cards"]',
     },
     {
       icon: BarChart3,
@@ -45,6 +46,7 @@ export const dashboardOnboarding: PageOnboardingConfig = {
       description: 'See your budget progress and spending across all categories. Track how much you have allocated vs spent.',
       color: 'text-secondary',
       bgColor: 'bg-secondary/10',
+      highlightSelector: '[data-tour="budget-overview"]',
     },
     {
       icon: Clock,
@@ -52,6 +54,7 @@ export const dashboardOnboarding: PageOnboardingConfig = {
       description: 'View all your recent transactions including income, expenses, and savings contributions in one place.',
       color: 'text-success',
       bgColor: 'bg-success/10',
+      highlightSelector: '[data-tour="recent-activity"]',
     },
     {
       icon: Calendar,
@@ -59,6 +62,7 @@ export const dashboardOnboarding: PageOnboardingConfig = {
       description: 'Filter your dashboard by week, month, quarter, or custom date ranges to analyze specific time periods.',
       color: 'text-warning',
       bgColor: 'bg-warning/10',
+      highlightSelector: '[data-tour="date-filter"]',
     },
   ],
   tips: [
@@ -81,6 +85,7 @@ export const budgetOnboarding: PageOnboardingConfig = {
       description: 'Create budgets that allocate portions of your monthly income for expenses and savings. Your total allocations cannot exceed your income.',
       color: 'text-secondary',
       bgColor: 'bg-secondary/10',
+      highlightSelector: '[data-tour="add-budget"]',
     },
     {
       icon: PiggyBank,
@@ -95,6 +100,7 @@ export const budgetOnboarding: PageOnboardingConfig = {
       description: 'View spending trends over time with interactive charts. See how your spending patterns change month to month.',
       color: 'text-primary',
       bgColor: 'bg-primary/10',
+      highlightSelector: '[data-tour="spending-chart"]',
     },
     {
       icon: RefreshCw,
@@ -124,6 +130,7 @@ export const incomeOnboarding: PageOnboardingConfig = {
       description: 'Record all your income sources including salary, freelance work, investments, and other earnings.',
       color: 'text-success',
       bgColor: 'bg-success/10',
+      highlightSelector: '[data-tour="add-income"]',
     },
     {
       icon: Calendar,
@@ -131,6 +138,7 @@ export const incomeOnboarding: PageOnboardingConfig = {
       description: 'View your income history with filtering by time period. Compare earnings across weeks, months, or custom ranges.',
       color: 'text-primary',
       bgColor: 'bg-primary/10',
+      highlightSelector: '[data-tour="income-list"]',
     },
     {
       icon: TrendingUp,
@@ -138,6 +146,7 @@ export const incomeOnboarding: PageOnboardingConfig = {
       description: 'See your total income, average per entry, and percentage changes compared to previous periods.',
       color: 'text-secondary',
       bgColor: 'bg-secondary/10',
+      highlightSelector: '[data-tour="income-stats"]',
     },
   ],
   tips: [
@@ -160,6 +169,7 @@ export const expensesOnboarding: PageOnboardingConfig = {
       description: 'Record your purchases and bills. Each expense can be assigned to a budget and category for better organization.',
       color: 'text-destructive',
       bgColor: 'bg-destructive/10',
+      highlightSelector: '[data-tour="add-expense"]',
     },
     {
       icon: Camera,
@@ -167,6 +177,7 @@ export const expensesOnboarding: PageOnboardingConfig = {
       description: 'Scan receipts with your camera! OCR technology extracts the amount, date, and vendor automatically.',
       color: 'text-primary',
       bgColor: 'bg-primary/10',
+      highlightSelector: '[data-tour="scan-receipt"]',
     },
     {
       icon: Filter,
@@ -174,6 +185,7 @@ export const expensesOnboarding: PageOnboardingConfig = {
       description: 'Find expenses quickly with search, category filters, and budget filters. Sort by date, amount, or name.',
       color: 'text-secondary',
       bgColor: 'bg-secondary/10',
+      highlightSelector: '[data-tour="expense-filters"]',
     },
     {
       icon: Wallet,
@@ -203,6 +215,7 @@ export const goalsOnboarding: PageOnboardingConfig = {
       description: 'Set savings goals for anything - emergency fund, vacation, new car, or retirement. Define target amounts and dates.',
       color: 'text-primary',
       bgColor: 'bg-primary/10',
+      highlightSelector: '[data-tour="add-goal"]',
     },
     {
       icon: Link2,
@@ -217,6 +230,7 @@ export const goalsOnboarding: PageOnboardingConfig = {
       description: 'Visualize your progress with charts showing contributions over time. See projected completion dates.',
       color: 'text-secondary',
       bgColor: 'bg-secondary/10',
+      highlightSelector: '[data-tour="goal-chart"]',
     },
     {
       icon: Sparkles,
@@ -224,6 +238,7 @@ export const goalsOnboarding: PageOnboardingConfig = {
       description: 'Get AI-powered insights on your savings rate, goal feasibility, and recommendations for faster progress.',
       color: 'text-warning',
       bgColor: 'bg-warning/10',
+      highlightSelector: '[data-tour="ask-sage"]',
     },
   ],
   tips: [
@@ -246,13 +261,15 @@ export const accountOnboarding: PageOnboardingConfig = {
       description: 'Update your display name and personal information. Your profile helps personalize your experience.',
       color: 'text-primary',
       bgColor: 'bg-primary/10',
+      highlightSelector: '[data-tour="profile-info"]',
     },
     {
       icon: Palette,
-      title: 'Theme Settings',
-      description: 'Switch between light, dark, or system-based themes. Choose the look that works best for you.',
+      title: 'Timezone Settings',
+      description: 'Set your timezone for accurate date tracking of transactions and budget resets.',
       color: 'text-secondary',
       bgColor: 'bg-secondary/10',
+      highlightSelector: '[data-tour="timezone"]',
     },
     {
       icon: Shield,
@@ -260,11 +277,12 @@ export const accountOnboarding: PageOnboardingConfig = {
       description: 'Change your password and manage account security. Keep your financial data protected.',
       color: 'text-success',
       bgColor: 'bg-success/10',
+      highlightSelector: '[data-tour="security"]',
     },
   ],
   tips: [
     'Use a strong, unique password',
     'Keep your email address up to date',
-    'Dark mode is easier on the eyes at night',
+    'Reset tutorials anytime from settings',
   ],
 };
