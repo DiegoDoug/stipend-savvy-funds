@@ -171,6 +171,57 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_dismissed: boolean
+          is_read: boolean
+          link_label: string | null
+          link_path: string | null
+          message: string
+          priority: string
+          reference_id: string | null
+          reference_type: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_dismissed?: boolean
+          is_read?: boolean
+          link_label?: string | null
+          link_path?: string | null
+          message: string
+          priority?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_dismissed?: boolean
+          is_read?: boolean
+          link_label?: string | null
+          link_path?: string | null
+          message?: string
+          priority?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -273,6 +324,54 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_billing_history: {
+        Row: {
+          amount: number
+          billing_date: string
+          created_at: string
+          id: string
+          status: string
+          subscription_id: string | null
+          transaction_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          billing_date: string
+          created_at?: string
+          id?: string
+          status?: string
+          subscription_id?: string | null
+          transaction_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          billing_date?: string
+          created_at?: string
+          id?: string
+          status?: string
+          subscription_id?: string | null
+          transaction_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_billing_history_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "tracked_subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_billing_history_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tracked_subscriptions: {
         Row: {
           amount: number
@@ -282,9 +381,13 @@ export type Database = {
           frequency: string
           id: string
           is_active: boolean
+          last_notified_at: string | null
           name: string
+          next_billing_date: string | null
+          notification_days_before: number | null
           reminder_date: string | null
           reminder_note: string | null
+          status: string
           updated_at: string
           user_id: string
         }
@@ -296,9 +399,13 @@ export type Database = {
           frequency?: string
           id?: string
           is_active?: boolean
+          last_notified_at?: string | null
           name: string
+          next_billing_date?: string | null
+          notification_days_before?: number | null
           reminder_date?: string | null
           reminder_note?: string | null
+          status?: string
           updated_at?: string
           user_id: string
         }
@@ -310,9 +417,13 @@ export type Database = {
           frequency?: string
           id?: string
           is_active?: boolean
+          last_notified_at?: string | null
           name?: string
+          next_billing_date?: string | null
+          notification_days_before?: number | null
           reminder_date?: string | null
           reminder_note?: string | null
+          status?: string
           updated_at?: string
           user_id?: string
         }
@@ -333,6 +444,7 @@ export type Database = {
           ocr_text: string | null
           ocr_vendor: string | null
           receipt_url: string | null
+          status: string
           subscription_group_id: string | null
           type: string
           updated_at: string
@@ -352,6 +464,7 @@ export type Database = {
           ocr_text?: string | null
           ocr_vendor?: string | null
           receipt_url?: string | null
+          status?: string
           subscription_group_id?: string | null
           type: string
           updated_at?: string
@@ -371,6 +484,7 @@ export type Database = {
           ocr_text?: string | null
           ocr_vendor?: string | null
           receipt_url?: string | null
+          status?: string
           subscription_group_id?: string | null
           type?: string
           updated_at?: string
