@@ -44,20 +44,30 @@ export function PageOnboarding({ config, onComplete }: PageOnboardingProps) {
   const [highlightRect, setHighlightRect] = useState<HighlightRect | null>(null);
   const totalSteps = config.steps.length;
 
-  // Update highlight position when step changes
+  // Update highlight position when step changes and scroll element into view
   useEffect(() => {
     const step = config.steps[currentStep];
     if (step?.highlightSelector) {
       const element = document.querySelector(step.highlightSelector);
       if (element) {
-        const rect = element.getBoundingClientRect();
-        const padding = 8;
-        setHighlightRect({
-          top: rect.top - padding,
-          left: rect.left - padding,
-          width: rect.width + padding * 2,
-          height: rect.height + padding * 2,
-        });
+        // Scroll element into view first
+        element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+        
+        // Wait for scroll to complete before calculating position
+        const updateRect = () => {
+          const rect = element.getBoundingClientRect();
+          const padding = 8;
+          setHighlightRect({
+            top: rect.top - padding,
+            left: rect.left - padding,
+            width: rect.width + padding * 2,
+            height: rect.height + padding * 2,
+          });
+        };
+        
+        // Update position after scroll animation
+        const scrollTimeout = setTimeout(updateRect, 400);
+        return () => clearTimeout(scrollTimeout);
       } else {
         setHighlightRect(null);
       }
