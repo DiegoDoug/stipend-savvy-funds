@@ -141,7 +141,7 @@ export function PageOnboarding({ config, onComplete }: PageOnboardingProps) {
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
       )}
       <Card className={cn(
-        "w-full max-w-md overflow-hidden border-border/50 shadow-2xl transition-all duration-500",
+        "relative z-10 w-full max-w-md overflow-hidden border-border/50 shadow-2xl transition-all duration-500 bg-card",
         isVisible ? "animate-scale-in" : "animate-scale-out"
       )}>
         {/* Close Button */}
