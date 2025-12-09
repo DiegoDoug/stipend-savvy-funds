@@ -47,16 +47,16 @@ interface TrackedSubscription {
 }
 
 interface SubscriptionTrackerProps {
-  detectedSubscriptions: DetectedSubscription[];
-  totalMonthly: number;
-  totalAnnual: number;
+  detectedSubscriptions?: DetectedSubscription[];
+  totalMonthly?: number;
+  totalAnnual?: number;
   onRefresh?: () => void;
 }
 
 const SubscriptionTracker: React.FC<SubscriptionTrackerProps> = ({
-  detectedSubscriptions,
-  totalMonthly,
-  totalAnnual,
+  detectedSubscriptions = [],
+  totalMonthly = 0,
+  totalAnnual = 0,
   onRefresh,
 }) => {
   const { user } = useAuth();
