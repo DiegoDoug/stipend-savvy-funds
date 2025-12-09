@@ -4,17 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Sparkles, Loader2, TrendingUp, PiggyBank, Target, HelpCircle, RotateCcw, History, Trash2, X, Plus, MinusCircle, PlusCircle, Pencil, DollarSign, Bot } from 'lucide-react';
+import { Send, Sparkles, Loader2, TrendingUp, PiggyBank, Target, HelpCircle, RotateCcw, History, Trash2, X, Plus, MinusCircle, PlusCircle, Pencil, DollarSign, Bot, PanelLeftClose, PanelLeft, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ChatMessageBubble from './ChatMessageBubble';
 import ChatTypingIndicator from './ChatTypingIndicator';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatDistanceToNow } from 'date-fns';
 
 type Message = {
@@ -497,6 +491,7 @@ const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentPlaceholder, setCurrentPlaceholder] = useState(0);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const intervalRef = useRef<number | null>(null);
@@ -928,98 +923,200 @@ const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({
 
   return (
     <Card className={cn(
-      "flex flex-col h-full overflow-hidden backdrop-blur-[5px]",
+      "flex h-full overflow-hidden backdrop-blur-[5px]",
       standalone ? "border-0 shadow-none bg-transparent" : "bg-card/60 border-border/50 shadow-[0_8px_32px_rgba(0,0,0,0.12)]"
     )}>
-      {/* Header - hidden in standalone mode since Sage page has its own header */}
-      {!standalone && (
-        <CardHeader className="flex-shrink-0 flex flex-row items-center justify-between p-4 border-b border-border/50 bg-card/80 backdrop-blur-md">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-muted to-primary flex items-center justify-center shadow-[0_0_20px_hsl(var(--primary)/0.3)]">
-              <Sparkles className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-foreground">Financial Advisor</h3>
-              <p className="text-xs text-muted-foreground">Your AI financial coach</p>
-            </div>
+      {/* Chat Sidebar */}
+      <motion.div
+        initial={false}
+        animate={{ width: sidebarOpen ? 220 : 48 }}
+        transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+        className="flex-shrink-0 border-r border-border/50 bg-card/80 backdrop-blur-md flex flex-col"
+      >
+        {/* Sidebar Header */}
+        <div className="p-2 border-b border-border/50 flex items-center justify-between">
+          <TooltipProvider delayDuration={0}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                >
+                  {sidebarOpen ? (
+                    <PanelLeftClose className="h-4 w-4" />
+                  ) : (
+                    <PanelLeft className="h-4 w-4" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                {sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
+          <AnimatePresence>
+            {sidebarOpen && (
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="text-xs font-display font-semibold text-muted-foreground truncate"
+              >
+                Chat History
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* New Chat Button */}
+        <div className="p-2">
+          <TooltipProvider delayDuration={0}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size={sidebarOpen ? "sm" : "icon"}
+                  onClick={handleNewChat}
+                  disabled={isLoading}
+                  className={cn(
+                    "w-full gap-2 bg-card/70 border-border/40 hover:bg-primary/10 hover:border-primary/50 transition-all duration-300",
+                    !sidebarOpen && "h-8 w-8"
+                  )}
+                >
+                  <Plus className="h-4 w-4" />
+                  <AnimatePresence>
+                    {sidebarOpen && (
+                      <motion.span
+                        initial={{ opacity: 0, width: 0 }}
+                        animate={{ opacity: 1, width: "auto" }}
+                        exit={{ opacity: 0, width: 0 }}
+                        className="font-display font-medium text-xs"
+                      >
+                        New Chat
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </Button>
+              </TooltipTrigger>
+              {!sidebarOpen && (
+                <TooltipContent side="right">New Chat</TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+
+        {/* Conversation List */}
+        <ScrollArea className="flex-1 px-2">
+          <div className="space-y-1 py-1">
+            {conversations.map((convo) => (
+              <TooltipProvider key={convo.id} delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <motion.button
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      onClick={() => switchConversation(convo.id)}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-2 py-2 rounded-lg text-left transition-all duration-200 group",
+                        activeConversationId === convo.id
+                          ? "bg-primary/10 border border-primary/30 text-foreground"
+                          : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      <MessageSquare className="h-4 w-4 flex-shrink-0" />
+                      <AnimatePresence>
+                        {sidebarOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, width: 0 }}
+                            animate={{ opacity: 1, width: "auto" }}
+                            exit={{ opacity: 0, width: 0 }}
+                            className="flex-1 min-w-0 overflow-hidden"
+                          >
+                            <p className="text-xs font-medium truncate">{convo.title}</p>
+                            <p className="text-[10px] text-muted-foreground truncate">
+                              {formatDistanceToNow(new Date(convo.updatedAt), { addSuffix: true })}
+                            </p>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                      <AnimatePresence>
+                        {sidebarOpen && (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                          >
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 opacity-0 group-hover:opacity-100 hover:bg-destructive/20 hover:text-destructive transition-all"
+                              onClick={(e) => deleteConversation(convo.id, e)}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.button>
+                  </TooltipTrigger>
+                  {!sidebarOpen && (
+                    <TooltipContent side="right" className="max-w-48">
+                      <p className="font-medium">{convo.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(convo.updatedAt), { addSuffix: true })}
+                      </p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
+            ))}
           </div>
-          <div className="flex items-center gap-1">
-            {/* History Dropdown */}
-            {conversations.length > 0 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
+        </ScrollArea>
+
+        {/* Clear History */}
+        {conversations.length > 0 && (
+          <div className="p-2 border-t border-border/50">
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
-                    size="sm"
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <History className="h-4 w-4 mr-1" />
-                    History
-                    <span className="ml-1 text-xs bg-muted rounded-full px-1.5">
-                      {conversations.length}
-                    </span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64 bg-popover">
-                  <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                    Recent Conversations
-                  </div>
-                  <DropdownMenuSeparator />
-                  <ScrollArea className="max-h-64">
-                    {conversations.map((convo) => (
-                      <DropdownMenuItem
-                        key={convo.id}
-                        className={cn(
-                          "flex items-center justify-between cursor-pointer",
-                          activeConversationId === convo.id && "bg-accent"
-                        )}
-                        onClick={() => switchConversation(convo.id)}
-                      >
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm truncate font-medium">{convo.title}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(convo.updatedAt), { addSuffix: true })}
-                          </p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 ml-2 hover:bg-destructive/20 hover:text-destructive"
-                          onClick={(e) => deleteConversation(convo.id, e)}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </DropdownMenuItem>
-                    ))}
-                  </ScrollArea>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive cursor-pointer"
+                    size={sidebarOpen ? "sm" : "icon"}
                     onClick={clearAllHistory}
+                    className={cn(
+                      "w-full gap-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all",
+                      !sidebarOpen && "h-8 w-8"
+                    )}
                   >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Clear All History
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-            
-            {/* New Chat Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleNewChat}
-              disabled={isLoading}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <RotateCcw className="h-4 w-4 mr-1" />
-              New Chat
-            </Button>
+                    <Trash2 className="h-4 w-4" />
+                    <AnimatePresence>
+                      {sidebarOpen && (
+                        <motion.span
+                          initial={{ opacity: 0, width: 0 }}
+                          animate={{ opacity: 1, width: "auto" }}
+                          exit={{ opacity: 0, width: 0 }}
+                          className="text-xs"
+                        >
+                          Clear History
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </Button>
+                </TooltipTrigger>
+                {!sidebarOpen && (
+                  <TooltipContent side="right">Clear History</TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
           </div>
-        </CardHeader>
-      )}
+        )}
+      </motion.div>
 
-      {/* Messages */}
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col min-w-0">
       <ScrollArea className="flex-1 p-4 bg-background/50" ref={scrollRef}>
         {messages.length === 0 ? (
           <div className="space-y-6">
@@ -1185,6 +1282,7 @@ const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({
           </motion.div>
         </div>
       </form>
+      </div>
     </Card>
   );
 };
