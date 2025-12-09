@@ -25,6 +25,8 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccountStatus } from "@/hooks/useAccountStatus";
+import { PageOnboarding, usePageOnboarding } from "@/components/UI/PageOnboarding";
+import { incomeOnboarding } from "@/components/UI/onboardingConfigs";
 
 export default function Income() {
   const location = useLocation();
@@ -39,6 +41,7 @@ export default function Income() {
   const { transactions, loading, refetch, filterByPeriod, filterTransactionsByRange } = useFinanceData();
   const { toast } = useToast();
   const { checkAndNotify } = useAccountStatus();
+  const { showOnboarding, completeOnboarding } = usePageOnboarding('income');
 
   const handlePeriodChange = (period: string) => {
     setSelectedPeriod(period);
@@ -242,7 +245,12 @@ export default function Income() {
   }, [incomeData, currentPeriodRange]);
 
   return (
-    <div className="space-y-6">
+    <>
+      {showOnboarding && (
+        <PageOnboarding config={incomeOnboarding} onComplete={completeOnboarding} />
+      )}
+      
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -571,5 +579,6 @@ export default function Income() {
         income={selectedIncome}
       />
     </div>
+    </>
   );
 }
