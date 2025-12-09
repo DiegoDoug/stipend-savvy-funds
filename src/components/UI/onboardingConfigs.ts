@@ -1,0 +1,270 @@
+import { 
+  Home, 
+  DollarSign, 
+  TrendingUp, 
+  TrendingDown,
+  PieChart, 
+  Target, 
+  Wallet, 
+  CreditCard,
+  Calendar,
+  BarChart3,
+  PiggyBank,
+  Receipt,
+  Plus,
+  Filter,
+  Camera,
+  Link2,
+  RefreshCw,
+  Clock,
+  Sparkles,
+  Settings,
+  User,
+  Shield,
+  Bell,
+  Palette
+} from 'lucide-react';
+import { PageOnboardingConfig } from './PageOnboarding';
+
+export const dashboardOnboarding: PageOnboardingConfig = {
+  pageKey: 'dashboard',
+  title: 'Welcome to Dashboard',
+  subtitle: 'Your financial overview at a glance',
+  icon: Home,
+  steps: [
+    {
+      icon: DollarSign,
+      title: 'Financial Summary',
+      description: 'View your available balance, total savings, and monthly income/expenses with real-time percentage changes.',
+      color: 'text-primary',
+      bgColor: 'bg-primary/10',
+    },
+    {
+      icon: BarChart3,
+      title: 'Budget Overview',
+      description: 'See your budget progress and spending across all categories. Track how much you have allocated vs spent.',
+      color: 'text-secondary',
+      bgColor: 'bg-secondary/10',
+    },
+    {
+      icon: Clock,
+      title: 'Recent Activity',
+      description: 'View all your recent transactions including income, expenses, and savings contributions in one place.',
+      color: 'text-success',
+      bgColor: 'bg-success/10',
+    },
+    {
+      icon: Calendar,
+      title: 'Date Filtering',
+      description: 'Filter your dashboard by week, month, quarter, or custom date ranges to analyze specific time periods.',
+      color: 'text-warning',
+      bgColor: 'bg-warning/10',
+    },
+  ],
+  tips: [
+    'Export your dashboard as a PDF report',
+    'Click on transactions to view details',
+    'Use the period selector to compare different time ranges',
+  ],
+};
+
+export const budgetOnboarding: PageOnboardingConfig = {
+  pageKey: 'budget',
+  title: 'Budget Management',
+  subtitle: 'Control your spending and savings',
+  icon: PieChart,
+  iconGradient: 'bg-gradient-to-br from-secondary to-secondary/70',
+  steps: [
+    {
+      icon: Wallet,
+      title: 'Budget Allocation',
+      description: 'Create budgets that allocate portions of your monthly income for expenses and savings. Your total allocations cannot exceed your income.',
+      color: 'text-secondary',
+      bgColor: 'bg-secondary/10',
+    },
+    {
+      icon: PiggyBank,
+      title: 'Savings Goals',
+      description: 'Link budgets to savings goals for automatic monthly transfers. Each month, your savings allocation is added to your linked goal.',
+      color: 'text-success',
+      bgColor: 'bg-success/10',
+    },
+    {
+      icon: BarChart3,
+      title: 'Spending Trends',
+      description: 'View spending trends over time with interactive charts. See how your spending patterns change month to month.',
+      color: 'text-primary',
+      bgColor: 'bg-primary/10',
+    },
+    {
+      icon: RefreshCw,
+      title: 'Monthly Reset',
+      description: 'Budgets reset automatically each month. Savings allocations transfer to goals, and expense tracking starts fresh.',
+      color: 'text-warning',
+      bgColor: 'bg-warning/10',
+    },
+  ],
+  tips: [
+    'Start with essential budgets like rent, groceries, utilities',
+    'Set realistic spending limits based on your history',
+    'Link savings goals to budgets for automated saving',
+  ],
+};
+
+export const incomeOnboarding: PageOnboardingConfig = {
+  pageKey: 'income',
+  title: 'Income Tracking',
+  subtitle: 'Monitor all your earnings',
+  icon: TrendingUp,
+  iconGradient: 'bg-gradient-to-br from-success to-success/70',
+  steps: [
+    {
+      icon: Plus,
+      title: 'Add Income',
+      description: 'Record all your income sources including salary, freelance work, investments, and other earnings.',
+      color: 'text-success',
+      bgColor: 'bg-success/10',
+    },
+    {
+      icon: Calendar,
+      title: 'Track History',
+      description: 'View your income history with filtering by time period. Compare earnings across weeks, months, or custom ranges.',
+      color: 'text-primary',
+      bgColor: 'bg-primary/10',
+    },
+    {
+      icon: TrendingUp,
+      title: 'Income Insights',
+      description: 'See your total income, average per entry, and percentage changes compared to previous periods.',
+      color: 'text-secondary',
+      bgColor: 'bg-secondary/10',
+    },
+  ],
+  tips: [
+    'Categorize income by source (salary, freelance, etc.)',
+    'Record income on the day you receive it',
+    'Use custom date ranges for tax period analysis',
+  ],
+};
+
+export const expensesOnboarding: PageOnboardingConfig = {
+  pageKey: 'expenses',
+  title: 'Expense Tracking',
+  subtitle: 'Know where your money goes',
+  icon: CreditCard,
+  iconGradient: 'bg-gradient-to-br from-destructive to-destructive/70',
+  steps: [
+    {
+      icon: Plus,
+      title: 'Add Expenses',
+      description: 'Record your purchases and bills. Each expense can be assigned to a budget and category for better organization.',
+      color: 'text-destructive',
+      bgColor: 'bg-destructive/10',
+    },
+    {
+      icon: Camera,
+      title: 'Receipt Scanning',
+      description: 'Scan receipts with your camera! OCR technology extracts the amount, date, and vendor automatically.',
+      color: 'text-primary',
+      bgColor: 'bg-primary/10',
+    },
+    {
+      icon: Filter,
+      title: 'Filter & Search',
+      description: 'Find expenses quickly with search, category filters, and budget filters. Sort by date, amount, or name.',
+      color: 'text-secondary',
+      bgColor: 'bg-secondary/10',
+    },
+    {
+      icon: Wallet,
+      title: 'Budget Integration',
+      description: 'Expenses are automatically tracked against your budgets. See real-time spending vs allocation.',
+      color: 'text-warning',
+      bgColor: 'bg-warning/10',
+    },
+  ],
+  tips: [
+    'Scan receipts immediately after purchases',
+    'Assign every expense to a budget for accurate tracking',
+    'Use categories to identify spending patterns',
+  ],
+};
+
+export const goalsOnboarding: PageOnboardingConfig = {
+  pageKey: 'goals',
+  title: 'Savings Goals',
+  subtitle: 'Build your financial future',
+  icon: Target,
+  iconGradient: 'bg-gradient-to-br from-primary to-primary-glow',
+  steps: [
+    {
+      icon: Target,
+      title: 'Create Goals',
+      description: 'Set savings goals for anything - emergency fund, vacation, new car, or retirement. Define target amounts and dates.',
+      color: 'text-primary',
+      bgColor: 'bg-primary/10',
+    },
+    {
+      icon: Link2,
+      title: 'Link to Budgets',
+      description: 'Connect goals to budgets for automatic monthly contributions. Your savings grow without manual tracking.',
+      color: 'text-success',
+      bgColor: 'bg-success/10',
+    },
+    {
+      icon: BarChart3,
+      title: 'Progress Tracking',
+      description: 'Visualize your progress with charts showing contributions over time. See projected completion dates.',
+      color: 'text-secondary',
+      bgColor: 'bg-secondary/10',
+    },
+    {
+      icon: Sparkles,
+      title: 'AI Insights',
+      description: 'Get AI-powered insights on your savings rate, goal feasibility, and recommendations for faster progress.',
+      color: 'text-warning',
+      bgColor: 'bg-warning/10',
+    },
+  ],
+  tips: [
+    'Start with an emergency fund goal',
+    'Set realistic target dates based on your income',
+    'Ask Sage for personalized goal recommendations',
+  ],
+};
+
+export const accountOnboarding: PageOnboardingConfig = {
+  pageKey: 'account',
+  title: 'Account Settings',
+  subtitle: 'Manage your profile and preferences',
+  icon: Settings,
+  iconGradient: 'bg-gradient-to-br from-muted-foreground to-muted-foreground/70',
+  steps: [
+    {
+      icon: User,
+      title: 'Profile Management',
+      description: 'Update your display name and personal information. Your profile helps personalize your experience.',
+      color: 'text-primary',
+      bgColor: 'bg-primary/10',
+    },
+    {
+      icon: Palette,
+      title: 'Theme Settings',
+      description: 'Switch between light, dark, or system-based themes. Choose the look that works best for you.',
+      color: 'text-secondary',
+      bgColor: 'bg-secondary/10',
+    },
+    {
+      icon: Shield,
+      title: 'Security',
+      description: 'Change your password and manage account security. Keep your financial data protected.',
+      color: 'text-success',
+      bgColor: 'bg-success/10',
+    },
+  ],
+  tips: [
+    'Use a strong, unique password',
+    'Keep your email address up to date',
+    'Dark mode is easier on the eyes at night',
+  ],
+};

@@ -18,6 +18,8 @@ import AIInsightsCard from '@/components/UI/AIInsightsCard';
 import EditGoalDialog from '@/components/UI/EditGoalDialog';
 import GoalProgressChart from '@/components/UI/GoalProgressChart';
 import AddFundsDialog from '@/components/UI/AddFundsDialog';
+import { PageOnboarding, usePageOnboarding } from '@/components/UI/PageOnboarding';
+import { goalsOnboarding } from '@/components/UI/onboardingConfigs';
 
 type SavingsGoal = {
   id: string;
@@ -39,6 +41,7 @@ const Goals: React.FC = () => {
   const [searchParams] = useSearchParams();
   const { transactions, budgetCategories, stats, budgets } = useFinanceData();
   const { updateBudget, refetch: budgetRefetch } = useBudgets();
+  const { showOnboarding, completeOnboarding } = usePageOnboarding('goals');
   
   const [goals, setGoals] = useState<SavingsGoal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -331,7 +334,12 @@ const Goals: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto p-4 lg:p-6">
+    <>
+      {showOnboarding && (
+        <PageOnboarding config={goalsOnboarding} onComplete={completeOnboarding} />
+      )}
+      
+      <div className="container mx-auto p-4 lg:p-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
@@ -679,6 +687,7 @@ const Goals: React.FC = () => {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 };
 

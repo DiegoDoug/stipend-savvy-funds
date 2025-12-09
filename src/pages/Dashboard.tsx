@@ -14,6 +14,8 @@ import { DateRangePicker } from "@/components/UI/DateRangePicker";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getCustomDateRange, formatDateRange, PeriodType, isDateInRange } from "@/lib/dateUtils";
+import { PageOnboarding, usePageOnboarding } from "@/components/UI/PageOnboarding";
+import { dashboardOnboarding } from "@/components/UI/onboardingConfigs";
 
 type DashboardPeriod = PeriodType | 'custom';
 
@@ -34,6 +36,7 @@ export default function Dashboard() {
   const [userTimezone] = useState<string>("America/Chicago");
   const [selectedPeriod, setSelectedPeriod] = useState<DashboardPeriod>('month');
   const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>(undefined);
+  const { showOnboarding, completeOnboarding } = usePageOnboarding('dashboard');
   
   const { transactions, budgetCategories, budgets, refunds, goalContributions, loading, filterByPeriod, filterByCustomRange } = useFinanceData();
 
@@ -201,7 +204,12 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <>
+      {showOnboarding && (
+        <PageOnboarding config={dashboardOnboarding} onComplete={completeOnboarding} />
+      )}
+      
+      <div className="space-y-6">
       {/* Welcome Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
@@ -503,5 +511,6 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
+    </>
   );
 }

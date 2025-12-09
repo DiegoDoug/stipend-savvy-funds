@@ -29,6 +29,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccountStatus } from "@/hooks/useAccountStatus";
+import { PageOnboarding, usePageOnboarding } from "@/components/UI/PageOnboarding";
+import { expensesOnboarding } from "@/components/UI/onboardingConfigs";
 export default function Expenses() {
   const location = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
@@ -48,6 +50,7 @@ export default function Expenses() {
   const { toast } = useToast();
   const { checkAndNotify } = useAccountStatus();
   const { transactions, budgets, loading, refetch } = useFinanceData();
+  const { showOnboarding, completeOnboarding } = usePageOnboarding('expenses');
 
   // Create a budget name lookup map
   const budgetNameMap = useMemo(() => {
@@ -258,7 +261,12 @@ export default function Expenses() {
     );
   }
   return (
-    <div className="space-y-6">
+    <>
+      {showOnboarding && (
+        <PageOnboarding config={expensesOnboarding} onComplete={completeOnboarding} />
+      )}
+      
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -567,5 +575,6 @@ export default function Expenses() {
         onUpdate={handleUpdateExpense}
       />
     </div>
+    </>
   );
 }

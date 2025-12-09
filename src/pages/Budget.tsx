@@ -33,6 +33,8 @@ import { useFinanceData } from "@/hooks/useFinanceData";
 import AddBudgetDialog from "@/components/UI/AddBudgetDialog";
 import EditBudgetDialog from "@/components/UI/EditBudgetDialog";
 import BudgetSpendingTrendsChart from "@/components/UI/BudgetSpendingTrendsChart";
+import { PageOnboarding, usePageOnboarding } from "@/components/UI/PageOnboarding";
+import { budgetOnboarding } from "@/components/UI/onboardingConfigs";
 
 export default function BudgetPage() {
   const { user } = useAuth();
@@ -48,6 +50,7 @@ export default function BudgetPage() {
     getGoalName,
     refetch 
   } = useBudgets();
+  const { showOnboarding, completeOnboarding } = usePageOnboarding('budget');
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
@@ -83,7 +86,12 @@ export default function BudgetPage() {
   }, [budgets]);
 
   return (
-    <div className="space-y-6">
+    <>
+      {showOnboarding && (
+        <PageOnboarding config={budgetOnboarding} onComplete={completeOnboarding} />
+      )}
+      
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
         <div>
@@ -394,5 +402,6 @@ export default function BudgetPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </>
   );
 }

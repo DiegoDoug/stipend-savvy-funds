@@ -11,6 +11,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { User, Mail, Lock, Trash2, UserX, LogOut, Calendar, Clock, Globe } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import VerificationCodeDialog from '@/components/UI/VerificationCodeDialog';
+import { PageOnboarding, usePageOnboarding } from '@/components/UI/PageOnboarding';
+import { accountOnboarding } from '@/components/UI/onboardingConfigs';
 
 interface ProfileData {
   name: string;
@@ -27,6 +29,7 @@ export default function Account() {
   const [loading, setLoading] = useState(false);
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const { showOnboarding, completeOnboarding } = usePageOnboarding('account');
   
   // Edit Name
   const [editingName, setEditingName] = useState(false);
@@ -439,7 +442,12 @@ export default function Account() {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <>
+      {showOnboarding && (
+        <PageOnboarding config={accountOnboarding} onComplete={completeOnboarding} />
+      )}
+      
+      <div className="space-y-6 max-w-4xl mx-auto">
       <div>
         <h1 className="text-2xl md:text-3xl font-bold mb-2">Account Settings</h1>
         <p className="text-muted-foreground">Manage your account information and preferences</p>
@@ -837,5 +845,6 @@ export default function Account() {
         }}
       />
     </div>
+    </>
   );
 }
