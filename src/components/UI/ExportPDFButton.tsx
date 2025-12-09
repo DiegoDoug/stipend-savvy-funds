@@ -3,6 +3,7 @@ import { FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { generateDashboardPDF } from '@/lib/pdfExport';
 import { toast } from 'sonner';
+import { logError } from '@/lib/errorLogger';
 
 interface ExportPDFButtonProps {
   userName: string;
@@ -66,7 +67,7 @@ export default function ExportPDFButton({
 
       toast.success('PDF exported successfully!');
     } catch (error) {
-      console.error('Error exporting PDF:', error);
+      logError(error, 'ExportPDFButton:handleExport');
       toast.error('Failed to export PDF. Please try again.');
     } finally {
       setIsExporting(false);

@@ -28,6 +28,7 @@ import { useAccountStatus } from "@/hooks/useAccountStatus";
 import { PageOnboarding, usePageOnboarding } from "@/components/UI/PageOnboarding";
 import { incomeOnboarding } from "@/components/UI/onboardingConfigs";
 import { useLanguage } from "@/hooks/useLanguage";
+import { logError } from "@/lib/errorLogger";
 export default function Income() {
   const location = useLocation();
   const { t } = useLanguage();
@@ -98,7 +99,7 @@ export default function Income() {
       setShowEditDialog(false);
       setEditingIncome(null);
     } catch (error) {
-      console.error("Error updating income:", error);
+      logError(error, 'Income:handleUpdateIncome');
       toast({
         title: "Error",
         description: "Failed to update the income entry. Please try again.",
@@ -121,7 +122,7 @@ export default function Income() {
 
       refetch.transactions();
     } catch (error) {
-      console.error("Error deleting income:", error);
+      logError(error, 'Income:handleDeleteIncome');
       toast({
         title: "Error",
         description: "Failed to delete the income entry. Please try again.",

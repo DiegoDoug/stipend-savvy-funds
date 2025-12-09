@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { logError } from '@/lib/errorLogger';
 
 export interface Notification {
   id: string;
@@ -42,7 +43,7 @@ export function useNotifications() {
       if (error) throw error;
       setNotifications((data as Notification[]) || []);
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      logError(error, 'useNotifications:fetchNotifications');
     } finally {
       setLoading(false);
     }
@@ -91,7 +92,7 @@ export function useNotifications() {
         prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
       );
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      logError(error, 'useNotifications:markAsRead');
     }
   };
 
@@ -109,7 +110,7 @@ export function useNotifications() {
       
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
     } catch (error) {
-      console.error('Error marking all notifications as read:', error);
+      logError(error, 'useNotifications:markAllAsRead');
     }
   };
 
@@ -127,7 +128,7 @@ export function useNotifications() {
       
       setNotifications(prev => prev.filter(n => n.id !== notificationId));
     } catch (error) {
-      console.error('Error dismissing notification:', error);
+      logError(error, 'useNotifications:dismissNotification');
     }
   };
 
@@ -144,7 +145,7 @@ export function useNotifications() {
       
       setNotifications([]);
     } catch (error) {
-      console.error('Error dismissing all notifications:', error);
+      logError(error, 'useNotifications:dismissAll');
     }
   };
 
@@ -176,7 +177,7 @@ export function useNotifications() {
 
       if (error) throw error;
     } catch (error) {
-      console.error('Error creating notification:', error);
+      logError(error, 'useNotifications:createNotification');
     }
   };
 

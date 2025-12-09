@@ -3,6 +3,7 @@ import { Calendar, DollarSign, Plus, Minus, Pause, Play } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { logError } from '@/lib/errorLogger';
 import {
   Dialog,
   DialogContent,
@@ -82,7 +83,7 @@ export function EditRecurringExpenseDialog({
       toast({ title: 'Updated', description: `${futureIds.length} future transactions updated` });
       onUpdate();
     } catch (error) {
-      console.error('Error updating transactions:', error);
+      logError(error, 'EditRecurringExpenseDialog:handleUpdateFutureTransactions');
       toast({ title: 'Error', description: 'Failed to update transactions', variant: 'destructive' });
     } finally {
       setLoading(false);
@@ -125,7 +126,7 @@ export function EditRecurringExpenseDialog({
       setMonthsToAdd(0);
       onUpdate();
     } catch (error) {
-      console.error('Error extending recurrence:', error);
+      logError(error, 'EditRecurringExpenseDialog:handleExtendRecurrence');
       toast({ title: 'Error', description: 'Failed to extend recurrence', variant: 'destructive' });
     } finally {
       setLoading(false);
@@ -150,7 +151,7 @@ export function EditRecurringExpenseDialog({
       toast({ title: 'Paused', description: 'All future occurrences paused' });
       onUpdate();
     } catch (error) {
-      console.error('Error pausing transactions:', error);
+      logError(error, 'EditRecurringExpenseDialog:handlePauseAll');
       toast({ title: 'Error', description: 'Failed to pause transactions', variant: 'destructive' });
     } finally {
       setLoading(false);
@@ -173,7 +174,7 @@ export function EditRecurringExpenseDialog({
       toast({ title: 'Reactivated', description: 'All occurrences reactivated' });
       onUpdate();
     } catch (error) {
-      console.error('Error reactivating transactions:', error);
+      logError(error, 'EditRecurringExpenseDialog:handleReactivateAll');
       toast({ title: 'Error', description: 'Failed to reactivate transactions', variant: 'destructive' });
     } finally {
       setLoading(false);

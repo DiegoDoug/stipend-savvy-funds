@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Shield, Mail } from "lucide-react";
+import { logError } from "@/lib/errorLogger";
 
 interface VerificationCodeDialogProps {
   open: boolean;
@@ -78,7 +79,7 @@ export default function VerificationCodeDialog({
         description: `A verification code has been sent to ${newEmail || email}`,
       });
     } catch (error: any) {
-      console.error('Error sending code:', error);
+      logError(error, 'VerificationCodeDialog:handleSendCode');
       toast({
         title: "Error",
         description: "Failed to send verification code. Please try again.",
@@ -131,7 +132,7 @@ export default function VerificationCodeDialog({
       onOpenChange(false);
       setCode("");
     } catch (error: any) {
-      console.error('Verification error:', error);
+      logError(error, 'VerificationCodeDialog:handleVerify');
       toast({
         title: "Error",
         description: "Verification failed. Please try again.",
