@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { Menu, Bell } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import ProfileDialog from "@/components/UI/ProfileDialog";
 import { SearchBar } from "@/components/ui/search-bar";
+import { NotificationCenter } from "@/components/UI/NotificationCenter";
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -44,11 +44,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <button className="p-1.5 sm:p-2 rounded-lg hover:bg-accent/50 transition-colors relative">
-            <Bell size={16} className="sm:w-[18px] sm:h-[18px]" />
-            <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-warning rounded-full text-xs"></span>
-          </button>
-
+          <NotificationCenter />
           {userName && <ProfileDialog userName={userName} />}
         </div>
       </div>

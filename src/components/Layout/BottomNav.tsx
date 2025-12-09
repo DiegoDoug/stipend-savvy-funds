@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Home, PieChart, TrendingUp, CreditCard, Target, Sparkles, Settings } from "lucide-react";
+import { Home, PieChart, TrendingUp, CreditCard, Target, Sparkles, Settings, RefreshCw } from "lucide-react";
 
 const navItems = [
   { path: "/", icon: Home, label: "Home" },
@@ -7,6 +7,7 @@ const navItems = [
   { path: "/income", icon: TrendingUp, label: "Income" },
   { path: "/expenses", icon: CreditCard, label: "Expenses" },
   { path: "/goals", icon: Target, label: "Goals" },
+  { path: "/subscriptions", icon: RefreshCw, label: "Subs" },
   { path: "/sage", icon: Sparkles, label: "Sage" },
   { path: "/account", icon: Settings, label: "Account" },
 ];
