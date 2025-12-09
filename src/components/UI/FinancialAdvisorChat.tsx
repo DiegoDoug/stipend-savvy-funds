@@ -142,6 +142,7 @@ export type FinancialContext = {
 
 interface FinancialAdvisorChatProps {
   financialContext: FinancialContext;
+  standalone?: boolean;
   onCreateGoal?: (goal: SuggestedGoal) => void;
   onCreateExpense?: (expense: { description: string; amount: number; category: string; date: string }) => void;
   onCreateIncome?: (income: { description: string; amount: number; category: string; date: string }) => void;
@@ -471,7 +472,8 @@ const getActionButtonStyle = (type: ActionType) => {
 };
 
 const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({ 
-  financialContext, 
+  financialContext,
+  standalone = false,
   onCreateGoal,
   onCreateExpense,
   onCreateIncome,
@@ -857,92 +859,97 @@ const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({
   };
 
   return (
-    <Card className="flex flex-col h-full border-border/50">
-      {/* Header */}
-      <CardHeader className="flex-shrink-0 flex flex-row items-center justify-between p-4 border-b border-border/50">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-            <Sparkles className="h-5 w-5 text-primary" />
+    <Card className={cn(
+      "flex flex-col h-full",
+      standalone ? "border-0 shadow-none bg-transparent" : "border-border/50"
+    )}>
+      {/* Header - hidden in standalone mode since Sage page has its own header */}
+      {!standalone && (
+        <CardHeader className="flex-shrink-0 flex flex-row items-center justify-between p-4 border-b border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <Sparkles className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">Financial Advisor</h3>
+              <p className="text-xs text-muted-foreground">AI-powered savings assistant</p>
+            </div>
           </div>
-          <div>
-            <h3 className="font-semibold text-foreground">Financial Advisor</h3>
-            <p className="text-xs text-muted-foreground">AI-powered savings assistant</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-1">
-          {/* History Dropdown */}
-          {conversations.length > 0 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <History className="h-4 w-4 mr-1" />
-                  History
-                  <span className="ml-1 text-xs bg-muted rounded-full px-1.5">
-                    {conversations.length}
-                  </span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64 bg-popover">
-                <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                  Recent Conversations
-                </div>
-                <DropdownMenuSeparator />
-                <ScrollArea className="max-h-64">
-                  {conversations.map((convo) => (
-                    <DropdownMenuItem
-                      key={convo.id}
-                      className={cn(
-                        "flex items-center justify-between cursor-pointer",
-                        activeConversationId === convo.id && "bg-accent"
-                      )}
-                      onClick={() => switchConversation(convo.id)}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm truncate font-medium">{convo.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(convo.updatedAt), { addSuffix: true })}
-                        </p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 ml-2 hover:bg-destructive/20 hover:text-destructive"
-                        onClick={(e) => deleteConversation(convo.id, e)}
+          <div className="flex items-center gap-1">
+            {/* History Dropdown */}
+            {conversations.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <History className="h-4 w-4 mr-1" />
+                    History
+                    <span className="ml-1 text-xs bg-muted rounded-full px-1.5">
+                      {conversations.length}
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64 bg-popover">
+                  <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                    Recent Conversations
+                  </div>
+                  <DropdownMenuSeparator />
+                  <ScrollArea className="max-h-64">
+                    {conversations.map((convo) => (
+                      <DropdownMenuItem
+                        key={convo.id}
+                        className={cn(
+                          "flex items-center justify-between cursor-pointer",
+                          activeConversationId === convo.id && "bg-accent"
+                        )}
+                        onClick={() => switchConversation(convo.id)}
                       >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </DropdownMenuItem>
-                  ))}
-                </ScrollArea>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive cursor-pointer"
-                  onClick={clearAllHistory}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Clear All History
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-          
-          {/* New Chat Button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleNewChat}
-            disabled={isLoading}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <RotateCcw className="h-4 w-4 mr-1" />
-            New Chat
-          </Button>
-        </div>
-      </CardHeader>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm truncate font-medium">{convo.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatDistanceToNow(new Date(convo.updatedAt), { addSuffix: true })}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 ml-2 hover:bg-destructive/20 hover:text-destructive"
+                          onClick={(e) => deleteConversation(convo.id, e)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </DropdownMenuItem>
+                    ))}
+                  </ScrollArea>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive cursor-pointer"
+                    onClick={clearAllHistory}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Clear All History
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            
+            {/* New Chat Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleNewChat}
+              disabled={isLoading}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <RotateCcw className="h-4 w-4 mr-1" />
+              New Chat
+            </Button>
+          </div>
+        </CardHeader>
+      )}
 
       {/* Messages */}
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>

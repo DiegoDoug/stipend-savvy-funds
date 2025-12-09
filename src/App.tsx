@@ -11,6 +11,7 @@ import Budget from "./pages/Budget";
 import Income from "./pages/Income";
 import Expenses from "./pages/Expenses";
 import Goals from "./pages/Goals";
+import Sage from "./pages/Sage";
 import Auth from "./pages/Auth";
 import Account from "./pages/Account";
 import NotFound from "./pages/NotFound";
@@ -52,6 +53,7 @@ const App = () => (
                 <Route path="income" element={<Income />} />
                 <Route path="expenses" element={<Expenses />} />
                 <Route path="goals" element={<Goals />} />
+                <Route path="sage" element={<Sage />} />
                 <Route path="account" element={<Account />} />
               </Route>
               <Route path="*" element={<NotFound />} />

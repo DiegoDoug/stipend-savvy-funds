@@ -1,4 +1,4 @@
-import { Home, PieChart, TrendingUp, CreditCard, Target, Settings } from "lucide-react";
+import { Home, PieChart, TrendingUp, CreditCard, Target, Sparkles, Settings } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -8,6 +8,7 @@ const dockItems = [
   { label: "Income", icon: TrendingUp, path: "/income" },
   { label: "Expenses", icon: CreditCard, path: "/expenses" },
   { label: "Goals", icon: Target, path: "/goals" },
+  { label: "Sage", icon: Sparkles, path: "/sage" },
   { label: "Settings", icon: Settings, path: "/account" },
 ];
 
