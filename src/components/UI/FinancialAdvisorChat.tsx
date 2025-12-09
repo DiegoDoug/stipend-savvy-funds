@@ -1101,7 +1101,7 @@ const FinancialAdvisorChat: React.FC<FinancialAdvisorChatProps> = ({
                               size="sm"
                               variant="outline"
                               className={cn(
-                                "gap-1.5 text-xs h-8 font-semibold backdrop-blur-md transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]",
+                                "gap-1.5 text-xs h-8 font-display font-semibold tracking-tight backdrop-blur-md transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]",
                                 buttonStyle
                               )}
                               onClick={() => handleAction(action)}
