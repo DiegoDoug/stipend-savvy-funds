@@ -318,6 +318,19 @@ export const translations: Record<Language, Record<string, string>> = {
     'sage.askQuestion': 'Ask a question...',
     'sage.forecastAnalysis': 'Forecast & Analysis',
 
+    // Charts
+    'charts.spendingTrends': 'Spending Trends',
+    'charts.noSpendingData': 'No spending data available yet',
+    'charts.startTracking': 'Start tracking expenses to see trends',
+    'charts.vsLastMonth': 'vs last month',
+    'charts.progressOverTime': 'Progress Over Time',
+    'charts.selectGoal': 'Select goal',
+    'charts.noProgressData': 'No progress data yet. Update your goal to start tracking!',
+    'charts.saved': 'Saved',
+    'charts.date': 'Date',
+    'charts.target': 'Target',
+    'charts.started': 'Started',
+
     // Periods
     'period.thisWeek': 'This Week',
     'period.thisMonth': 'This Month',
@@ -688,6 +701,19 @@ export const translations: Record<Language, Record<string, string>> = {
     'sage.title': 'Sage Asesor IA',
     'sage.askQuestion': 'Haz una pregunta...',
     'sage.forecastAnalysis': 'Pronóstico y Análisis',
+
+    // Charts
+    'charts.spendingTrends': 'Tendencias de Gastos',
+    'charts.noSpendingData': 'No hay datos de gastos disponibles aún',
+    'charts.startTracking': 'Comienza a registrar gastos para ver tendencias',
+    'charts.vsLastMonth': 'vs mes anterior',
+    'charts.progressOverTime': 'Progreso en el Tiempo',
+    'charts.selectGoal': 'Seleccionar meta',
+    'charts.noProgressData': 'Sin datos de progreso aún. ¡Actualiza tu meta para comenzar a rastrear!',
+    'charts.saved': 'Ahorrado',
+    'charts.date': 'Fecha',
+    'charts.target': 'Objetivo',
+    'charts.started': 'Iniciado',
 
     // Periods
     'period.thisWeek': 'Esta Semana',

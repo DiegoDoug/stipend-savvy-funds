@@ -5,7 +5,9 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
+import { es, enUS } from 'date-fns/locale';
 import { TrendingUp, Loader2 } from 'lucide-react';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface ProgressData {
   date: string;
@@ -26,11 +28,13 @@ interface GoalProgressChartProps {
 
 export default function GoalProgressChart({ goals }: GoalProgressChartProps) {
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   const [selectedGoalId, setSelectedGoalId] = useState<string>('');
   const [progressData, setProgressData] = useState<ProgressData[]>([]);
   const [loading, setLoading] = useState(false);
 
   const selectedGoal = goals.find(g => g.id === selectedGoalId);
+  const dateLocale = language === 'es' ? es : enUS;
 
   // Auto-select first goal when goals change
   useEffect(() => {
@@ -57,7 +61,7 @@ export default function GoalProgressChart({ goals }: GoalProgressChartProps) {
         const formattedData: ProgressData[] = (data || []).map(item => ({
           date: item.recorded_at,
           amount: Number(item.amount),
-          formattedDate: format(new Date(item.recorded_at), 'MMM d'),
+          formattedDate: format(new Date(item.recorded_at), 'MMM d', { locale: dateLocale }),
         }));
 
         // If no history, add current amount as starting point
@@ -65,7 +69,7 @@ export default function GoalProgressChart({ goals }: GoalProgressChartProps) {
           formattedData.push({
             date: new Date().toISOString(),
             amount: selectedGoal.current_amount,
-            formattedDate: format(new Date(), 'MMM d'),
+            formattedDate: format(new Date(), 'MMM d', { locale: dateLocale }),
           });
         }
 
@@ -99,11 +103,11 @@ export default function GoalProgressChart({ goals }: GoalProgressChartProps) {
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-primary" />
-            <CardTitle className="text-base">Progress Over Time</CardTitle>
+            <CardTitle className="text-base">{t('charts.progressOverTime')}</CardTitle>
           </div>
           <Select value={selectedGoalId} onValueChange={setSelectedGoalId}>
             <SelectTrigger className="w-[180px] h-8 text-sm">
-              <SelectValue placeholder="Select goal" />
+              <SelectValue placeholder={t('charts.selectGoal')} />
             </SelectTrigger>
             <SelectContent>
               {goals.map(goal => (
@@ -122,7 +126,7 @@ export default function GoalProgressChart({ goals }: GoalProgressChartProps) {
           </div>
         ) : progressData.length === 0 ? (
           <div className="h-[200px] flex items-center justify-center text-sm text-muted-foreground">
-            No progress data yet. Update your goal to start tracking!
+            {t('charts.noProgressData')}
           </div>
         ) : (
           <div className="h-[200px]">
@@ -157,8 +161,8 @@ export default function GoalProgressChart({ goals }: GoalProgressChartProps) {
                     borderRadius: '8px',
                     fontSize: '12px',
                   }}
-                  formatter={(value: number) => [formatCurrency(value), 'Saved']}
-                  labelFormatter={(label) => `Date: ${label}`}
+                  formatter={(value: number) => [formatCurrency(value), t('charts.saved')]}
+                  labelFormatter={(label) => `${t('charts.date')}: ${label}`}
                 />
                 {selectedGoal && (
                   <ReferenceLine
@@ -166,7 +170,7 @@ export default function GoalProgressChart({ goals }: GoalProgressChartProps) {
                     stroke="hsl(var(--primary))"
                     strokeDasharray="5 5"
                     label={{
-                      value: `Target: ${formatCurrency(selectedGoal.target_amount)}`,
+                      value: `${t('charts.target')}: ${formatCurrency(selectedGoal.target_amount)}`,
                       position: 'right',
                       fill: 'hsl(var(--muted-foreground))',
                       fontSize: 10,
@@ -190,7 +194,7 @@ export default function GoalProgressChart({ goals }: GoalProgressChartProps) {
         {selectedGoal && progressData.length > 0 && (
           <div className="mt-3 pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
             <span>
-              Started: {progressData[0]?.formattedDate}
+              {t('charts.started')}: {progressData[0]?.formattedDate}
             </span>
             <span className="font-medium text-foreground">
               {formatCurrency(selectedGoal.current_amount)} / {formatCurrency(selectedGoal.target_amount)}

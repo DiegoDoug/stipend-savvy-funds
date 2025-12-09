@@ -11,6 +11,7 @@ import {
   Legend
 } from 'recharts';
 import { TrendingUp, TrendingDown } from 'lucide-react';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface Transaction {
   id: string;
@@ -46,6 +47,8 @@ const BudgetSpendingTrendsChart: React.FC<BudgetSpendingTrendsChartProps> = ({
   transactions, 
   budgets 
 }) => {
+  const { t, language } = useLanguage();
+  
   // Get the last 6 months of data
   const chartData = useMemo(() => {
     const now = new Date();
@@ -55,7 +58,7 @@ const BudgetSpendingTrendsChart: React.FC<BudgetSpendingTrendsChartProps> = ({
     for (let i = 5; i >= 0; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       months.push({
-        month: date.toLocaleDateString('en-US', { month: 'short' }),
+        month: date.toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', { month: 'short' }),
         date,
         data: {},
       });
@@ -128,13 +131,13 @@ const BudgetSpendingTrendsChart: React.FC<BudgetSpendingTrendsChartProps> = ({
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base sm:text-lg">Spending Trends</CardTitle>
+          <CardTitle className="text-base sm:text-lg">{t('charts.spendingTrends')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-muted-foreground">
             <TrendingUp className="w-10 h-10 mx-auto mb-3 opacity-50" />
-            <p className="text-sm">No spending data available yet</p>
-            <p className="text-xs mt-1">Start tracking expenses to see trends</p>
+            <p className="text-sm">{t('charts.noSpendingData')}</p>
+            <p className="text-xs mt-1">{t('charts.startTracking')}</p>
           </div>
         </CardContent>
       </Card>
@@ -145,12 +148,12 @@ const BudgetSpendingTrendsChart: React.FC<BudgetSpendingTrendsChartProps> = ({
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base sm:text-lg">Spending Trends</CardTitle>
+          <CardTitle className="text-base sm:text-lg">{t('charts.spendingTrends')}</CardTitle>
           {trend && (
             <div className={`flex items-center gap-1 text-sm ${trend.isUp ? 'text-destructive' : 'text-success'}`}>
               {trend.isUp ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
               <span>{trend.value}%</span>
-              <span className="text-muted-foreground text-xs">vs last month</span>
+              <span className="text-muted-foreground text-xs">{t('charts.vsLastMonth')}</span>
             </div>
           )}
         </div>
