@@ -113,7 +113,7 @@ const Landing = () => {
       <nav className="relative z-50 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src="/src/assets/sagetrack-logo.png" alt="SageTrack" className="h-12 w-auto" />
+            <img src="/src/assets/sagetrack-logo-new.png" alt="SageTrack" className="h-10 w-auto" />
           </div>
           <div className="flex items-center gap-4">
             <Link to="/auth">
@@ -485,7 +485,7 @@ const Landing = () => {
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2">
-              <img src="/src/assets/sagetrack-logo.png" alt="SageTrack" className="h-8 w-auto" />
+              <img src="/src/assets/sagetrack-logo-new.png" alt="SageTrack" className="h-8 w-auto" />
             </div>
             
             <div className="flex items-center gap-8 text-white/60 text-sm">

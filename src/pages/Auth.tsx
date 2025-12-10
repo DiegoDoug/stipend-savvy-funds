@@ -511,9 +511,9 @@ export default function Auth() {
           <Card className="w-full p-8 space-y-6 bg-slate-900/40 backdrop-blur-xl border-white/10 shadow-2xl">
             <div className="text-center">
               <motion.img
-                src="/src/assets/sagetrack-Logo-solo.png"
+                src="/src/assets/sagetrack-icon.png"
                 alt="SageTrack Logo"
-                className="w-16 h-16 mx-auto mb-4"
+                className="w-20 h-20 mx-auto mb-4 rounded-2xl"
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{ duration: 0.8, delay: 0.5, type: "spring" }}
