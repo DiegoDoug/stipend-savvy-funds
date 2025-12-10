@@ -589,9 +589,15 @@ export default function Auth() {
                   </button>
                 </div>
                 <div>
-                  {!isLogin && (
-                    <div className="bg-white/4 border border-white/12 rounded-lg p-4 backdrop-blur-sm mt-1">
-                      <div className="space-y-1 text-sm text-white/60 mt-2">
+                  {!isLogin && password.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.3, ease: "easeOut" }}
+                      className="bg-white/4 border border-white/12 rounded-lg p-4 backdrop-blur-sm mt-1 overflow-hidden"
+                    >
+                      <div className="space-y-1 text-sm text-white/60">
                         {[
                           { label: "At least 10 characters", test: password.length >= 10 },
                           { label: "Contains lowercase letter", test: /[a-z]/.test(password) },
@@ -615,7 +621,7 @@ export default function Auth() {
                           </motion.div>
                         ))}
                       </div>
-                    </div>
+                    </motion.div>
                   )}
                 </div>
               </div>
