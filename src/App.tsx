@@ -17,6 +17,7 @@ import Auth from "./pages/Auth";
 import Account from "./pages/Account";
 import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
+import Landing from "./pages/Landing";
 import type { ReactNode } from "react";
 
 const queryClient = new QueryClient();
@@ -30,7 +31,19 @@ const ProtectedRoute = ({ children }: { children: ReactNode }) => {
     </div>;
   }
   
-  return user ? <>{children}</> : <Navigate to="/auth" />;
+  return user ? <>{children}</> : <Navigate to="/landing" />;
+};
+
+const PublicRoute = ({ children }: { children: ReactNode }) => {
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+    </div>;
+  }
+  
+  return user ? <Navigate to="/" /> : <>{children}</>;
 };
 
 const App = () => (
@@ -42,6 +55,11 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
+              <Route path="/landing" element={
+                <PublicRoute>
+                  <Landing />
+                </PublicRoute>
+              } />
               <Route path="/auth" element={<Auth />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/" element={
