@@ -593,10 +593,11 @@ export default function Auth() {
                     <div className="bg-white/4 border border-white/12 rounded-lg p-4 backdrop-blur-sm mt-1">
                       <div className="space-y-1 text-sm text-white/60 mt-2">
                         {[
-                          { label: "At least 8 characters", test: password.length >= 8 },
+                          { label: "At least 10 characters", test: password.length >= 10 },
                           { label: "Contains lowercase letter", test: /[a-z]/.test(password) },
                           { label: "Contains uppercase letter", test: /[A-Z]/.test(password) },
                           { label: "Contains number", test: /\d/.test(password) },
+                          { label: "Contains special character (@$!%*#?&)", test: /[@$!%*#?&]/.test(password) },
                         ].map((req, i) => (
                           <motion.div
                             key={i}
