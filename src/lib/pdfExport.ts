@@ -1,4 +1,5 @@
 import { jsPDF } from "jspdf";
+import sagetrackIcon from "@/assets/sagetrack-icon.png";
 
 interface TransactionData {
   date: string;
@@ -44,6 +45,28 @@ const TEXT_DARK = [0, 0, 0]; // Black text
 const TEXT_GRAY = [80, 80, 80]; // Gray text
 const LIGHT_GRAY = [245, 245, 245]; // Light background
 
+// Helper to load image as base64
+const loadImageAsBase64 = (src: string): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL("image/png"));
+      } else {
+        reject(new Error("Could not get canvas context"));
+      }
+    };
+    img.onerror = reject;
+    img.src = src;
+  });
+};
+
 export const generateDashboardPDF = async (data: DashboardData) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -81,24 +104,25 @@ export const generateDashboardPDF = async (data: DashboardData) => {
     doc.rect(0, i, pageWidth, 1, "F");
   }
 
-  // Icon placeholder (rounded square) - top left
-  doc.setFillColor(255, 255, 255);
-  doc.roundedRect(margin, 12, 26, 26, 3, 3, "F");
-
-  // Draw stylized "F" icon
-  doc.setFillColor(BRAND_BLUE[0], BRAND_BLUE[1], BRAND_BLUE[2]);
-  // Vertical bar
-  doc.rect(margin + 6, 18, 4, 14, "F");
-  // Top horizontal
-  doc.rect(margin + 6, 18, 10, 4, "F");
-  // Middle horizontal
-  doc.rect(margin + 6, 24, 7, 3, "F");
+  // Add SageTrack logo
+  try {
+    const logoBase64 = await loadImageAsBase64(sagetrackIcon);
+    doc.addImage(logoBase64, "PNG", margin, 10, 30, 30);
+  } catch (e) {
+    // Fallback: draw placeholder if logo fails to load
+    doc.setFillColor(255, 255, 255);
+    doc.roundedRect(margin, 12, 26, 26, 3, 3, "F");
+    doc.setFillColor(BRAND_BLUE[0], BRAND_BLUE[1], BRAND_BLUE[2]);
+    doc.rect(margin + 6, 18, 4, 14, "F");
+    doc.rect(margin + 6, 18, 10, 4, "F");
+    doc.rect(margin + 6, 24, 7, 3, "F");
+  }
 
   // FINANCIAL REPORT title
   doc.setFontSize(24);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(255, 255, 255);
-  doc.text("FINANCIAL REPORT", margin + 35, 32);
+  doc.text("FINANCIAL REPORT", margin + 38, 32);
 
   yPos = headerHeight + 15;
 
