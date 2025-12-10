@@ -512,14 +512,14 @@ export default function Auth() {
             <div className="text-center">
               <motion.img
                 src="/Icon.png"
-                alt="FinTrack Logo"
+                alt="SageTrack Logo"
                 className="w-16 h-16 mx-auto mb-4"
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{ duration: 0.8, delay: 0.5, type: "spring" }}
               />
               <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-white to-white/80">
-                FinTrack
+                SageTrack
               </h1>
               <p className="text-white/50 mt-2 text-sm">
                 {isLogin ? "Your expense and income tracker" : "Create your account"}

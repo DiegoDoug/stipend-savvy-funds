@@ -80,7 +80,7 @@ const testimonials = [
   {
     name: "Sarah M.",
     role: "College Student",
-    quote: "FinTrack helped me save $500 in my first semester. The AI advisor is like having a financial mentor!",
+    quote: "SageTrack helped me save $500 in my first semester. The AI advisor is like having a financial mentor!",
     avatar: "S"
   },
   {
@@ -113,8 +113,8 @@ const Landing = () => {
       <nav className="relative z-50 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/images/fintrack-icon.png" alt="FinTrack" className="w-10 h-10" />
-            <span className="text-2xl font-bold text-white font-display">FinTrack</span>
+            <img src="/images/fintrack-icon.png" alt="SageTrack" className="w-10 h-10" />
+            <span className="text-2xl font-bold text-white font-display">SageTrack</span>
           </div>
           <div className="flex items-center gap-4">
             <Link to="/auth">
@@ -168,7 +168,7 @@ const Landing = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
             >
-              FinTrack is your personal finance companion, built to make money management feel effortless. 
+              SageTrack is your personal finance companion, built to make money management feel effortless. 
               Track budgets, set savings goals, scan receipts with AI, and get personalized advice from 
               Sage—your built-in financial advisor.
             </motion.p>
@@ -294,13 +294,101 @@ const Landing = () => {
               </div>
               
               <div className="relative">
-                <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 shadow-2xl flex items-center justify-center overflow-hidden">
-                  <div className="text-center p-8">
-                    <div className="w-20 h-20 rounded-2xl bg-primary/20 flex items-center justify-center mx-auto mb-4">
-                      <ChartLine className="w-10 h-10 text-primary" />
+                <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 shadow-2xl overflow-hidden p-4">
+                  {/* Mini Dashboard Mockup */}
+                  <div className="h-full flex flex-col gap-3">
+                    {/* Top Stats Row */}
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { label: "Balance", value: "$12,450", change: "+12%", color: "text-primary" },
+                        { label: "Income", value: "$5,200", change: "+8%", color: "text-green-400" },
+                        { label: "Expenses", value: "$2,150", change: "-5%", color: "text-red-400" }
+                      ].map((stat, i) => (
+                        <motion.div
+                          key={stat.label}
+                          className="bg-white/5 rounded-lg p-2 border border-white/5"
+                          initial={{ opacity: 0, y: 10 }}
+                          whileInView={{ opacity: 1, y: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: 0.3 + i * 0.1 }}
+                        >
+                          <p className="text-white/40 text-[10px]">{stat.label}</p>
+                          <p className={`text-sm font-bold ${stat.color}`}>{stat.value}</p>
+                          <p className="text-[10px] text-green-400">{stat.change}</p>
+                        </motion.div>
+                      ))}
                     </div>
-                    <p className="text-white/60">Dashboard Preview</p>
-                    <p className="text-white/40 text-sm mt-2">Interactive demo coming soon</p>
+                    
+                    {/* Animated Chart */}
+                    <div className="flex-1 bg-white/5 rounded-lg p-3 border border-white/5 min-h-0">
+                      <p className="text-white/40 text-[10px] mb-2">Monthly Overview</p>
+                      <div className="h-[calc(100%-20px)] flex items-end gap-1">
+                        {[40, 65, 45, 80, 55, 90, 70, 85, 60, 75, 95, 80].map((height, i) => (
+                          <motion.div
+                            key={i}
+                            className="flex-1 bg-gradient-to-t from-primary to-primary-glow rounded-t"
+                            initial={{ height: 0 }}
+                            whileInView={{ height: `${height}%` }}
+                            viewport={{ once: true }}
+                            transition={{ 
+                              delay: 0.5 + i * 0.05, 
+                              duration: 0.6,
+                              ease: "easeOut"
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Bottom Row - Budget & Goals */}
+                    <div className="grid grid-cols-2 gap-2">
+                      {/* Budget Progress */}
+                      <motion.div
+                        className="bg-white/5 rounded-lg p-2 border border-white/5"
+                        initial={{ opacity: 0, x: -10 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.8 }}
+                      >
+                        <p className="text-white/40 text-[10px] mb-1">Budget Used</p>
+                        <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                          <motion.div
+                            className="h-full bg-gradient-to-r from-primary to-secondary rounded-full"
+                            initial={{ width: 0 }}
+                            whileInView={{ width: "68%" }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 1, duration: 0.8 }}
+                          />
+                        </div>
+                        <p className="text-white/60 text-[10px] mt-1">68% of $3,200</p>
+                      </motion.div>
+                      
+                      {/* Savings Goal */}
+                      <motion.div
+                        className="bg-white/5 rounded-lg p-2 border border-white/5"
+                        initial={{ opacity: 0, x: 10 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.9 }}
+                      >
+                        <p className="text-white/40 text-[10px] mb-1">Savings Goal</p>
+                        <div className="flex items-center gap-2">
+                          <motion.div
+                            className="w-8 h-8 rounded-full border-2 border-secondary flex items-center justify-center"
+                            initial={{ rotate: -90 }}
+                            whileInView={{ rotate: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 1.1, duration: 0.5 }}
+                          >
+                            <span className="text-[8px] text-secondary font-bold">75%</span>
+                          </motion.div>
+                          <div>
+                            <p className="text-white/80 text-[10px] font-medium">Vacation</p>
+                            <p className="text-white/40 text-[8px]">$3,750 / $5,000</p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    </div>
                   </div>
                 </div>
                 {/* Decorative elements */}
@@ -327,7 +415,7 @@ const Landing = () => {
               <span className="text-secondary">Everywhere</span>
             </h2>
             <p className="text-white/60 max-w-2xl mx-auto">
-              Join thousands of people who have transformed their financial habits with FinTrack.
+              Join thousands of people who have transformed their financial habits with SageTrack.
             </p>
           </motion.div>
 
@@ -379,7 +467,7 @@ const Landing = () => {
                 Ready to Take Control of Your Finances?
               </h2>
               <p className="text-white/70 mb-8 max-w-xl mx-auto">
-                Join FinTrack today and start your journey to financial clarity. 
+                Join SageTrack today and start your journey to financial clarity. 
                 It's free to get started—no credit card required.
               </p>
               <Link to="/auth">
@@ -398,8 +486,8 @@ const Landing = () => {
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-3">
-              <img src="/images/fintrack-icon.png" alt="FinTrack" className="w-8 h-8" />
-              <span className="text-xl font-bold text-white font-display">FinTrack</span>
+              <img src="/images/fintrack-icon.png" alt="SageTrack" className="w-8 h-8" />
+              <span className="text-xl font-bold text-white font-display">SageTrack</span>
             </div>
             
             <div className="flex items-center gap-8 text-white/60 text-sm">
@@ -410,7 +498,7 @@ const Landing = () => {
             </div>
             
             <p className="text-white/40 text-sm">
-              © {new Date().getFullYear()} FinTrack. All rights reserved.
+              © {new Date().getFullYear()} SageTrack. All rights reserved.
             </p>
           </div>
         </div>
