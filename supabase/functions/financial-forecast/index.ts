@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const forecastSystemPrompt = `You are an advanced financial forecasting AI for FinTrack. Analyze the user's financial data and provide predictions.
+const forecastSystemPrompt = `You are an advanced financial forecasting AI for SageTrack. Analyze the user's financial data and provide predictions.
 
 Your analysis MUST be returned in the following JSON format only (no additional text before or after):
 

@@ -33,7 +33,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
         <div className="flex items-center gap-2 sm:gap-3">
           <div>
             <h1 className="text-base sm:text-lg lg:text-xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-              FinTrack
+              SageTrack
             </h1>
             <p className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">Student Finance Manager</p>
           </div>
