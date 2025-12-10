@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const systemPrompt = `You are a friendly and knowledgeable personal financial advisor AI for FinTrack, a personal finance tracking app. Your role is to:
+const systemPrompt = `You are a friendly and knowledgeable personal financial advisor AI for SageTrack, a personal finance tracking app. Your role is to:
 
 1. **Analyze Spending Patterns**: Look at the user's transaction history to identify trends, top expense categories, and areas where they might be overspending.
 

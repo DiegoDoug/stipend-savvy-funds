@@ -272,7 +272,7 @@ export default function ResetPassword() {
             <div className="text-center space-y-2">
               <motion.img
                 src="/Icon.png"
-                alt="FinTrack Logo"
+                alt="SageTrack Logo"
                 className="w-16 h-16 mx-auto mb-4"
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
