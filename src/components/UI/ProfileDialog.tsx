@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Settings, LogOut, Moon, Sun, ChevronDown, Globe, Check } from "lucide-react";
+import { Settings, LogOut, Moon, Sun, Monitor, ChevronDown, Globe, Check } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +14,6 @@ import {
   DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -26,7 +25,7 @@ interface ProfileDialogProps {
 export default function ProfileDialog({ userName }: ProfileDialogProps) {
   const navigate = useNavigate();
   const { signOut } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const { language, setLanguage, t } = useLanguage();
   const [open, setOpen] = useState(false);
 
@@ -38,6 +37,18 @@ export default function ProfileDialog({ userName }: ProfileDialogProps) {
   const handleSettings = () => {
     navigate('/account');
     setOpen(false);
+  };
+
+  const getThemeIcon = () => {
+    if (theme === 'system') return <Monitor size={16} className="mr-2" />;
+    if (theme === 'dark') return <Moon size={16} className="mr-2" />;
+    return <Sun size={16} className="mr-2" />;
+  };
+
+  const getThemeLabel = () => {
+    if (theme === 'system') return t('common.systemTheme') || 'System';
+    if (theme === 'dark') return t('common.darkMode');
+    return t('common.lightMode') || 'Light';
   };
 
   return (
@@ -74,29 +85,40 @@ export default function ProfileDialog({ userName }: ProfileDialogProps) {
           {t('common.settings')}
         </DropdownMenuItem>
 
-        <DropdownMenuItem 
-          onClick={(e) => {
-            e.preventDefault();
-            toggleTheme();
-          }}
-          className="cursor-pointer"
-        >
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center">
-              {theme === 'light' ? (
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger className="cursor-pointer">
+            {getThemeIcon()}
+            <span>{t('common.theme') || 'Theme'}</span>
+          </DropdownMenuSubTrigger>
+          <DropdownMenuPortal>
+            <DropdownMenuSubContent className="bg-popover border-border">
+              <DropdownMenuItem 
+                onClick={() => setTheme('light')}
+                className="cursor-pointer"
+              >
                 <Sun size={16} className="mr-2" />
-              ) : (
+                {t('common.lightMode') || 'Light'}
+                {theme === 'light' && <Check size={16} className="ml-auto" />}
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => setTheme('dark')}
+                className="cursor-pointer"
+              >
                 <Moon size={16} className="mr-2" />
-              )}
-              <span>{t('common.darkMode')}</span>
-            </div>
-            <Switch 
-              checked={theme === 'dark'} 
-              onCheckedChange={toggleTheme}
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
-        </DropdownMenuItem>
+                {t('common.darkMode')}
+                {theme === 'dark' && <Check size={16} className="ml-auto" />}
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => setTheme('system')}
+                className="cursor-pointer"
+              >
+                <Monitor size={16} className="mr-2" />
+                {t('common.systemTheme') || 'System'}
+                {theme === 'system' && <Check size={16} className="ml-auto" />}
+              </DropdownMenuItem>
+            </DropdownMenuSubContent>
+          </DropdownMenuPortal>
+        </DropdownMenuSub>
 
         <DropdownMenuSub>
           <DropdownMenuSubTrigger className="cursor-pointer">
