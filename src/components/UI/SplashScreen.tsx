@@ -1,4 +1,6 @@
 import { motion } from "framer-motion";
+import { Sun, Moon, Monitor } from "lucide-react";
+import { useTheme } from "@/hooks/useTheme";
 import sagetrackLogo from "@/assets/sagetrack-logo-new.png";
 
 interface SplashScreenProps {
@@ -6,6 +8,20 @@ interface SplashScreenProps {
 }
 
 const SplashScreen = ({ onComplete }: SplashScreenProps) => {
+  const { theme, toggleTheme, resolvedTheme } = useTheme();
+
+  const getThemeIcon = () => {
+    if (theme === 'system') return <Monitor className="w-4 h-4" />;
+    if (theme === 'dark') return <Moon className="w-4 h-4" />;
+    return <Sun className="w-4 h-4" />;
+  };
+
+  const getThemeLabel = () => {
+    if (theme === 'system') return 'System';
+    if (theme === 'dark') return 'Dark';
+    return 'Light';
+  };
+
   return (
     <motion.div
       className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-background via-background to-primary/10"
@@ -15,6 +31,20 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
       transition={{ duration: 0.5 }}
       onAnimationComplete={onComplete}
     >
+      {/* Theme Toggle - Top Right */}
+      <motion.button
+        onClick={toggleTheme}
+        className="absolute top-6 right-6 flex items-center gap-2 px-3 py-2 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 text-foreground hover:bg-card transition-colors shadow-lg"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        {getThemeIcon()}
+        <span className="text-xs font-medium">{getThemeLabel()}</span>
+      </motion.button>
+
       {/* Animated background glow */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
